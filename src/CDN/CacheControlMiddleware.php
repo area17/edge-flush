@@ -3,14 +3,15 @@
 namespace App\Services\CDN;
 
 use Closure;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class CacheControlMiddleware
 {
     public function handle($request, Closure $next)
     {
         $response = $next($request);
+
         return $this->responseCanBeCached($response, $request)
             ? cache_control()->cache($response)
             : cache_control()->noCache($response);
@@ -19,7 +20,7 @@ class CacheControlMiddleware
     private function responseCanBeCached($response, $request): bool
     {
         if (
-            !(
+            ! (
                 $response instanceof Response ||
                 $response instanceof JsonResponse
             )

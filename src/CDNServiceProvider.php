@@ -2,9 +2,9 @@
 
 namespace Area17\CDN;
 
+use Area17\CDN\Commands\CDNCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Area17\CDN\Commands\CDNCommand;
 
 class CDNServiceProvider extends PackageServiceProvider
 {

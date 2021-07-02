@@ -4,8 +4,8 @@ namespace App\Services\CDN;
 
 use App\Support\Constants;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class CacheControl
 {
@@ -78,7 +78,7 @@ class CacheControl
 
     public function disabled(): bool
     {
-        return !$this->enabled();
+        return ! $this->enabled();
     }
 
     protected function getNoCacheStrategy(): string
@@ -100,9 +100,9 @@ class CacheControl
     protected function getContent()
     {
         if (
-            !filled($this->_content) &&
+            ! filled($this->_content) &&
             filled($this->response) &&
-            !($this->response instanceof BinaryFileResponse)
+            ! ($this->response instanceof BinaryFileResponse)
         ) {
             $this->_content = $this->minifyContent($this->response->content());
         }
@@ -135,7 +135,7 @@ class CacheControl
 
     protected function doesNotContainsAValidForm(): bool
     {
-        return !(
+        return ! (
             $this->contentContains('<form') &&
             $this->contentContains(
                 '<input type="hidden" name="_token" value="' .
@@ -162,14 +162,14 @@ class CacheControl
 
     protected function middlewaresAllowCaching(): bool
     {
-        return !collect(request()->route()->action['middleware'])->contains(
+        return ! collect(request()->route()->action['middleware'])->contains(
             'doNotCacheResponse',
         );
     }
 
     protected function routeIsCachable(): bool
     {
-        return !collect($this->_forbiddenRoutes)->contains(
+        return ! collect($this->_forbiddenRoutes)->contains(
             request()
                 ->route()
                 ->getName(),

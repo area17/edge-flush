@@ -2,9 +2,9 @@
 
 namespace Area17\CDN\Tests;
 
+use Area17\CDN\CDNServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Area17\CDN\CDNServiceProvider;
 
 class TestCase extends Orchestra
 {
