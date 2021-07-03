@@ -2,7 +2,7 @@
 
 namespace A17\CDN;
 
-use A17\TwillTransformers\Exceptions\CDN as CDNException;
+use A17\CDN\Exceptions\CDN as CDNException;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
 class ServiceProvider extends IlluminateServiceProvider

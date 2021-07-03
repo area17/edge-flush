@@ -1,12 +1,12 @@
 <?php
 
-namespace A17\TwillTransformers\Exceptions;
+namespace A17\CDN\Exceptions;
 
-class Block extends \Exception
+class CDN extends \Exception
 {
     /**
      * @param $type
-     * @throws \A17\TwillTransformers\Exceptions\Block
+     * @throws \A17\CDN\Exceptions\Block
      */
     public static function missingService($type)
     {
@@ -16,7 +16,7 @@ class Block extends \Exception
     }
 
     /**
-     * @throws \A17\TwillTransformers\Exceptions\Block
+     * @throws \A17\CDN\Exceptions\Block
      */
     public static function classNotFound($class)
     {

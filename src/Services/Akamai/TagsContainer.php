@@ -2,7 +2,7 @@
 
 namespace A17\CDN\Services;
 
-use A17\TwillTransformers\Contracts\Transformer as TransformerContract;
+use A17\CDN\Contracts\Transformer as TransformerContract;
 use App\Jobs\PurgeEdgeCacheTags;
 use App\Jobs\StoreEdgeCacheTags;
 use App\Models\EdgeCacheTag;
