@@ -1,7 +1,13 @@
 <?php
 
-namespace Area17\CDN;
+namespace A17\CDN;
 
-class CDN
+use Illuminate\Support\Facades\Facade;
+
+class CDN extends Facade
 {
+    protected static function getFacadeAccessor()
+    {
+        return 'a17.cdn.service';
+    }
 }
