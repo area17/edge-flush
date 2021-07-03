@@ -13,11 +13,11 @@ class CreateEdgeCacheTable extends Migration
      */
     public function up()
     {
-        Schema::create('edge_cache_tags', function (Blueprint $table) {
+        Schema::create('cdn_cache_tags', function (Blueprint $table) {
             $table->id();
 
             $table->string('tag')->index();
-            $table->string('page_hash')->index();
+            $table->string('url')->index();
 
             $table->timestamps();
         });
@@ -30,6 +30,6 @@ class CreateEdgeCacheTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('edge_cache_tags');
+        Schema::dropIfExists('cdn_cache_tags');
     }
 }
