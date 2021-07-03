@@ -5,7 +5,7 @@ use A17\CDN\Support\Constants;
 use Illuminate\Http\JsonResponse;
 
 return [
-    'service' => A17\CDN\Services\Akamai\Service::class,
+    'service' => A17\CDN\Services\Akamai\Service::class, // Akamai, CloudFront
 
     'cache-control' => ['max-age' => 1 * Constants::WEEK],
 
