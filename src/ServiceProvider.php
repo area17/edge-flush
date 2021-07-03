@@ -2,6 +2,7 @@
 
 namespace A17\CDN;
 
+use A17\CDN\Services\CacheControl;
 use A17\CDN\Exceptions\CDN as CDNException;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
@@ -39,13 +40,13 @@ class ServiceProvider extends IlluminateServiceProvider
     public function configureContainer()
     {
         $this->app->singleton('a17.cdn.service', function ($app) {
-            $service = config('cdn.service');
+            $service = config('cdn.cdn-service');
 
             if (blank($service)) {
-                CDNException::missingService();
+                CDNException::missingService($service);
             }
 
-            if (! class_exists($service)) {
+            if (!class_exists($service)) {
                 CDNException::classNotFound($service);
             }
 
@@ -53,7 +54,7 @@ class ServiceProvider extends IlluminateServiceProvider
         });
 
         $this->app->singleton('a17.cdn.cache-control', function ($app) {
-            return new CacheControl();
+            return $this->app->make(config('cdn.cache-control-service'));
         });
     }
 }

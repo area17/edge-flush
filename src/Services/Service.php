@@ -7,10 +7,10 @@ class Service
     public function responseIsCachable($response): bool
     {
         return (collect(config('cdn.responses.cachable'))->isEmpty() ||
-                collect(config('cdn.responses.cachable'))->contains(
-                    get_class($response),
-                )) &&
-            ! collect(config('cdn.responses.not-cachable'))->contains(
+            collect(config('cdn.responses.cachable'))->contains(
+                get_class($response),
+            )) &&
+            !collect(config('cdn.responses.not-cachable'))->contains(
                 get_class($response),
             );
     }
@@ -18,33 +18,33 @@ class Service
     public function methodIsCachable(): bool
     {
         return (collect(config('cdn.methods.cachable'))->isEmpty() ||
-                collect(config('cdn.methods.cachable'))->contains(
-                    $request->getMethod(),
-                )) &&
-            ! collect(config('cdn.methods.not-cachable'))->contains(
-                $request->getMethod(),
+            collect(config('cdn.methods.cachable'))->contains(
+                request()->getMethod(),
+            )) &&
+            !collect(config('cdn.methods.not-cachable'))->contains(
+                request()->getMethod(),
             );
     }
 
-    public function statusCodeIsCachable(): bool
+    public function statusCodeIsCachable($response): bool
     {
         return (collect(config('cdn.statuses.cachable'))->isEmpty() ||
-                collect(config('cdn.statuses.cachable'))->contains(
-                    $response->getStatusCode(),
-                )) &&
-            ! collect(config('cdn.statuses.not-cachable'))->contains(
+            collect(config('cdn.statuses.cachable'))->contains(
+                $response->getStatusCode(),
+            )) &&
+            !collect(config('cdn.statuses.not-cachable'))->contains(
                 $response->getStatusCode(),
             );
     }
 
-    public function routeCodeIsCachable(): bool
+    public function routeIsCachable(): bool
     {
-        $route = request()
-            ->route()
-            ->getName();
+        $route = request()->route();
+
+        $route = filled($route) ? $route->getName() : 'no-route';
 
         return (collect(config('cdn.routes.cachable'))->isEmpty() ||
-                collect(config('cdn.routes.cachable'))->contains($route)) &&
-            ! collect(config('cdn.routes.not-cachable'))->contains($route);
+            collect(config('cdn.routes.cachable'))->contains($route)) &&
+            !collect(config('cdn.routes.not-cachable'))->contains($route);
     }
 }
