@@ -36,14 +36,14 @@ composer require area17/cdn
 You can publish and run the migrations with:
 
 ```bash
-php artisan vendor:publish --provider="Area17\CDN\ServiceProvider" --tag="cdn-migrations"
+php artisan vendor:publish --provider="A17\CDN\ServiceProvider" --tag="cdn-migrations"
 php artisan migrate
 ```
 
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --provider="Area17\CDN\ServiceProvider" --tag="cdn-config"
+php artisan vendor:publish --provider="A17\CDN\ServiceProvider" --tag="cdn-config"
 ```
 
 This is the contents of the published config file:
@@ -55,7 +55,7 @@ return [];
 ## Usage
 
 ```php
-$cdn = new Area17\CDN();
+$cdn = new A17\CDN();
 echo $cdn->echoPhrase('Hello, AREA 17!');
 ```
 

@@ -1,8 +1,8 @@
 <?php
 
-namespace Area17\CDN\Tests;
+namespace A17\CDN\Tests;
 
-use Area17\CDN\CDNServiceProvider;
+use A17\CDN\CDNServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -13,15 +13,15 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Area17\\CDN\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn(string $modelName) => 'A17\\CDN\\Database\\Factories\\' .
+                class_basename($modelName) .
+                'Factory',
         );
     }
 
     protected function getPackageProviders($app)
     {
-        return [
-            CDNServiceProvider::class,
-        ];
+        return [CDNServiceProvider::class];
     }
 
     public function getEnvironmentSetUp($app)

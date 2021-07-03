@@ -1,6 +1,6 @@
 <?php
 
-namespace Area17\CDN\Database\Factories;
+namespace A17\CDN\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 

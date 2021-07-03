@@ -1,6 +1,6 @@
 <?php
 
-namespace Area17\CDN\Tests;
+namespace A17\CDN\Tests;
 
 class ExampleTest extends TestCase
 {
