@@ -3,7 +3,6 @@
 namespace A17\CDN;
 
 use Closure;
-use A17\CDN\CacheControl;
 
 class CacheControlMiddleware
 {

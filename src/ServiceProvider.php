@@ -45,7 +45,7 @@ class ServiceProvider extends IlluminateServiceProvider
                 CDNException::missingService();
             }
 
-            if (!class_exists($service)) {
+            if (! class_exists($service)) {
                 CDNException::classNotFound($service);
             }
 

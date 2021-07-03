@@ -10,7 +10,7 @@ class Service
                 collect(config('cdn.responses.cachable'))->contains(
                     get_class($response),
                 )) &&
-            !collect(config('cdn.responses.not-cachable'))->contains(
+            ! collect(config('cdn.responses.not-cachable'))->contains(
                 get_class($response),
             );
     }
@@ -21,7 +21,7 @@ class Service
                 collect(config('cdn.methods.cachable'))->contains(
                     $request->getMethod(),
                 )) &&
-            !collect(config('cdn.methods.not-cachable'))->contains(
+            ! collect(config('cdn.methods.not-cachable'))->contains(
                 $request->getMethod(),
             );
     }
@@ -32,7 +32,7 @@ class Service
                 collect(config('cdn.statuses.cachable'))->contains(
                     $response->getStatusCode(),
                 )) &&
-            !collect(config('cdn.statuses.not-cachable'))->contains(
+            ! collect(config('cdn.statuses.not-cachable'))->contains(
                 $response->getStatusCode(),
             );
     }
@@ -45,6 +45,6 @@ class Service
 
         return (collect(config('cdn.routes.cachable'))->isEmpty() ||
                 collect(config('cdn.routes.cachable'))->contains($route)) &&
-            !collect(config('cdn.routes.not-cachable'))->contains($route);
+            ! collect(config('cdn.routes.not-cachable'))->contains($route);
     }
 }
