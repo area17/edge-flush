@@ -12,13 +12,16 @@
         {
             "name": "AREA 17",
             "email": "support@area17.com",
-            "role": "Developer"
+            "role": "Owner"
+        },
+        {
+            "name": "Antonio Ribeiro",
+            "email": "antonio@area17.com",
+            "role": "Creator"
         }
     ],
     "require": {
-        "php": "^8.0",
-        "spatie/laravel-package-tools": "^1.4.3",
-        "illuminate/contracts": "^8.37"
+        "php": "^7.4"
     },
     "require-dev": {
         "brianium/paratest": "^6.2",
@@ -30,13 +33,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Area17\\CDN\\": "src",
-            "Area17\\CDN\\Database\\Factories\\": "database/factories"
+            "A17\\CDN\\": "src",
+            "A17\\CDN\\Database\\Factories\\": "database/factories"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Area17\\CDN\\Tests\\": "tests"
+            "A17\\CDN\\Tests\\": "tests"
         }
     },
     "scripts": {
@@ -50,10 +53,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Area17\\CDN\\CDNServiceProvider"
+                "A17\\CDN\\ServiceProvider"
             ],
             "aliases": {
-                "CDN": "Area17\\CDN\\CDNFacade"
+                "CDN": "A17\\CDN\\CDN"
             }
         }
     },
