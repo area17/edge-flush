@@ -2,14 +2,14 @@
 
 namespace A17\CDN\Services;
 
-use Illuminate\Support\Str;
-use App\Models\EdgeCacheTag;
+use A17\TwillTransformers\Contracts\Transformer as TransformerContract;
 use App\Jobs\PurgeEdgeCacheTags;
 use App\Jobs\StoreEdgeCacheTags;
+use App\Models\EdgeCacheTag;
 use App\Services\Akamai\Service;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
-use A17\TwillTransformers\Contracts\Transformer as TransformerContract;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TagsContainer
 {
@@ -46,7 +46,7 @@ class TagsContainer
 
     public function disabled()
     {
-        return !$this->enabled();
+        return ! $this->enabled();
     }
 
     protected function getAllTagsFor(string $tag)
@@ -114,7 +114,7 @@ class TagsContainer
     protected function isTaggable($model): ?bool
     {
         return $model instanceof Model &&
-            !(
+            ! (
                 $model instanceof \App\Models\Translations\Model ||
                 $model instanceof \App\Models\Slugs\Model ||
                 $model instanceof \App\Models\Revisions\Model
@@ -173,13 +173,13 @@ class TagsContainer
 
     protected function tagIsNotExcluded(string $tag): bool
     {
-        return !$this->tagIsExcluded($tag);
+        return ! $this->tagIsExcluded($tag);
     }
 
     public function storeCacheTags($tags, $hash)
     {
         collect($tags)->each(
-            fn($tag) => EdgeCacheTag::firstOrCreate([
+            fn ($tag) => EdgeCacheTag::firstOrCreate([
                 'tag' => $tag,
                 'page_hash' => $hash,
             ]),
@@ -203,8 +203,8 @@ class TagsContainer
     public function purgeCacheTags($tags)
     {
         DB::transaction(
-            fn() => collect($tags)->each(
-                fn($tag) => $this->deleteEdgeCacheTag($tag),
+            fn () => collect($tags)->each(
+                fn ($tag) => $this->deleteEdgeCacheTag($tag),
             ),
         );
 
