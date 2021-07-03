@@ -56,7 +56,8 @@
                 "A17\\CDN\\ServiceProvider"
             ],
             "aliases": {
-                "CDN": "A17\\CDN\\CDN"
+                "CDN": "A17\\CDN\\CDN",
+                "CacheControl": "A17\\CDN\\CacheControl"
             }
         }
     },
