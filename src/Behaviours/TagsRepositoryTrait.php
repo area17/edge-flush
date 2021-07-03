@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\CDN;
+namespace A17\CDN;
 
 trait TagsRepositoryTrait
 {

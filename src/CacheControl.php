@@ -1,16 +1,13 @@
 <?php
 
-namespace Area17\CDN;
+namespace A17\CDN;
 
 use Illuminate\Support\Facades\Facade;
 
-/**
- * @see \Area17\CDN\CDN
- */
-class CDNFacade extends Facade
+class CacheControl extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return 'cdn';
+        return 'a17.cdn.cache-control';
     }
 }

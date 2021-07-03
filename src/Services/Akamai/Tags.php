@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\CDN;
+namespace A17\CDN\Services\Akamai;
 
 use Illuminate\Http\Response;
 
@@ -15,7 +15,7 @@ class Tags
 
     private function instantiateContainer()
     {
-        if (! app()->bound(self::CONTAINER_KEY)) {
+        if (!app()->bound(self::CONTAINER_KEY)) {
             app()->singleton(self::CONTAINER_KEY, function () {
                 return new TagsContainer();
             });
@@ -32,7 +32,7 @@ class Tags
         if ($response instanceof Response) {
             $response->header('Edge-Cache-Tag', $this->getTagsHash());
 
-            if (! app()->environment('production')) {
+            if (!app()->environment('production')) {
                 $response->header('X-Cache-Tag', $this->getTagsHash());
             }
         }

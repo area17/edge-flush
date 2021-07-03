@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Services\CDN;
+namespace A17\CDN;
 
 use Closure;
 
-class TagsMiddleware
+class Middleware
 {
     /**
      * Handle an incoming request.
