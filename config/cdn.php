@@ -7,6 +7,11 @@ use Illuminate\Http\JsonResponse;
 
 return [
     /**
+     * Enable/disable the pacakge
+     */
+    'enabled' => true,
+
+    /**
      * The CDN service currently caching pages. Possible options:
      *
      *    Akamai, CloudFront
@@ -20,18 +25,48 @@ return [
     'cache-control-service' => A17\CDN\Services\CacheControl::class,
 
     /**
-     * List of possible resulting strategies
-     *  must-revalidate
-     *  no-cache
-     *  no-store
-     *  no-transform
-     *  public
-     *  private
-     *  proxy-revalidate
-     *  max-age=<seconds>
-     *  s-maxage=<seconds>
+     * Caching strategies. Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+     *
+     *   public
+     *   private
+     *   no-cache
+     *   no-store
+     *   max-age=<seconds>
+     *   s-maxage=<seconds>
+     *   max-stale=<seconds> // not supported yet
+     *   min-fresh=<seconds> // not supported yet
+     *   stale-while-revalidate=<seconds> // not supported yet
+     *   stale-if-error=<seconds> // not supported yet
+     *   must-revalidate
+     *   proxy-revalidate
+     *   immutable
+     *   no-transform
+     *   only-if-cached
      */
-    'strategies' => ['do-not-cache' => 'no-store, private'],
+    'strategies' => [
+        'cache' => ['public', 'no-store', 'max-age', 'must-revalidate'],
+
+        'do-not-cache' => ['no-store', 'private'],
+
+        'api' => ['max-age=20', 'public', 'no-store'],
+    ],
+
+    /**
+     * Define how max-age will work.
+     *
+     * default: in case max-age is not configured at runtime, and
+     * pages are set to be cached, this is the default value.
+     *
+     * strategy: defines how the setter will behave:
+     *    min = will use the minumum value set
+     *    last = will use the last value set
+     *
+     */
+    'max-age' => [
+        'default' => 1 * Constants::WEEK,
+
+        'strategy' => 'min', // min, last
+    ],
 
     /**
      * In case max-age is not configured at runtime, and
@@ -93,14 +128,7 @@ return [
     'routes' => [
         'cachable' => [],
 
-        'not-cachable' => [
-            'pdf.ticket',
-            'awallet.ticket',
-            'gwallet.ticket',
-            'newsletter.store',
-            'newsletter',
-            'api.',
-        ],
+        'not-cachable' => ['*.ticket', 'newsletter*', 'api.*'],
     ],
 
     /**

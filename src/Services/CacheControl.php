@@ -10,118 +10,73 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class CacheControl
 {
-    /**
-     * @var \Illuminate\Http\Response|null
-     */
-    protected $response;
-
-    protected $_enabled;
+    protected $_isCachable;
 
     protected $_content;
-
-    protected $_forceCache = false;
 
     protected $public;
 
     protected $maxAge;
 
-    public function makeResponse($response)
-    {
-        return $this->responseCanBeCached($response)
-            ? $this->cachedResponse($response)
-            : $this->cacheDisabledResponse($response);
-    }
+    protected $strategy;
 
-    public function responseCanBeCached($response): bool
+    public function addHttpHeadersToResponse($response)
     {
-        return CDN::responseIsCachable($response) &&
-            CDN::routeIsCachable() &&
-            CDN::methodIsCachable() &&
-            CDN::statusCodeIsCachable($response);
-    }
-
-    public function addCacheHeaders(
-        SymfonyResponse $response,
-        $value
-    ): SymfonyResponse {
-        $this->response = $response;
+        $strategy = $this->getCacheStrategy($response);
 
         collect(config('cdn.headers.cache-control'))->each(
-            fn($header) => $response->header($header, $value),
+            fn($header) => $response->header($header, $strategy),
         );
 
         return $response;
     }
 
-    public function cachedResponse(SymfonyResponse $response): SymfonyResponse
-    {
-        return $this->addCacheHeaders($response, $this->getCacheStrategyFor($response));
-    }
-
-    public function cacheDisabledResponse(
-        SymfonyResponse $response
-    ): SymfonyResponse {
-        return $this->addCacheHeaders($response, $this->getDoNotCacheStrategy());
-    }
-
-    protected function contentContains(string $string): bool
+    protected function contentContains($response, string $string): bool
     {
         return Str::contains(
-            $this->getContent(),
+            $this->getContent($response),
             $this->minifyContent($string),
         );
     }
 
-    public function enabled(): bool
+    public function isCachable($response): bool
     {
-        if (filled($this->_enabled)) {
-            return $this->_enabled;
+        if (filled($this->_isCachable)) {
+            return $this->_isCachable;
         }
 
-        return $this->isForced() ||
-            ($this->isFrontend() &&
-                $this->doesNotContainAValidForm() &&
-                CDN::routeIsCachable() &&
-                $this->middlewaresAllowCaching());
+        return CDN::enabled() &&
+            $this->isFrontend() &&
+            $this->doesNotContainAValidForm($response) &&
+            $this->middlewaresAllowCaching() &&
+            $this->routeIsCachable($response) &&
+            $this->responseIsCachable($response) &&
+            $this->methodIsCachable() &&
+            $this->statusCodeIsCachable($response);
     }
 
-    public function disabled(): bool
+    public function getCacheStrategy($response): string
     {
-        return !$this->enabled();
-    }
-
-    protected function getDoNotCacheStrategy(): string
-    {
-        return config('cdn.strategies.do-not-cache');
-    }
-
-    protected function getCacheStrategyFor(SymfonyResponse $response): string
-    {
-        if ($this->disabled()) {
-            return $this->getDoNotCacheStrategy();
+        if (filled($this->strategy)) {
+            return $this->buildStrategy($this->strategy);
         }
 
-        return collect([$this->getPublic(), $this->getMaxAgeCache()])->join(
-            ',',
-        );
+        return $this->isCachable($response)
+            ? $this->buildStrategy('cache')
+            : $this->buildStrategy('do-not-cache');
     }
 
-    protected function getContent()
+    protected function getContent($response)
     {
         if (
             !filled($this->_content) &&
-            filled($this->response) &&
-            !($this->response instanceof BinaryFileResponse)
+            filled($response) &&
+            !($response instanceof BinaryFileResponse)
         ) {
-            $this->_content = $this->minifyContent($this->response->content());
+            $this->_content = $this->minifyContent($response->content());
         }
 
         return $this->_content;
-    }
-
-    protected function getPublic(): ?string
-    {
-        return $this->enabled() ? 'public' : null;
     }
 
     public function getMaxAge(): int
@@ -133,31 +88,21 @@ class CacheControl
         return $this->getDefaultMaxAge();
     }
 
-    public function getMaxAgeCache(): ?string
-    {
-        return $this->enabled() ? 'max-age=' . $this->getMaxAge() : null;
-    }
-
-    protected function doesNotContainAValidForm(): bool
+    protected function doesNotContainAValidForm($response): bool
     {
         $hasForm = false;
 
         if (config('cdn.valid_forms.enabled', false)) {
             $hasForm = collect(
                 config('cdn.valid_forms.strings', false),
-            )->reduce(function ($hasForm, $string) {
+            )->reduce(function ($hasForm, $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
-                $hasForm = $hasForm && $this->contentContains($string);
+                $hasForm = $hasForm && $this->contentContains($response, $string);
             }, true);
         }
 
         return !$hasForm;
-    }
-
-    protected function isForced(): bool
-    {
-        return filled($this->maxAge) || $this->_forceCache;
     }
 
     protected function isFrontend(): bool
@@ -191,30 +136,120 @@ class CacheControl
      */
     public function setMaxAge($maxAge): self
     {
-        if (filled($maxAge)) {
+        if (blank($maxAge)) {
+            return $this;
+        }
+
+        if (config('cdn.max-age.strategy') === 'min') {
             $this->maxAge = min(
                 $maxAge,
                 $this->maxAge ?? $this->getDefaultMaxAge(),
             );
         }
 
+        if (config('cdn.max-age.strategy') === 'last') {
+            $this->maxAge = $maxAge;
+        }
+
         return $this;
-    }
-
-    public function forceCache($maxAge = null)
-    {
-        $this->_forceCache = true;
-
-        $this->setMaxAge($maxAge);
-    }
-
-    public function responseIsCachable()
-    {
-        return $this->enabled();
     }
 
     public function getDefaultMaxAge()
     {
-        return config('cdn.cache-control.max-age', Constants::WEEK);
+        return config('cdn.max-age.default', Constants::WEEK);
+    }
+
+    public function buildStrategy($strategy)
+    {
+        return collect(config("cdn.strategies.$strategy"))
+            ->map(
+                fn($header) => [
+                    'header' => $header,
+                    'value' => $this->getHeaderValue($header),
+                ],
+            )
+            ->map(
+                fn($item) => $item['header'] === $item['value']
+                    ? $item['header']
+                    : "{$item['header']}={$item['value']}",
+            )
+            ->sort()
+            ->join(', ');
+    }
+
+    public function getHeaderValue($header)
+    {
+        if ($header === 'max-age' || $header === 's-maxage') {
+            return $this->getMaxAge();
+        }
+
+        if (
+            $header === 'max-stale' ||
+            $header === 'min-fresh' ||
+            $header === 'stale-while-revalidate' ||
+            $header === 'stale-if-error'
+        ) {
+            return 'unsupported';
+        }
+
+        return $header;
+    }
+
+    public function getStrategy(): ?string
+    {
+        return $this->strategy ?? null;
+    }
+
+    public function setStrategy($strategy): self
+    {
+        $this->strategy = $strategy;
+
+        return $this;
+    }
+
+    public function responseIsCachable($response): bool
+    {
+        return (collect(config('cdn.responses.cachable'))->isEmpty() ||
+            collect(config('cdn.responses.cachable'))->contains(
+                get_class($response),
+            )) &&
+            !collect(config('cdn.responses.not-cachable'))->contains(
+                get_class($response),
+            );
+    }
+
+    public function methodIsCachable(): bool
+    {
+        return (collect(config('cdn.methods.cachable'))->isEmpty() ||
+            collect(config('cdn.methods.cachable'))->contains(
+                request()->getMethod(),
+            )) &&
+            !collect(config('cdn.methods.not-cachable'))->contains(
+                request()->getMethod(),
+            );
+    }
+
+    public function statusCodeIsCachable($response): bool
+    {
+        return (collect(config('cdn.statuses.cachable'))->isEmpty() ||
+            collect(config('cdn.statuses.cachable'))->contains(
+                $response->getStatusCode(),
+            )) &&
+            !collect(config('cdn.statuses.not-cachable'))->contains(
+                $response->getStatusCode(),
+            );
+    }
+
+    public function routeIsCachable(): bool
+    {
+        $route = request()->route();
+
+        $route = filled($route) ? $route->getName() : 'newsletter';
+
+        $filter = fn($pattern) => fnmatch($pattern, $route);
+
+        return (collect(config('cdn.routes.cachable'))->isEmpty() ||
+            collect(config('cdn.routes.cachable'))->contains($filter)) &&
+            !collect(config('cdn.routes.not-cachable'))->contains($filter);
     }
 }
