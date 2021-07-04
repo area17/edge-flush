@@ -46,11 +46,12 @@ You can publish the config file with:
 php artisan vendor:publish --provider="A17\CDN\ServiceProvider" --tag="cdn-config"
 ```
 
-This is the contents of the published config file:
+## Dependencies
 
-```php
-return [];
-```
+The supported CDN services have these package dependencies that you need to install yourself:
+
+Akamai: "akamai-open/edgegrid-auth"
+CloudFront: 
 
 ## Usage
 
