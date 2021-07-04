@@ -1,29 +1,27 @@
-# CDN Cache Control and Invalidation
+# Laravel CDN Cache Control and Invalidations
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/area17/cdn.svg?style=flat-square)](https://packagist.org/packages/area17/cdn)
 [![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/area17/cdn/run-tests?label=tests)](https://github.com/area17/cdn/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/area17/cdn/Check%20&%20fix%20styling?label=code%20style)](https://github.com/area17/cdn/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/area17/cdn.svg?style=flat-square)](https://packagist.org/packages/area17/cdn)
 
----
+This package was created to help managing CDN granular caching and invalidations. While using Akamai or CloudFront, we usually bust the whole cache when we update something on our backend. This pacakge will do it granularly by doing the following: 
 
-This repo can be used as to scaffold a Laravel package. Follow these steps to get started:
-
-1. Press the "Use template" button at the top of this repo to create a new repo with the contents of this cdn
-2. Run "./configure-cdn.sh" to run a script that will replace all placeholders throughout all the files
-3. Remove this block of text.
-4. Have fun creating your package.
-5. If you need help creating a package, consider picking up our <a href="https://laravelpackage.training">Laravel Package Training</a> video course.
-
----
-
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
-
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/CDN.jpg?t=1" width="419px" />](https://area17.com/github-ad-click/CDN)
-
-We invest a lot of resources into creating [best in class open source packages](https://area17.com/open-source). You can support us by [buying one of our paid products](https://area17.com/open-source/support-us).
+- To allow granular invalidation this package will crete a collection of all models that impacts one page and when one of those models change, all pages that had that model rendered in previous requests will be purged from CDN.
+- Allow granular control of Cache-Control headers: you will be able to configure it differently per request, telling the CDN to store some pages for one week and others for 5 seconds, for example.
+- Allow defining different strategies for Cache-Control: web pages may have a different cache strategy than api endpoints.
+- Prevents from caching pages containing forms.
+- Caches only frontend pages, leaving the CMS uncashed, if needed.
+- Allow disabling caching for some pages using a middlware.
+- Configure HTTP methods that allow caching or not: cache GET but not POST.
+- Configure HTTP response status codes that allow caching or not: Cache 200 and 301 but not 400+ status codes.
+- Configure what routes can and cannot be cached by CDN.
+- Configure what type of responses can be cached: cache Response but not JsonResponse, for example.
+- Configure what Model classes can be cached or not.  
+- Remember what pages have been cached and command your CDN service to burst only those when you save something on your backend.
+- Supports CloudFront invalidations.
+- Supports Akamai EdgeCacheTags invalidations.
+- Allow override of Services and easy implementation to support new CDN Services.
 
 ## Installation
 
@@ -33,37 +31,40 @@ You can install the package via composer:
 composer require area17/cdn
 ```
 
-You can publish and run the migrations with:
-
-```bash
-php artisan vendor:publish --provider="A17\CDN\ServiceProvider" --tag="cdn-migrations"
-php artisan migrate
-```
-
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --provider="A17\CDN\ServiceProvider" --tag="cdn-config"
+php artisan vendor:publish --provider="A17\CDN\ServiceProvider"
 ```
+
+And run the migrations:
+
+```bash
+php artisan migrate
+```
+
+## Configuration
+
 
 ## Dependencies
 
 The supported CDN services have these package dependencies that you need to install yourself:
 
-Akamai: "akamai-open/edgegrid-auth"
-CloudFront: 
+Akamai: akamai-open/edgegrid-auth
+CloudFront: aws/aws-sdk-php
 
 ## Usage
 
-```php
-$cdn = new A17\CDN();
-echo $cdn->echoPhrase('Hello, AREA 17!');
-```
+Do a full read on the `config/cdn.php` there's a lot of configuration items and we tried to document them all.
 
-## Testing
+Add the trait `A17\CDN\Behaviours\HasCDNTags` to your models and repositories.
 
-```bash
-composer test
+Call `$this->invalidateCDNTags($model)` every time a model (on your base model or repository save() method).
+
+Cache-Control max-age is set automatically, but if you need to change it depending on the current request you can use the following method: 
+
+``` php
+CacheControl::setMaxAge(5000);
 ```
 
 ## Changelog
