@@ -45,7 +45,9 @@ class CacheControl
             return $this->_isCachable;
         }
 
-        return !$this->getCachableMatrix($response)->contains(false);
+        return $this->_isCachable = !$this->getCachableMatrix(
+            $response,
+        )->contains(false);
     }
 
     public function getCachableMatrix($response)
