@@ -45,14 +45,21 @@ class CacheControl
             return $this->_isCachable;
         }
 
-        return CDN::enabled() &&
-            $this->isFrontend() &&
-            $this->doesNotContainAValidForm($response) &&
-            $this->middlewaresAllowCaching() &&
-            $this->routeIsCachable($response) &&
-            $this->responseIsCachable($response) &&
-            $this->methodIsCachable() &&
-            $this->statusCodeIsCachable($response);
+        return !$this->getCachableMatrix($response)->contains(false);
+    }
+
+    public function getCachableMatrix($response)
+    {
+        return collect([
+            'enabled' => CDN::enabled(),
+            'isFrontend' => $this->isFrontend(),
+            'notValidForm' => $this->doesNotContainAValidForm($response),
+            'middlewareAllowCaching' => $this->middlewaresAllowCaching(),
+            'routeIsCachable' => $this->routeIsCachable($response),
+            'responseIsCachable' => $this->responseIsCachable($response),
+            'methodIsCachable' => $this->methodIsCachable(),
+            'statusCodeIsCachable' => $this->statusCodeIsCachable($response),
+        ]);
     }
 
     public function getCacheStrategy($response): string
@@ -98,7 +105,8 @@ class CacheControl
             )->reduce(function ($hasForm, $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
-                $hasForm = $hasForm && $this->contentContains($response, $string);
+                $hasForm =
+                    $hasForm && $this->contentContains($response, $string);
             }, true);
         }
 
@@ -244,7 +252,11 @@ class CacheControl
     {
         $route = request()->route();
 
-        $route = filled($route) ? $route->getName() : 'newsletter';
+        $route = filled($route) ? $route->getName() : null;
+
+        if (blank($route)) {
+            return config('cdn.routes.cache_nameless_routes', false);
+        }
 
         $filter = fn($pattern) => fnmatch($pattern, $route);
 
