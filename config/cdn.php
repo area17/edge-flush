@@ -167,6 +167,10 @@ return [
         'not-cachable' => [],
     ],
 
+    /**
+     * Tags configuration. Here you can exclude model classes and
+     * define the format of the page-related tags.
+     */
     'tags' => [
         'excluded-model-classes' => [
             '\Models\Translations*',
@@ -175,5 +179,25 @@ return [
         ],
 
         'format' => 'app-%environment%-%sha1%',
+    ],
+
+    /**
+     * Services configuration
+     */
+    'services' => [
+        'akamai' => [
+            'host' => env('CDN_AKAMAI_HOST'),
+            'access_token' => env('CDN_AKAMAI_ACCESS_TOKEN'),
+            'client_token' => env('CDN_AKAMAI_CLIENT_TOKEN'),
+            'client_secret' => env('CDN_AKAMAI_CLIENT_SECRET'),
+        ],
+
+        'cloud_front' => [
+            'sdk_version' => env('CDN_CLOUD_FRONT_SDK_VERSION', '2016-01-13'),
+            'region' => env('CDN_AWS_DEFAULT_REGION', 'us-east-1'),
+            'distribution_id' => env('CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
+            'key' => env('CDN_AWS_CLOUDFRONT_KEY'),
+            'secret' => env('CDN_AWS_CLOUDFRONT_SECRET'),
+        ],
     ],
 ];

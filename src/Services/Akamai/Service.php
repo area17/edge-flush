@@ -3,12 +3,14 @@
 namespace A17\CDN\Services\Akamai;
 
 use A17\CDN\CDN;
-use Symfony\Component\HttpFoundation\Response;
 use A17\CDN\Services\BaseService;
+use A17\CDN\Contracts\CDNService;
 use A17\CDN\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpFoundation\Response;
+use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
-class Service extends BaseService
+class Service extends BaseService implements CDNService
 {
     protected $tags;
 
@@ -31,7 +33,7 @@ class Service extends BaseService
      */
     private function getHost()
     {
-        return config('services.akamai.host');
+        return config('cdn.services.akamai.host');
     }
 
     public function getInvalidationURL(): string
@@ -63,9 +65,9 @@ class Service extends BaseService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            config('services.akamai.client_token'),
-            config('services.akamai.client_secret'),
-            config('services.akamai.access_token'),
+            config('cdn.services.akamai.client_token'),
+            config('cdn.services.akamai.client_secret'),
+            config('cdn.services.akamai.access_token'),
         );
 
         $auth->setPath($this->getApiPath());

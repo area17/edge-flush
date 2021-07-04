@@ -10,6 +10,8 @@ class CDN extends BaseService
 
     public $cacheControl;
 
+    public $tags;
+
     public $enabled;
 
     public function __construct(
@@ -57,6 +59,11 @@ class CDN extends BaseService
     public function tags()
     {
         return $this->tags;
+    }
+
+    public function cdnService()
+    {
+        return $this->cdnService;
     }
 
     public function match($patten, $string)
