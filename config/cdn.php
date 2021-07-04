@@ -9,7 +9,7 @@ return [
     /**
      * Enable/disable the pacakge
      */
-    'enabled' => true,
+    'enabled' => env('CDN_ENABLED', false),
 
     /**
      * The CDN service currently caching pages. Possible options:
@@ -25,7 +25,18 @@ return [
     'cache-control-service' => A17\CDN\Services\CacheControl::class,
 
     /**
-     * Caching strategies. Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+     * Caching strategies.
+     *
+     * Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+     *
+     * The default "do-not-cache" strategy takes in consideration that a 5 seconds cache
+     * is better than NO-CACHE, and if your application gets hit by a DDoS attack
+     * only 1 request every 5 seconds (per page) will hit your servers.
+     *
+     *  Warning: "cache" and "do-not-cache" strategies are built-in and used by the package.
+     *           Do not delete them.
+     *
+     * These are the supported directives:
      *
      *   public
      *   private
@@ -42,13 +53,14 @@ return [
      *   immutable
      *   no-transform
      *   only-if-cached
+     *
      */
     'strategies' => [
-        'cache' => ['public', 'no-store', 'max-age', 'must-revalidate'],
+        'cache' => ['max-age', 'public'], // built-in
 
-        'do-not-cache' => ['no-store', 'private'],
+        'do-not-cache' => ['max-age=5', 'public'], // built-in
 
-        'api' => ['max-age=20', 'public', 'no-store'],
+        'api' => ['max-age=20', 'public', 'no-store'], // custom
     ],
 
     /**
@@ -81,11 +93,9 @@ return [
      *
      * To allow everything you can just set
      *
-     *    fn() => true
+     *    'frontend-checker' => fn() => true,
      *
      */
-    'frontend-checker' => fn() => true,
-
     'frontend-checker-save' => fn() => Str::startsWith(
         optional(request()->route())->getName(),
         ['front.', 'api.'],
