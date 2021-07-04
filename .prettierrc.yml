@@ -1,0 +1,32 @@
+### General
+arrowParens: always
+trailingComma: none
+printWidth: 80
+tabWidth: 4
+useTabs: false
+singleQuote: true
+requirePragma: false
+insertPragma: false
+semi: false
+
+### VueJS
+vueIndentScriptAndStyle: true
+
+### PHP
+phpVersion: "7.4"
+trailingCommaPHP: true
+braceStyle: psr-2
+
+### Pattern-specific
+overrides:
+    - files: "*.js"
+      options:
+          tabWidth: 2
+          semi: true
+          requirePragma: true
+    - files: "*.yml"
+      options:
+          singleQuote: false
+    - files: "*.scss"
+      options:
+          requirePragma: true
