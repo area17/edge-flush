@@ -59,7 +59,9 @@ class ServiceProvider extends IlluminateServiceProvider
         });
 
         $this->app->singleton('a17.cdn.cache-control', function ($app) {
-            return $this->app->make('a17.cdn.service')->getCacheControlInstance();
+            return $this->app
+                ->make('a17.cdn.service')
+                ->getCacheControlInstance();
         });
     }
 }

@@ -123,12 +123,15 @@ return [
     ],
 
     /**
-     * Allowed routes
+     * Allowed routes. You can also tell the package if you want to cache nor not cache
+     * routes without names.
      */
     'routes' => [
         'cachable' => [],
 
         'not-cachable' => ['*.ticket', 'newsletter*', 'api.*'],
+
+        'cache_nameless_routes' => true,
     ],
 
     /**

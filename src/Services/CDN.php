@@ -8,8 +8,10 @@ class CDN
 
     public $cacheControl;
 
-    public function __construct(BaseService $cdnService, CacheControl $cacheControl)
-    {
+    public function __construct(
+        BaseService $cdnService,
+        CacheControl $cacheControl
+    ) {
         $this->cdnService = $cdnService;
 
         $this->cacheControl = $cacheControl;
