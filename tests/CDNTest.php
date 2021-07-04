@@ -8,70 +8,62 @@ use A17\CDN\CacheControl;
 class CDNTest extends TestCase
 {
     protected $enabledValues = [
-        "enabled" => true,
-        "isCachable" => true,
-        "routeIsCachable" => true,
-        "max-age 1" => 604800,
-        "max-age 2" => 2500,
-        "max-age 3" => 1500,
-        "max-age" => [
-            "enabled" => true,
-            "isFrontend" => true,
-            "notValidForm" => true,
-            "middlewareAllowCaching" => true,
-            "routeIsCachable" => true,
-            "responseIsCachable" => true,
-            "methodIsCachable" => true,
-            "statusCodeIsCachable" => true,
+        'enabled' => true,
+        'isCachable' => true,
+        'routeIsCachable' => true,
+        'max-age 1' => 604800,
+        'max-age 2' => 2500,
+        'max-age 3' => 1500,
+        'max-age' => [
+            'enabled' => true,
+            'isFrontend' => true,
+            'notValidForm' => true,
+            'middlewareAllowCaching' => true,
+            'routeIsCachable' => true,
+            'responseIsCachable' => true,
+            'methodIsCachable' => true,
+            'statusCodeIsCachable' => true,
         ],
-        "headers" => [
-            "cache-control" => [
-                "max-age=1500, must-revalidate, no-store, public",
+        'headers' => [
+            'cache-control' => [
+                'max-age=1500, must-revalidate, no-store, public',
             ],
-            "content-type" => [
-                "application/json",
-            ],
-            "x-cache-control" => [
-                "max-age=1500, must-revalidate, no-store, public",
+            'content-type' => ['application/json'],
+            'x-cache-control' => [
+                'max-age=1500, must-revalidate, no-store, public',
             ],
         ],
-        "strategy 1" => "max-age=1500, must-revalidate, no-store, public",
-        "strategy 2" => "no-store, private",
-        "strategy 3" => "max-age=20, no-store, public",
+        'strategy 1' => 'max-age=1500, must-revalidate, no-store, public',
+        'strategy 2' => 'no-store, private',
+        'strategy 3' => 'max-age=20, no-store, public',
         0 => true,
     ];
 
     protected $disabledValues = [
-        "enabled" => false,
-        "isCachable" => false,
-        "routeIsCachable" => true,
-        "max-age 1" => 604800,
-        "max-age 2" => 2500,
-        "max-age 3" => 1500,
-        "max-age" => [
-            "enabled" => false,
-            "isFrontend" => true,
-            "notValidForm" => true,
-            "middlewareAllowCaching" => true,
-            "routeIsCachable" => true,
-            "responseIsCachable" => true,
-            "methodIsCachable" => true,
-            "statusCodeIsCachable" => true,
+        'enabled' => false,
+        'isCachable' => false,
+        'routeIsCachable' => true,
+        'max-age 1' => 604800,
+        'max-age 2' => 2500,
+        'max-age 3' => 1500,
+        'max-age' => [
+            'enabled' => false,
+            'isFrontend' => true,
+            'notValidForm' => true,
+            'middlewareAllowCaching' => true,
+            'routeIsCachable' => true,
+            'responseIsCachable' => true,
+            'methodIsCachable' => true,
+            'statusCodeIsCachable' => true,
         ],
-        "headers" => [
-            "cache-control" => [
-                "no-store, private",
-            ],
-            "content-type" => [
-                "application/json",
-            ],
-            "x-cache-control" => [
-                "no-store, private",
-            ],
+        'headers' => [
+            'cache-control' => ['no-store, private'],
+            'content-type' => ['application/json'],
+            'x-cache-control' => ['no-store, private'],
         ],
-        "strategy 1" => "no-store, private",
-        "strategy 2" => "no-store, private",
-        "strategy 3" => "max-age=20, no-store, public",
+        'strategy 1' => 'no-store, private',
+        'strategy 2' => 'no-store, private',
+        'strategy 3' => 'max-age=20, no-store, public',
         0 => true,
     ];
 
@@ -114,9 +106,11 @@ class CDNTest extends TestCase
 
             'max-age' => CacheControl::getCachableMatrix($response)->toArray(),
 
-            'headers' => $this->extractHeaders(CacheControl::addHttpHeadersToResponse(
-                $response,
-            )->headers->all()),
+            'headers' => $this->extractHeaders(
+                CacheControl::addHttpHeadersToResponse(
+                    $response,
+                )->headers->all(),
+            ),
 
             'strategy 1' => CacheControl::getCacheStrategy($response),
 
@@ -134,6 +128,8 @@ class CDNTest extends TestCase
 
     public function extractHeaders($headers)
     {
-        return collect($headers)->except('date')->toArray();
+        return collect($headers)
+            ->except('date')
+            ->toArray();
     }
 }
