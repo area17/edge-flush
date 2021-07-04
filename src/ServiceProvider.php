@@ -41,7 +41,7 @@ class ServiceProvider extends IlluminateServiceProvider
     public function configureContainer()
     {
         $this->app->singleton('a17.cdn.service', function ($app) {
-            $service = config('cdn.cdn-service');
+            $service = config('cdn.classes.cdn');
 
             if (blank($service)) {
                 CDNException::missingService($service);
@@ -52,16 +52,20 @@ class ServiceProvider extends IlluminateServiceProvider
             }
 
             $cacheControl = $this->app->make(
-                config('cdn.cache-control-service'),
+                config('cdn.classes.cache-control'),
             );
 
-            return new CDN(app($service), $cacheControl);
+            $tags = $this->app->make(config('cdn.classes.tags'));
+
+            return new CDN(app($service), $cacheControl, $tags);
         });
 
         $this->app->singleton('a17.cdn.cache-control', function ($app) {
-            return $this->app
-                ->make('a17.cdn.service')
-                ->getCacheControlInstance();
+            return $this->app->make('a17.cdn.service')->cacheControl();
+        });
+
+        $this->app->singleton('a17.cdn.tags', function ($app) {
+            return $this->app->make('a17.cdn.service')->tags();
         });
     }
 }

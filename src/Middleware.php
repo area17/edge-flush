@@ -17,6 +17,6 @@ class Middleware
     {
         $response = $next($request);
 
-        return CDN::addHttpHeadersToResponse($response);
+        return CDN::makeResponse($response);
     }
 }

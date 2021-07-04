@@ -5,10 +5,11 @@ namespace A17\CDN\Services;
 use A17\CDN\CDN;
 use Illuminate\Support\Str;
 use A17\CDN\Support\Constants;
+use Symfony\Component\HttpFoundation\Response;
+use A17\CDN\Contracts\Service as ServiceContract;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
-class CacheControl
+class CacheControl extends BaseService implements ServiceContract
 {
     protected $_isCachable;
 
@@ -20,15 +21,13 @@ class CacheControl
 
     protected $strategy;
 
-    public function addHttpHeadersToResponse($response)
+    public function makeResponse(Response $response): Response
     {
-        $strategy = $this->getCacheStrategy($response);
-
-        collect(config('cdn.headers.cache-control'))->each(
-            fn($header) => $response->header($header, $strategy),
+        return $this->addHeadersToResponse(
+            $response,
+            'cache-control',
+            $this->getCacheStrategy($response),
         );
-
-        return $response;
     }
 
     protected function contentContains($response, string $string): bool
@@ -39,7 +38,7 @@ class CacheControl
         );
     }
 
-    public function isCachable($response): bool
+    public function isCachable($response = null): bool
     {
         if (filled($this->_isCachable)) {
             return $this->_isCachable;
@@ -260,7 +259,7 @@ class CacheControl
             return config('cdn.routes.cache_nameless_routes', false);
         }
 
-        $filter = fn($pattern) => fnmatch($pattern, $route);
+        $filter = fn($pattern) => CDN::match($pattern, $route);
 
         return (collect(config('cdn.routes.cachable'))->isEmpty() ||
             collect(config('cdn.routes.cachable'))->contains($filter)) &&

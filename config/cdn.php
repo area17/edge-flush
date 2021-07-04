@@ -12,17 +12,18 @@ return [
     'enabled' => env('CDN_ENABLED', false),
 
     /**
-     * The CDN service currently caching pages. Possible options:
+     * Service classes
      *
-     *    Akamai, CloudFront
+     * Supported CDN services: Akamai, CloudFront
      *
      */
-    'cdn-service' => A17\CDN\Services\Akamai\Service::class,
+    'classes' => [
+        'cdn' => A17\CDN\Services\Akamai\Service::class,
 
-    /**
-     * The Cache Control service class.
-     */
-    'cache-control-service' => A17\CDN\Services\CacheControl::class,
+        'cache-control' => A17\CDN\Services\CacheControl::class,
+
+        'tags' => A17\CDN\Services\Tags::class,
+    ],
 
     /**
      * Caching strategies.
@@ -96,7 +97,7 @@ return [
      *    'frontend-checker' => fn() => true,
      *
      */
-    'frontend-checker-save' => fn() => Str::startsWith(
+    'frontend-checker' => fn() => Str::startsWith(
         optional(request()->route())->getName(),
         ['front.', 'api.'],
     ),
@@ -104,7 +105,11 @@ return [
     /**
      * List of cache control headers to add to responses
      */
-    'headers' => ['cache-control' => ['Cache-Control', 'X-Cache-Control']],
+    'headers' => [
+        'cache-control' => ['Cache-Control', 'X-Cache-Control'],
+
+        'tags' => ['Edge-Cache-Tag', 'X-Cache-Tag'],
+    ],
 
     /**
      * Usually pages that contains forms should not be cached. Here you can
@@ -160,5 +165,15 @@ return [
         'cachable' => [200, 301],
 
         'not-cachable' => [],
+    ],
+
+    'tags' => [
+        'excluded-model-classes' => [
+            '\Models\Translations*',
+            '\Models\Slugs*',
+            '\Models\Revisions*',
+        ],
+
+        'format' => 'app-%environment%-%sha1%',
     ],
 ];
