@@ -2,7 +2,7 @@
 
 namespace A17\CDN\Tests;
 
-use A17\CDN\CDNServiceProvider;
+use A17\CDN\ServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -21,7 +21,7 @@ class TestCase extends Orchestra
 
     protected function getPackageProviders($app)
     {
-        return [CDNServiceProvider::class];
+        return [ServiceProvider::class];
     }
 
     public function getEnvironmentSetUp($app)
