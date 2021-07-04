@@ -27,9 +27,9 @@ class Tags
         Tag::where('tag', $tag)->delete();
     }
 
-    protected function getAllTagsFor(string $tag)
+    protected function getAllTagsForModel(string $tag)
     {
-        return Tag::where('tag', $tag)->get();
+        return Tag::where('model', $tag)->get();
     }
 
     public function getTags()
@@ -121,7 +121,7 @@ class Tags
 
     public function purgeTagsFor($model)
     {
-        $tags = $this->getAllTagsFor($this->makeTag($model))->pluck(
+        $tags = $this->getAllTagsForModel($this->makeTag($model))->pluck(
             'tag',
             'url_hash',
         );
