@@ -18,11 +18,6 @@ class Service extends BaseService implements CDNService
         $this->instantiate();
     }
 
-    public function makeResponse(Response $response): Response
-    {
-        return $response;
-    }
-
     public function purge($tags)
     {
         return $this->createInvalidationRequest($tags);

@@ -14,15 +14,6 @@ class Service extends BaseService implements CDNService
 {
     protected $tags;
 
-    public function makeResponse(Response $response): Response
-    {
-        return $this->addHeadersToResponse(
-            $response,
-            'tags',
-            CDN::tags()->getTagsHash($response),
-        );
-    }
-
     private function getApiPath(): string
     {
         return '/ccu/v3/invalidate/tag/production';

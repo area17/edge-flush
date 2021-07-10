@@ -2,6 +2,7 @@
 
 namespace A17\CDN\Services;
 
+use A17\CDN\CDN;
 use Symfony\Component\HttpFoundation\Response;
 use A17\CDN\Contracts\Service as ServiceContract;
 
@@ -21,5 +22,14 @@ abstract class BaseService implements ServiceContract
         );
 
         return $response;
+    }
+
+    public function makeResponse(Response $response): Response
+    {
+        return $this->addHeadersToResponse(
+            $response,
+            'tags',
+            CDN::tags()->getTagsHash($response),
+        );
     }
 }
