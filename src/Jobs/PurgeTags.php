@@ -15,8 +15,6 @@ class PurgeTags implements ShouldQueue
 
     public $tags;
 
-    public $invalidationUrl;
-
     /**
      * Create a new job instance.
      *
@@ -25,8 +23,6 @@ class PurgeTags implements ShouldQueue
     public function __construct($tags)
     {
         $this->tags = $tags;
-
-        $this->invalidationUrl = CDN::cdnService()->getInvalidationURL();
     }
 
     /**
