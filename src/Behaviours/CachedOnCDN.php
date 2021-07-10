@@ -4,9 +4,9 @@ namespace A17\CDN\Behaviours;
 
 use A17\CDN\CDN;
 
-trait HasCDNTags
+trait CachedOnCDN
 {
-    public function invalidateCDNTags($model)
+    public function invalidateCDNCache($model)
     {
         CDN::tags()->purgeTagsFor($model);
     }
