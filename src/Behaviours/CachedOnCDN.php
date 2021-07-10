@@ -18,10 +18,8 @@ trait CachedOnCDN
             : '';
     }
 
-    public function getAttribute($key)
+    public function cacheModelOnCDN($model)
     {
-        CDN::tags()->addTag($this);
-
-        return parent::getAttribute($key);
+        CDN::tags()->addTag($model);
     }
 }
