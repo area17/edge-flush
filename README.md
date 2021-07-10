@@ -57,6 +57,16 @@ CloudFront: aws/aws-sdk-php
 
 Do a full read on the `config/cdn.php` there's a lot of configuration items and we tried to document them all.
 
+Define your CDN service class on `config/cdn.php`:
+
+``` php
+'classes' => [
+    'cdn' => A17\CDN\Services\CloudFront\Service::class,
+    
+    ...
+]
+```
+
 Add the trait `A17\CDN\Behaviours\CachedOnCDN` to your models and repositories.
 
 Call `$this->invalidateCDNCache($model)` every time a model (on your base model or repository save() method). This example takes in consideration [Twill's](https://twill.io/) repositories:
