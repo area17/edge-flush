@@ -59,13 +59,49 @@ Do a full read on the `config/cdn.php` there's a lot of configuration items and 
 
 Add the trait `A17\CDN\Behaviours\CachedOnCDN` to your models and repositories.
 
-Call `$this->invalidateCDNCache($model)` every time a model (on your base model or repository save() method).
+Call `$this->invalidateCDNCache($model)` every time a model (on your base model or repository save() method). This example takes in consideration [Twill's](https://twill.io/) repositories:
+
+``` php
+public function afterSave($object, $fields)
+{
+    $this->invalidateCDNCache($object);
+
+    parent::afterSave($object, $fields);
+}
+```
+
+Call `$this->cacheModelOnCDN($model)` method on model's `getAttribute()`: 
+
+``` php
+public function getAttribute($key)
+{
+    $this->cacheModelOnCDN($this);
+
+    return parent::getAttribute($key);
+}
+```
+
+Add the Middlware to the `Kernel.php` file:
+
+```
+protected $middleware = [
+    \A17\CDN\Middleware::class,
+    ...
+];
+```
 
 Cache-Control max-age is set automatically, but if you need to change it depending on the current request you can use the following method: 
 
 ``` php
 CacheControl::setMaxAge(5000);
 ```
+
+## CDN third-party service configuration
+
+Please check the respective environment variables needed for supported services to work:
+
+- [Akamai](https://github.com/area17/cdn/blob/unstable/config/cdn.php#L188)
+- [CloudFront](https://github.com/area17/cdn/blob/unstable/config/cdn.php#L195)
 
 ## Changelog
 
