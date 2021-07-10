@@ -57,9 +57,9 @@ CloudFront: aws/aws-sdk-php
 
 Do a full read on the `config/cdn.php` there's a lot of configuration items and we tried to document them all.
 
-Add the trait `A17\CDN\Behaviours\HasCDNTags` to your models and repositories.
+Add the trait `A17\CDN\Behaviours\CachedOnCDN` to your models and repositories.
 
-Call `$this->invalidateCDNTags($model)` every time a model (on your base model or repository save() method).
+Call `$this->invalidateCDNCache($model)` every time a model (on your base model or repository save() method).
 
 Cache-Control max-age is set automatically, but if you need to change it depending on the current request you can use the following method: 
 
