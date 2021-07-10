@@ -36,7 +36,7 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    private function getDistributionId()
+    protected function getDistributionId()
     {
         return config('cdn.services.cloud_front.distribution_id');
     }
@@ -62,7 +62,7 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    private function hasInProgressInvalidation(): bool
+    protected function hasInProgressInvalidation(): bool
     {
         $list = $this->client
             ->listInvalidations([
@@ -79,7 +79,7 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    private function createInvalidationRequest($paths = [])
+    protected function createInvalidationRequest($paths = [])
     {
         if (is_object($this->client) && count($paths) > 0) {
             try {
@@ -111,7 +111,7 @@ class Service extends BaseService implements CDNService
         return config('cdn.services.cloud_front.enabled', false);
     }
 
-    private function instantiate(): void
+    protected function instantiate(): void
     {
         if (!$this->isEnabled()) {
             return;

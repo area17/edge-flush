@@ -33,7 +33,7 @@ class ServiceProvider extends IlluminateServiceProvider
         );
     }
 
-    private function mergeConfig(): void
+    protected function mergeConfig(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/cdn.php', 'cdn');
     }

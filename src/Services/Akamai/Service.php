@@ -14,7 +14,7 @@ class Service extends BaseService implements CDNService
 {
     protected $tags;
 
-    private function getApiPath(): string
+    protected function getApiPath(): string
     {
         return '/ccu/v3/invalidate/tag/production';
     }
@@ -22,7 +22,7 @@ class Service extends BaseService implements CDNService
     /**
      * @return \Illuminate\Config\Repository|\Illuminate\Contracts\Foundation\Application|mixed
      */
-    private function getHost()
+    protected function getHost()
     {
         return config('cdn.services.akamai.host');
     }
