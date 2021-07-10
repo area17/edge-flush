@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\CloudFront;
 
 use A17\CDN\CDN;
 use A17\CDN\Services\BaseService;
