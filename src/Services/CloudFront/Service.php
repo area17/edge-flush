@@ -100,7 +100,7 @@ class Service extends BaseService implements CDNService
                     ],
                 ]);
             } catch (\Exception $e) {
-                Log::debug('Cloudfront invalidation request failed');
+                Log::error('CDN: CloudFront invalidation request failed: '.$e->getMessage());
 
                 return false;
             }
