@@ -95,27 +95,6 @@ class Tags
         CDN::cdn()->purge($keys);
     }
 
-    /**
-     * @param mixed $data
-     */
-    protected function recursivelyCreateTags($data): void
-    {
-        if ($data instanceof Model) {
-            $this->addTag($data);
-
-            return;
-        }
-
-        if (is_traversable($data)) {
-            /**
-             * @param callable(mixed $item): void
-             */
-            collect($data)->each(function ($item) {
-                $this->recursivelyCreateTags($item);
-            });
-        }
-    }
-
     protected function tagIsExcluded(string $tag): bool
     {
         /**
@@ -131,8 +110,11 @@ class Tags
         return !$this->tagIsExcluded($tag);
     }
 
-    public function storeCacheTags(array $models, string $tag, string $url): void
-    {
+    public function storeCacheTags(
+        array $models,
+        string $tag,
+        string $url
+    ): void {
         collect($models)->each(
             fn(string $model) => Tag::firstOrCreate([
                 'model' => $model,
@@ -145,10 +127,9 @@ class Tags
 
     public function purgeTagsFor(Model $model): void
     {
-        $tags = $this->getAllTagsForModel($this->makeTag($model))->pluck(
-            'tag',
-            'url_hash',
-        );
+        $tags = $this->getAllTagsForModel($this->makeTag($model))
+            ->pluck('tag')
+            ->toArray();
 
         if (filled($tags)) {
             PurgeTags::dispatch($tags);
@@ -156,6 +137,41 @@ class Tags
     }
 
     public function purgeCacheTags(array $tags): void
+    {
+        if (blank($tags)) {
+            $this->invalidateObsoleteTags();
+
+            return;
+        }
+
+        if (config('cdn.invalidations.type') === 'batch') {
+            $this->makeTagsObsolete($tags);
+
+            return;
+        }
+
+        $this->dispatchInvalidations(Tag::whereIn('tag', $tags)->get());
+    }
+
+    protected function invalidateObsoleteTags(): void
+    {
+        $count = Tag::where('obsolete', true)->count();
+
+        if ($count > config('cdn.invalidations.batch.max_tags')) {
+            $this->invalidateEntireCache();
+
+            return;
+        }
+
+        $this->dispatchInvalidations(Tag::where('obsolete', true)->get());
+    }
+
+    protected function makeTagsObsolete(array $tags): void
+    {
+        Tag::whereIn('tag', $tags)->update(['obsolete' => true]);
+    }
+
+    protected function dispatchInvalidations(array $tags): void
     {
         DB::transaction(
             fn() => collect($tags)->each(
