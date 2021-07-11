@@ -32,10 +32,11 @@ class Service extends BaseService implements CDNService
         return 'https://' . $this->getHost() . $this->getApiPath();
     }
 
-    public function purge(array $items): void
+    public function invalidate(array $items): bool
     {
         $body = [
             'objects' => collect($items)
+                ->map(fn($item) => $item instanceof Model ? $item->tag : $item)
                 ->unique()
                 ->toArray(),
         ];
@@ -43,6 +44,8 @@ class Service extends BaseService implements CDNService
         Http::withHeaders([
             'Authorization' => $this->getAuthHeaders($body),
         ])->post($this->getInvalidationURL(), $body);
+
+        return true;
     }
 
     /**

@@ -4,9 +4,9 @@ namespace A17\CDN\Services;
 
 use A17\CDN\CDN;
 use A17\CDN\Models\Tag;
-use A17\CDN\Jobs\PurgeTags;
 use A17\CDN\Jobs\StoreTags;
 use Illuminate\Support\Str;
+use A17\CDN\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -90,11 +90,6 @@ class Tags
         return $tag;
     }
 
-    protected function purgeTagsFromCDNService(Collection $keys): void
-    {
-        CDN::cdn()->purge($keys);
-    }
-
     protected function tagIsExcluded(string $tag): bool
     {
         /**
@@ -125,18 +120,18 @@ class Tags
         );
     }
 
-    public function purgeTagsFor(Model $model): void
+    public function invalidateTagsFor(Model $model): void
     {
         $tags = $this->getAllTagsForModel($this->makeTag($model))
             ->pluck('tag')
             ->toArray();
 
         if (filled($tags)) {
-            PurgeTags::dispatch($tags);
+            InvalidateTags::dispatch($tags);
         }
     }
 
-    public function purgeCacheTags(array $tags): void
+    public function invalidateCacheTags(array $tags): void
     {
         if (blank($tags)) {
             $this->invalidateObsoleteTags();
@@ -171,14 +166,15 @@ class Tags
         Tag::whereIn('tag', $tags)->update(['obsolete' => true]);
     }
 
-    protected function dispatchInvalidations(array $tags): void
+    protected function dispatchInvalidations($tags): void
     {
-        DB::transaction(
-            fn() => collect($tags)->each(
-                fn(string $tag) => $this->deleteTag($tag),
-            ),
-        );
+        if (CDN::cdn()->invalidate($tags)) {
+            $this->deleteTags($tags);
+        }
+    }
 
-        $this->purgeTagsFromCDNService(collect($tags)->keys());
+    protected function invalidateEntireCache()
+    {
+        CDN::cdn()->invalidate(config('cdn.invalidations.batch.site_roots'));
     }
 }

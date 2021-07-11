@@ -9,7 +9,7 @@ trait CachedOnCDN
 {
     public function invalidateCDNCache(Model $model): void
     {
-        CDN::tags()->purgeTagsFor($model);
+        CDN::tags()->invalidateTagsFor($model);
     }
 
     public function getCDNCacheTag(): string

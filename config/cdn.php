@@ -191,11 +191,13 @@ return [
      * batch.site_root: what's the site root path that should be invalidated?
      */
     'invalidations' => [
+        'method' => 'invalidate', // invalidate, delete
+
         'type' => 'single', // single, batch
 
         'batch' => [
             'max_tags' => 2999, /// CloudFront limit is 3000
-            'site_root' => '/*',
+            'site_roots' => ['/*'],
         ],
     ],
 

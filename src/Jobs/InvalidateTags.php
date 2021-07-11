@@ -9,7 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-class PurgeTags implements ShouldQueue
+class InvalidateTags implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -32,6 +32,6 @@ class PurgeTags implements ShouldQueue
      */
     public function handle()
     {
-        CDN::tags()->purgeCacheTags($this->tags);
+        CDN::tags()->invalidateCacheTags($this->tags);
     }
 }

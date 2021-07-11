@@ -8,6 +8,7 @@ use A17\CDN\Services\BaseService;
 use A17\CDN\Contracts\CDNService;
 use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
+use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
 
 class Service extends BaseService implements CDNService
@@ -19,9 +20,14 @@ class Service extends BaseService implements CDNService
         $this->instantiate();
     }
 
-    public function purge(array $items): void
+    public function invalidate(array $items): bool
     {
-        $this->createInvalidationRequest($items);
+        $items = collect($items)
+            ->map(fn($item) => $item instanceof Model ? $item->url : $item)
+            ->unique()
+            ->toArray();
+
+        return $this->createInvalidationRequest($items);
     }
 
     protected function dispatchInvalidation(): void
@@ -54,13 +60,6 @@ class Service extends BaseService implements CDNService
                 'secret' => config('cdn.services.cloud_front.secret'),
             ],
         ]);
-    }
-
-    public function invalidate(): void
-    {
-        if ($this->isEnabled()) {
-            $this->dispatchInvalidation();
-        }
     }
 
     protected function hasInProgressInvalidation(): bool
