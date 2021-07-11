@@ -175,6 +175,8 @@ class Tags
 
     protected function invalidateEntireCache()
     {
-        CDN::cdn()->invalidate(config('cdn.invalidations.batch.site_roots'));
+        CDN::cdn()->invalidate(
+            collect(config('cdn.invalidations.batch.site_roots')),
+        );
     }
 }

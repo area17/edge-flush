@@ -6,6 +6,7 @@ use A17\CDN\CDN;
 use Aws\AwsClient;
 use A17\CDN\Services\BaseService;
 use A17\CDN\Contracts\CDNService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Http;
@@ -20,7 +21,7 @@ class Service extends BaseService implements CDNService
         $this->instantiate();
     }
 
-    public function invalidate(array $items): bool
+    public function invalidate(Collection $items): bool
     {
         $items = collect($items)
             ->map(fn($item) => $item instanceof Model ? $item->url : $item)
@@ -107,17 +108,8 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    public function isEnabled(): bool
-    {
-        return config('cdn.services.cloud_front.enabled', false);
-    }
-
     protected function instantiate(): void
     {
-        if (!$this->isEnabled()) {
-            return;
-        }
-
         $this->client = static::getClient();
     }
 }

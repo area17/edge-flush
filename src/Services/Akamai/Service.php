@@ -5,6 +5,7 @@ namespace A17\CDN\Services\Akamai;
 use A17\CDN\CDN;
 use A17\CDN\Services\BaseService;
 use A17\CDN\Contracts\CDNService;
+use Illuminate\Support\Collection;
 use A17\CDN\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,7 +33,7 @@ class Service extends BaseService implements CDNService
         return 'https://' . $this->getHost() . $this->getApiPath();
     }
 
-    public function invalidate(array $items): bool
+    public function invalidate(Collection $items): bool
     {
         $body = [
             'objects' => collect($items)
