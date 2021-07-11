@@ -166,7 +166,7 @@ class Tags
         Tag::whereIn('tag', $tags)->update(['obsolete' => true]);
     }
 
-    protected function dispatchInvalidations($tags): void
+    protected function dispatchInvalidations(Collection $tags): void
     {
         if (CDN::cdn()->invalidate($tags)) {
             $this->deleteTags($tags);
@@ -178,5 +178,10 @@ class Tags
         CDN::cdn()->invalidate(
             collect(config('cdn.invalidations.batch.site_roots')),
         );
+    }
+
+    protected function deleteTags(Collection $tags): void
+    {
+        Tag::whereIn('tag', $tags->pluck('id')->toArray())->delete();
     }
 }
