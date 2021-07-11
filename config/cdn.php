@@ -194,7 +194,7 @@ return [
         'type' => 'single', // single, batch
 
         'batch' => [
-            'max_paths' => 2999, /// CloudFront limit is 3000
+            'max_tags' => 2999, /// CloudFront limit is 3000
             'site_root' => '/*',
         ],
     ],
