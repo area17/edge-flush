@@ -8,6 +8,7 @@ use A17\CDN\Contracts\CDNService;
 use Illuminate\Support\Collection;
 use A17\CDN\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\Response;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
@@ -37,7 +38,7 @@ class Service extends BaseService implements CDNService
     {
         $body = [
             'objects' => collect($items)
-                ->map(fn($item) => $item instanceof Model ? $item->tag : $item)
+                ->map(fn($item) => is_object($item) ? $item->tag : $item)
                 ->unique()
                 ->toArray(),
         ];

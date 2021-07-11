@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\Response;
 
 class Service extends BaseService implements CDNService
@@ -24,7 +25,7 @@ class Service extends BaseService implements CDNService
     public function invalidate(Collection $items): bool
     {
         $items = collect($items)
-            ->map(fn($item) => $item instanceof Model ? $item->url : $item)
+            ->map(fn($item) => is_object($item) ? $item->url : $item)
             ->unique()
             ->toArray();
 
@@ -52,7 +53,7 @@ class Service extends BaseService implements CDNService
     public function getClient(): CloudFrontClient
     {
         return new CloudFrontClient([
-            'region' => config('cdn.services.region'),
+            'region' => config('cdn.services.cloud_front.region'),
 
             'version' => config('cdn.services.cloud_front.sdk_version'),
 
