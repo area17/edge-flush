@@ -214,10 +214,23 @@ return [
 
         'cloud_front' => [
             'sdk_version' => env('CDN_CLOUD_FRONT_SDK_VERSION', '2016-01-13'),
-            'region' => env('CDN_AWS_DEFAULT_REGION', 'us-east-1'),
-            'distribution_id' => env('CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
-            'key' => env('CDN_AWS_CLOUDFRONT_KEY'),
-            'secret' => env('CDN_AWS_CLOUDFRONT_SECRET'),
+
+            'region' => env(
+                'CDN_AWS_DEFAULT_REGION',
+                env('AWS_DEFAULT_REGION', 'us-east-1'),
+            ),
+
+            'distribution_id' => env(
+                'CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID',
+                env('CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
+            ),
+
+            'key' => env('CDN_AWS_CLOUDFRONT_KEY', env('AWS_ACCESS_KEY_ID')),
+
+            'secret' => env(
+                'CDN_AWS_CLOUDFRONT_SECRET',
+                env('AWS_SECRET_ACCESS_KEY'),
+            ),
         ],
     ],
 ];
