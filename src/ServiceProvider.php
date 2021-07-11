@@ -9,21 +9,21 @@ use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
 class ServiceProvider extends IlluminateServiceProvider
 {
-    public function boot()
+    public function boot(): void
     {
         $this->publishConfig();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
     }
 
-    public function register()
+    public function register(): void
     {
         $this->mergeConfig();
 
         $this->configureContainer();
     }
 
-    public function publishConfig()
+    public function publishConfig(): void
     {
         $this->publishes(
             [
@@ -38,7 +38,7 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/cdn.php', 'cdn');
     }
 
-    public function configureContainer()
+    public function configureContainer(): void
     {
         $this->app->singleton('a17.cdn.service', function ($app) {
             $service = config('cdn.classes.cdn');
@@ -51,21 +51,19 @@ class ServiceProvider extends IlluminateServiceProvider
                 CDNException::classNotFound($service);
             }
 
-            $cacheControl = $this->app->make(
-                config('cdn.classes.cache-control'),
-            );
+            $cacheControl = $app->make(config('cdn.classes.cache-control'));
 
-            $tags = $this->app->make(config('cdn.classes.tags'));
+            $tags = $app->make(config('cdn.classes.tags'));
 
             return new CDN(app($service), $cacheControl, $tags);
         });
 
         $this->app->singleton('a17.cdn.cache-control', function ($app) {
-            return $this->app->make('a17.cdn.service')->cacheControl();
+            return $app->make('a17.cdn.service')->cacheControl();
         });
 
         $this->app->singleton('a17.cdn.tags', function ($app) {
-            return $this->app->make('a17.cdn.service')->tags();
+            return $app->make('a17.cdn.service')->tags();
         });
     }
 }

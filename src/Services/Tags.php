@@ -10,44 +10,61 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Symfony\Component\HttpFoundation\Response;
 
 class Tags
 {
-    protected $tags;
+    protected array $tags = [];
 
-    public function addTag($data)
+    /**
+     * @psalm-suppress ArgumentTypeCoercion
+     */
+    public function addTag(object $data): void
     {
         if (CDN::enabled() && filled($tag = $this->makeTag($data))) {
             $this->tags[$tag] = $tag;
         }
     }
 
-    protected function deleteTag($tag): void
+    protected function deleteTag(string $tag): void
     {
         Tag::where('tag', $tag)->delete();
     }
 
-    protected function getAllTagsForModel(string $tag)
+    /**
+     * @param string|null $tag
+     * @return mixed
+     */
+    protected function getAllTagsForModel(?string $tag)
     {
-        return Tag::where('model', $tag)->get();
+        if (filled($tag)) {
+            return Tag::where('model', $tag)->get();
+        }
     }
 
-    public function getTags()
+    public function getTags(): array
     {
         return collect($this->tags)
-            ->reject(function ($tag) {
+            ->reject(function (string $tag) {
                 return $this->tagIsExcluded($tag);
             })
-            ->values();
+            ->values()
+            ->toArray();
     }
 
-    public function getTagsHash($response)
+    /**
+     * @psalm-suppress UndefinedInterfaceMethod
+     */
+    public function getTagsHash(Response $response)
     {
         $models = $this->getTags();
 
+        /**
+         * @psalm-suppress InvalidScalarArgument
+         */
         $tag = str_replace(
             ['%environment%', '%sha1%'],
-            [app()->environment(), sha1($models->join(', '))],
+            [app()->environment(), sha1(collect($models)->join(', '))],
             config('cdn.tags.format'),
         );
 
@@ -58,16 +75,14 @@ class Tags
         return $tag;
     }
 
-    public function makeTag($model): ?string
+    public function makeTag(Model $model): ?string
     {
         $tag = null;
 
         try {
-            $tag =
-                $model instanceof Model &&
-                method_exists($model, 'getCDNCacheTag')
-                    ? $model->getCDNCacheTag()
-                    : null;
+            $tag = method_exists($model, 'getCDNCacheTag')
+                ? $model->getCDNCacheTag()
+                : null;
         } catch (\Exception $exception) {
             // TODO: should we ignore errors here?
         }
@@ -75,12 +90,15 @@ class Tags
         return $tag;
     }
 
-    protected function purgeTagsFromCDNService(Collection $keys)
+    protected function purgeTagsFromCDNService(Collection $keys): void
     {
-        CDN::cdnService()->purge($keys);
+        CDN::cdn()->purge($keys);
     }
 
-    protected function recursivelyCreateTags($data)
+    /**
+     * @param mixed $data
+     */
+    protected function recursivelyCreateTags($data): void
     {
         if ($data instanceof Model) {
             $this->addTag($data);
@@ -89,6 +107,9 @@ class Tags
         }
 
         if (is_traversable($data)) {
+            /**
+             * @param callable(mixed $item): void
+             */
             collect($data)->each(function ($item) {
                 $this->recursivelyCreateTags($item);
             });
@@ -97,8 +118,11 @@ class Tags
 
     protected function tagIsExcluded(string $tag): bool
     {
+        /**
+         * @param callable(string $pattern): boolean $pattern
+         */
         return collect(config('cdn.tags.excluded-model-classes'))->contains(
-            fn($pattern) => CDN::match($pattern, $tag),
+            fn(string $pattern) => CDN::match($pattern, $tag),
         );
     }
 
@@ -107,10 +131,10 @@ class Tags
         return !$this->tagIsExcluded($tag);
     }
 
-    public function storeCacheTags($models, $tag, $url)
+    public function storeCacheTags(array $models, string $tag, string $url): void
     {
         collect($models)->each(
-            fn($model) => Tag::firstOrCreate([
+            fn(string $model) => Tag::firstOrCreate([
                 'model' => $model,
                 'tag' => $tag,
                 'url' => Str::limit($url, 255),
@@ -119,7 +143,7 @@ class Tags
         );
     }
 
-    public function purgeTagsFor($model)
+    public function purgeTagsFor(Model $model): void
     {
         $tags = $this->getAllTagsForModel($this->makeTag($model))->pluck(
             'tag',
@@ -131,10 +155,12 @@ class Tags
         }
     }
 
-    public function purgeCacheTags($tags)
+    public function purgeCacheTags(array $tags): void
     {
         DB::transaction(
-            fn() => collect($tags)->each(fn($tag) => $this->deleteTag($tag)),
+            fn() => collect($tags)->each(
+                fn(string $tag) => $this->deleteTag($tag),
+            ),
         );
 
         $this->purgeTagsFromCDNService(collect($tags)->keys());

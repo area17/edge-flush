@@ -2,17 +2,18 @@
 
 namespace A17\CDN\Services;
 
+use Faker\Provider\Base;
 use Symfony\Component\HttpFoundation\Response;
 
 class CDN extends BaseService
 {
-    public $cdnService;
+    public BaseService $cdnService;
 
-    public $cacheControl;
+    public CacheControl $cacheControl;
 
-    public $tags;
+    public Tags $tags;
 
-    public $enabled;
+    public bool $enabled;
 
     public function __construct(
         BaseService $cdnService,
@@ -24,18 +25,16 @@ class CDN extends BaseService
         $this->cacheControl = $cacheControl;
 
         $this->tags = $tags;
+
+        $this->enabled = config('cdn.enabled', true);
     }
 
-    public function enabled()
+    public function enabled(): bool
     {
-        if (filled($this->enabled)) {
-            return $this->enabled;
-        }
-
-        return $this->enabled = config('cdn.enabled', true);
+        return $this->enabled;
     }
 
-    public function makeResponse($response): Response
+    public function makeResponse(Response $response): Response
     {
         if (!$this->enabled()) {
             return $response;
@@ -46,27 +45,22 @@ class CDN extends BaseService
         );
     }
 
-    public function cdn()
+    public function cdn(): BaseService
     {
         return $this->cdnService;
     }
 
-    public function cacheControl()
+    public function cacheControl(): CacheControl
     {
         return $this->cacheControl;
     }
 
-    public function tags()
+    public function tags(): Tags
     {
         return $this->tags;
     }
 
-    public function cdnService()
-    {
-        return $this->cdnService;
-    }
-
-    public function match($patten, $string)
+    public function match(string $patten, string $string): bool
     {
         $patten = str_replace('\\', '_', $patten);
 

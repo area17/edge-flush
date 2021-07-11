@@ -4,6 +4,7 @@ namespace A17\CDN\Jobs;
 
 use A17\CDN\CDN;
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Collection;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -13,19 +14,16 @@ class StoreTags implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $models;
+    public array $models;
 
-    public $tag;
+    public string $tag;
 
-    public $url;
+    public string $url;
 
     /**
      * Create a new job instance.
-     *
-     * @param $models
-     * @param $tag
      */
-    public function __construct($models, $tag, $url)
+    public function __construct(array $models, string $tag, string $url)
     {
         $this->models = $models;
 

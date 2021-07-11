@@ -8,14 +8,16 @@ use A17\CDN\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
 {
-    public function addHeadersToResponse($response, $service, $value): Response
-    {
-        if (!$response instanceof Response) {
-            return $response;
-        }
-
+    /**
+     * @psalm-suppress UndefinedMethod
+     */
+    public function addHeadersToResponse(
+        Response $response,
+        string $service,
+        string $value
+    ): Response {
         collect(config("cdn.headers.$service"))->each(
-            fn($header) => $response->header(
+            fn(string $header) => $response->header(
                 $header,
                 collect($value)->join(', '),
             ),

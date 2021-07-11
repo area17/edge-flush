@@ -13,14 +13,14 @@ class PurgeTags implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tags;
+    public array $tags;
 
     /**
      * Create a new job instance.
      *
      * @param $tags
      */
-    public function __construct($tags)
+    public function __construct(array $tags = null)
     {
         $this->tags = $tags;
     }

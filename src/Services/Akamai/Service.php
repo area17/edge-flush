@@ -12,7 +12,7 @@ use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
 class Service extends BaseService implements CDNService
 {
-    protected $tags;
+    protected array $tags = [];
 
     protected function getApiPath(): string
     {
@@ -22,7 +22,7 @@ class Service extends BaseService implements CDNService
     /**
      * @return \Illuminate\Config\Repository|\Illuminate\Contracts\Foundation\Application|mixed
      */
-    protected function getHost()
+    protected function getHost(): ?string
     {
         return config('cdn.services.akamai.host');
     }
@@ -32,10 +32,10 @@ class Service extends BaseService implements CDNService
         return 'https://' . $this->getHost() . $this->getApiPath();
     }
 
-    public function purge($keys)
+    public function purge(array $items): void
     {
         $body = [
-            'objects' => collect($keys)
+            'objects' => collect($items)
                 ->unique()
                 ->toArray(),
         ];
@@ -45,6 +45,10 @@ class Service extends BaseService implements CDNService
         ])->post($this->getInvalidationURL(), $body);
     }
 
+    /**
+     * @param mixed $body
+     * @return string
+     */
     public function getAuthHeaders($body): string
     {
         $auth = new AkamaiAuthentication();

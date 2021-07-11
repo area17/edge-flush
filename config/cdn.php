@@ -94,13 +94,10 @@ return [
      *
      * To allow everything you can just set
      *
-     *    'frontend-checker' => fn() => true,
+     *    'frontend-checker' => true,
      *
      */
-    'frontend-checker' => fn() => Str::startsWith(
-        optional(request()->route())->getName(),
-        ['front.', 'api.'],
-    ),
+    'frontend-checker' => A17\CDN\Services\FrontendChecker::class,
 
     /**
      * List of cache control headers to add to responses
@@ -179,6 +176,27 @@ return [
         ],
 
         'format' => 'app-%environment%-%sha1%',
+    ],
+
+    /**
+     * Invalidations.
+     *
+     * Invalidations can be sent one by one or in batch. In this section you can configure
+     * this and also set the limits.
+     *
+     * single invalidations are executed immediately after a model is updated.
+     * batch invalidations are executed every x minutes.
+     *
+     * batch.max_paths: what's is the limit before we invalidate the whole site?
+     * batch.site_root: what's the site root path that should be invalidated?
+     */
+    'invalidations' => [
+        'type' => 'single', // single, batch
+
+        'batch' => [
+            'max_paths' => 2999, /// CloudFront limit is 3000
+            'site_root' => '/*',
+        ],
     ],
 
     /**

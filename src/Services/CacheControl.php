@@ -5,9 +5,11 @@ namespace A17\CDN\Services;
 use A17\CDN\CDN;
 use Illuminate\Support\Str;
 use A17\CDN\Support\Constants;
+use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 use A17\CDN\Contracts\Service as ServiceContract;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use A17\CDN\Exceptions\FrontendChecker as FrontendCheckerException;
 
 class CacheControl extends BaseService implements ServiceContract
 {
@@ -30,7 +32,7 @@ class CacheControl extends BaseService implements ServiceContract
         );
     }
 
-    protected function contentContains($response, string $string): bool
+    protected function contentContains(Response $response, string $string): bool
     {
         return Str::contains(
             $this->getContent($response),
@@ -38,7 +40,7 @@ class CacheControl extends BaseService implements ServiceContract
         );
     }
 
-    public function isCachable($response = null): bool
+    public function isCachable(Response $response = null): bool
     {
         if (filled($this->_isCachable)) {
             return $this->_isCachable;
@@ -49,21 +51,21 @@ class CacheControl extends BaseService implements ServiceContract
         )->contains(false);
     }
 
-    public function getCachableMatrix($response)
+    public function getCachableMatrix(Response $response): Collection
     {
         return collect([
             'enabled' => CDN::enabled(),
             'isFrontend' => $this->isFrontend(),
             'notValidForm' => $this->doesNotContainAValidForm($response),
             'middlewareAllowCaching' => $this->middlewaresAllowCaching(),
-            'routeIsCachable' => $this->routeIsCachable($response),
+            'routeIsCachable' => $this->routeIsCachable(),
             'responseIsCachable' => $this->responseIsCachable($response),
             'methodIsCachable' => $this->methodIsCachable(),
             'statusCodeIsCachable' => $this->statusCodeIsCachable($response),
         ]);
     }
 
-    public function getCacheStrategy($response): string
+    public function getCacheStrategy(Response $response): string
     {
         if (filled($this->strategy)) {
             return $this->buildStrategy($this->strategy);
@@ -74,7 +76,10 @@ class CacheControl extends BaseService implements ServiceContract
             : $this->buildStrategy('do-not-cache');
     }
 
-    protected function getContent($response)
+    /**
+     * @psalm-suppress UndefinedMethod
+     */
+    protected function getContent(Response $response): string
     {
         if (
             !filled($this->_content) &&
@@ -96,24 +101,29 @@ class CacheControl extends BaseService implements ServiceContract
         return $this->getDefaultMaxAge();
     }
 
-    protected function doesNotContainAValidForm($response): bool
+    protected function doesNotContainAValidForm(Response $response): bool
     {
         $hasForm = false;
 
         if (config('cdn.valid_forms.enabled', false)) {
             $hasForm = collect(
                 config('cdn.valid_forms.strings', false),
-            )->reduce(function ($hasForm, $string) use ($response) {
+            )->reduce(function (bool $hasForm, string $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
                 $hasForm =
                     $hasForm && $this->contentContains($response, $string);
+
+                return $hasForm;
             }, true);
         }
 
         return !$hasForm;
     }
 
+    /**
+     * @psalm-suppress InvalidReturnType
+     */
     protected function isFrontend(): bool
     {
         $checker = config('cdn.frontend-checker');
@@ -122,28 +132,35 @@ class CacheControl extends BaseService implements ServiceContract
             return $checker();
         }
 
-        return $checker ?? false;
+        if (is_bool($checker)) {
+            return $checker;
+        }
+
+        if (is_string($checker) && class_exists($checker)) {
+            return app($checker)->runningOnFrontend();
+        }
+
+        FrontendCheckerException::unsupportedType(gettype($checker));
     }
 
-    protected function minifyContent(string $content)
+    protected function minifyContent(string $content): string
     {
         return str_replace(' ', '', $content);
     }
 
+    /**
+     * @psalm-suppress PossiblyNullPropertyFetch
+     */
     protected function middlewaresAllowCaching(): bool
     {
         $middleware = blank($route = request()->route())
             ? 'no-middleware'
-            : $route->action['middleware'];
+            : $route->action['middleware'] ?? null;
 
         return !collect($middleware)->contains('doNotCacheResponse');
     }
 
-    /**
-     * @param mixed $maxAge
-     * @return CacheControl
-     */
-    public function setMaxAge($maxAge): self
+    public function setMaxAge(int $maxAge): self
     {
         if (blank($maxAge)) {
             return $this;
@@ -163,22 +180,22 @@ class CacheControl extends BaseService implements ServiceContract
         return $this;
     }
 
-    public function getDefaultMaxAge()
+    public function getDefaultMaxAge(): int
     {
-        return config('cdn.max-age.default', Constants::WEEK);
+        return (int) config('cdn.max-age.default', Constants::WEEK);
     }
 
-    public function buildStrategy($strategy)
+    public function buildStrategy(string $strategy): string
     {
         return collect(config("cdn.strategies.$strategy"))
             ->map(
-                fn($header) => [
+                fn(string $header) => [
                     'header' => $header,
                     'value' => $this->getHeaderValue($header),
                 ],
             )
             ->map(
-                fn($item) => $item['header'] === $item['value']
+                fn(array $item) => $item['header'] === $item['value']
                     ? $item['header']
                     : "{$item['header']}={$item['value']}",
             )
@@ -186,7 +203,11 @@ class CacheControl extends BaseService implements ServiceContract
             ->join(', ');
     }
 
-    public function getHeaderValue($header)
+    /**
+     * @param string $header
+     * @return int|string
+     */
+    public function getHeaderValue(string $header)
     {
         if ($header === 'max-age' || $header === 's-maxage') {
             return $this->getMaxAge();
@@ -209,14 +230,14 @@ class CacheControl extends BaseService implements ServiceContract
         return $this->strategy ?? null;
     }
 
-    public function setStrategy($strategy): self
+    public function setStrategy(string $strategy): self
     {
         $this->strategy = $strategy;
 
         return $this;
     }
 
-    public function responseIsCachable($response): bool
+    public function responseIsCachable(Response $response): bool
     {
         return (collect(config('cdn.responses.cachable'))->isEmpty() ||
             collect(config('cdn.responses.cachable'))->contains(
@@ -227,6 +248,9 @@ class CacheControl extends BaseService implements ServiceContract
             );
     }
 
+    /**
+     * @psalm-suppress PossiblyNullReference|PossiblyInvalidMethodCall
+     */
     public function methodIsCachable(): bool
     {
         return (collect(config('cdn.methods.cachable'))->isEmpty() ||
@@ -238,7 +262,7 @@ class CacheControl extends BaseService implements ServiceContract
             );
     }
 
-    public function statusCodeIsCachable($response): bool
+    public function statusCodeIsCachable(Response $response): bool
     {
         return (collect(config('cdn.statuses.cachable'))->isEmpty() ||
             collect(config('cdn.statuses.cachable'))->contains(
@@ -249,6 +273,9 @@ class CacheControl extends BaseService implements ServiceContract
             );
     }
 
+    /**
+     * @psalm-suppress PossiblyInvalidMethodCall|PossiblyNullReference
+     */
     public function routeIsCachable(): bool
     {
         $route = request()->route();
@@ -259,7 +286,10 @@ class CacheControl extends BaseService implements ServiceContract
             return config('cdn.routes.cache_nameless_routes', false);
         }
 
-        $filter = fn($pattern) => CDN::match($pattern, $route);
+        /**
+         * @param callable(string $pattern): boolean $filter
+         */
+        $filter = fn(string $pattern) => CDN::match($pattern, $route);
 
         return (collect(config('cdn.routes.cachable'))->isEmpty() ||
             collect(config('cdn.routes.cachable'))->contains($filter)) &&

@@ -3,10 +3,11 @@
 namespace A17\CDN\Behaviours;
 
 use A17\CDN\CDN;
+use Illuminate\Database\Eloquent\Model;
 
 trait CachedOnCDN
 {
-    public function invalidateCDNCache($model)
+    public function invalidateCDNCache(Model $model): void
     {
         CDN::tags()->purgeTagsFor($model);
     }
@@ -18,7 +19,7 @@ trait CachedOnCDN
             : '';
     }
 
-    public function cacheModelOnCDN($model)
+    public function cacheModelOnCDN(Model $model): void
     {
         CDN::tags()->addTag($model);
     }

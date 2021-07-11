@@ -3,6 +3,7 @@
 namespace A17\CDN\Services\CloudFront;
 
 use A17\CDN\CDN;
+use Aws\AwsClient;
 use A17\CDN\Services\BaseService;
 use A17\CDN\Contracts\CDNService;
 use Illuminate\Support\Facades\Log;
@@ -11,16 +12,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 class Service extends BaseService implements CDNService
 {
-    protected $client = null;
+    protected CloudFrontClient $client;
 
     public function __construct()
     {
         $this->instantiate();
     }
 
-    public function purge($tags)
+    public function purge(array $items): void
     {
-        return $this->createInvalidationRequest($tags);
+        $this->createInvalidationRequest($items);
     }
 
     protected function dispatchInvalidation(): void
@@ -36,7 +37,7 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    protected function getDistributionId()
+    protected function getDistributionId(): ?string
     {
         return config('cdn.services.cloud_front.distribution_id');
     }
@@ -55,7 +56,7 @@ class Service extends BaseService implements CDNService
         ]);
     }
 
-    public function invalidate()
+    public function invalidate(): void
     {
         if ($this->isEnabled()) {
             $this->dispatchInvalidation();
@@ -79,9 +80,13 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    protected function createInvalidationRequest($paths = [])
+    /**
+     * @param array $paths
+     * @return mixed
+     */
+    protected function createInvalidationRequest(array $paths = [])
     {
-        if (is_object($this->client) && count($paths) > 0) {
+        if (count($paths) > 0) {
             try {
                 $result = $this->client->createInvalidation([
                     'DistributionId' => $this->getDistributionId(),
@@ -103,10 +108,7 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    /**
-     * @return \Illuminate\Config\Repository|\Illuminate\Contracts\Foundation\Application|mixed
-     */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return config('cdn.services.cloud_front.enabled', false);
     }
@@ -117,8 +119,6 @@ class Service extends BaseService implements CDNService
             return;
         }
 
-        if (is_object($client = static::getClient())) {
-            $this->client = $client;
-        }
+        $this->client = static::getClient();
     }
 }
