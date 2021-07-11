@@ -182,6 +182,6 @@ class Tags
 
     protected function deleteTags(Collection $tags): void
     {
-        Tag::whereIn('tag', $tags->pluck('id')->toArray())->delete();
+        Tag::whereIn('id', $tags->pluck('id')->toArray())->delete();
     }
 }
