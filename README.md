@@ -106,6 +106,15 @@ Cache-Control max-age is set automatically, but if you need to change it dependi
 CacheControl::setMaxAge(5000);
 ```
 
+If you want to invalidate your paths in batches, add a scheduler setting the desired frequency for this to happen: 
+
+``` php
+protected function schedule(Schedule $schedule)
+{
+    $schedule->job(new PurgeTags())->everyMinute();
+}
+```
+
 ## CDN third-party service configuration
 
 Please check the respective environment variables needed for supported services to work:
