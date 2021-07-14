@@ -263,7 +263,7 @@ return [
 
         'max_time' => Constants::MILLISECOND * 750,
 
-        'connection_timeout' => Constants::MILLISECOND * 5,
+        'connection_timeout' => Constants::MILLISECOND * 15,
 
         'concurrent_requests' => 50,
 

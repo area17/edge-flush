@@ -16,7 +16,7 @@ class Warmer
     public function __construct()
     {
         $this->guzzle = new Guzzle([
-            'timeout' => config('cdn.warmer.connection_timeout'),
+            'timeout' => config('cdn.warmer.connection_timeout') / 1000, // Guzzle expects seconds
             'connect_timeout' => config('cdn.warmer.connection_timeout'),
         ]);
     }
