@@ -257,7 +257,7 @@ return [
      *
      */
     'warmer' => [
-        'enabled' => false,
+        'enabled' => env('CDN_WARMER_ENABLED', false),
 
         'max_urls' => 100,
 
