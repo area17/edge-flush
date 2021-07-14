@@ -51,19 +51,12 @@ class ServiceProvider extends IlluminateServiceProvider
                 CDNException::classNotFound($service);
             }
 
-            $cacheControl = $app->make(config('cdn.classes.cache-control'));
-
-            $tags = $app->make(config('cdn.classes.tags'));
-
-            return new CDN(app($service), $cacheControl, $tags);
-        });
-
-        $this->app->singleton('a17.cdn.cache-control', function ($app) {
-            return $app->make('a17.cdn.service')->cacheControl();
-        });
-
-        $this->app->singleton('a17.cdn.tags', function ($app) {
-            return $app->make('a17.cdn.service')->tags();
+            return new CDN(
+                app($service),
+                $app->make(config('cdn.classes.cache-control')),
+                $app->make(config('cdn.classes.tags')),
+                $app->make(config('cdn.classes.warmer')),
+            );
         });
     }
 }

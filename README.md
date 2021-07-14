@@ -122,6 +122,19 @@ Please check the respective environment variables needed for supported services 
 - [Akamai](https://github.com/area17/cdn/blob/unstable/config/cdn.php#L188)
 - [CloudFront](https://github.com/area17/cdn/blob/unstable/config/cdn.php#L195)
 
+## Rewarming cache
+
+Purged cache pages can load slowly for the next users or even Google Bot, if you want to prevent this you can enable (on config) the cache warmer and add the job to the schedule:
+
+``` php
+protected function schedule(Schedule $schedule)
+{
+    $schedule->job(new WarmCache())->everyMinute();
+}
+```
+
+Note that the most hit (or frequently updated) pages will be warmed first. 
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.

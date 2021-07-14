@@ -14,7 +14,10 @@ class AddObsoleteField extends Migration
     public function up()
     {
         Schema::table('cdn_cache_tags', function (Blueprint $table) {
-            $table->boolean('obsolete')->default(false)->index();
+            $table
+                ->boolean('obsolete')
+                ->default(false)
+                ->index();
         });
     }
 

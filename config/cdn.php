@@ -23,6 +23,8 @@ return [
         'cache-control' => A17\CDN\Services\CacheControl::class,
 
         'tags' => A17\CDN\Services\Tags::class,
+
+        'warmer' => A17\CDN\Services\Warmer::class,
     ],
 
     /**
@@ -232,5 +234,41 @@ return [
                 env('AWS_SECRET_ACCESS_KEY'),
             ),
         ],
+    ],
+
+    /**
+     * Purged cache can be rewarmed. Enable and configure it here.
+     *
+     * max_urls: how many urls max should the warmer try to warm per session?
+     *
+     * max_time: how much time the whole job warming session can take?
+     *
+     * connection_timeout: to warm up a page we don't actually need to get the page contents
+     *                     that's why the warmer will kill the connection (possibly) before
+     *                     the server is able to respond with contents. The idea here is
+     *                     to speed up the warming process and save bandwidth.
+     *
+     * concurrent_requests: how many concurrent requests the warmer should dispatch per session?
+     *
+     * warm_all_on_purge: if the whole CDN cache is purged, do you wish to warm back all pages?
+     *
+     * wait_before_warming: invalidating tags can take time, maybe it's good to wait a couple
+     *                      of minutes before warming purged urls.
+     *
+     */
+    'warmer' => [
+        'enabled' => false,
+
+        'max_urls' => 100,
+
+        'max_time' => Constants::MILLISECOND * 750,
+
+        'connection_timeout' => Constants::MILLISECOND * 5,
+
+        'concurrent_requests' => 50,
+
+        'warm_all_on_purge' => true,
+
+        'wait_before_warming' => Constants::MINUTE * 2,
     ],
 ];

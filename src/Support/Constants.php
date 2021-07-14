@@ -4,7 +4,9 @@ namespace A17\CDN\Support;
 
 class Constants
 {
-    const SECOND = 1;
+    const MILLISECOND = 1;
+
+    const SECOND = self::MILLISECOND * 1000;
 
     const MINUTE = self::SECOND * 60;
 

@@ -4,6 +4,7 @@ namespace A17\CDN\Services;
 
 use A17\CDN\CDN;
 use A17\CDN\Models\Tag;
+use A17\CDN\Models\Url;
 use A17\CDN\Jobs\StoreTags;
 use Illuminate\Support\Str;
 use A17\CDN\Jobs\InvalidateTags;
@@ -26,19 +27,36 @@ class Tags
         }
     }
 
-    protected function deleteTag(string $tag): void
+    protected function deleteTags($tags): void
     {
-        Tag::where('tag', $tag)->delete();
+        $tags = is_string($tags)
+            ? [$tags]
+            : ($tags = $tags->pluck('tag')->toArray());
+
+        Tag::whereIn('tag', $tags)->update([
+            'obsolete' => false,
+        ]);
+
+        Url::join(
+            'cdn_cache_tags',
+            'cdn_cache_tags.url_id',
+            '=',
+            'cdn_cache_urls.id',
+        )
+            ->whereIn('cdn_cache_tags.tag', $tags)
+            ->update([
+                'was_purged_at' => now(),
+            ]);
     }
 
     /**
      * @param string|null $tag
      * @return mixed
      */
-    protected function getAllTagsForModel(?string $tag)
+    protected function getAllTagsForModel(?string $modelString)
     {
-        if (filled($tag)) {
-            return Tag::where('model', $tag)->get();
+        if (filled($modelString)) {
+            return Tag::where('model', $modelString)->get();
         }
     }
 
@@ -110,14 +128,27 @@ class Tags
         string $tag,
         string $url
     ): void {
-        collect($models)->each(
-            fn(string $model) => Tag::firstOrCreate([
+        collect($models)->each(function (string $model) use ($tag, $url) {
+            $url = Url::firstOrCreate(
+                ['url_hash' => sha1($url)],
+                [
+                    'url' => Str::limit($url, 255),
+                    'hits' => 1,
+                ],
+            );
+
+            if (!$url->wasRecentlyCreated) {
+                $url->hits++;
+
+                $url->save();
+            }
+
+            $tag = Tag::firstOrCreate([
                 'model' => $model,
                 'tag' => $tag,
-                'url' => Str::limit($url, 255),
-                'url_hash' => sha1($url),
-            ]),
-        );
+                'url_id' => $url->id,
+            ]);
+        });
     }
 
     public function invalidateTagsFor(Model $model): void
@@ -131,7 +162,7 @@ class Tags
         }
     }
 
-    public function invalidateCacheTags(array $tags): void
+    public function invalidateCacheTags($tags = null): void
     {
         if (blank($tags)) {
             $this->invalidateObsoleteTags();
@@ -169,8 +200,11 @@ class Tags
     protected function dispatchInvalidations(Collection $tags): void
     {
         if (CDN::cdn()->invalidate($tags)) {
+            // TODO: what happens here on Akamai?
             $this->deleteTags($tags);
         }
+
+        $this->deleteTags($tags); /// TODO: remove this before fixing invaliate
     }
 
     protected function invalidateEntireCache()
@@ -178,10 +212,5 @@ class Tags
         CDN::cdn()->invalidate(
             collect(config('cdn.invalidations.batch.site_roots')),
         );
-    }
-
-    protected function deleteTags(Collection $tags): void
-    {
-        Tag::whereIn('id', $tags->pluck('id')->toArray())->delete();
     }
 }
