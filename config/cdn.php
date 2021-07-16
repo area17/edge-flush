@@ -222,10 +222,7 @@ return [
                 env('AWS_DEFAULT_REGION', 'us-east-1'),
             ),
 
-            'distribution_id' => env(
-                'CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID',
-                env('CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
-            ),
+            'distribution_id' => env('CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
 
             'key' => env('CDN_AWS_CLOUDFRONT_KEY', env('AWS_ACCESS_KEY_ID')),
 
