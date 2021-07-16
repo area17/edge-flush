@@ -74,13 +74,4 @@ class CDN extends BaseService
     {
         return $this->warmer;
     }
-
-    public function match(string $patten, string $string): bool
-    {
-        $patten = str_replace('\\', '_', $patten);
-
-        $string = str_replace('\\', '_', $string);
-
-        return fnmatch($patten, $string);
-    }
 }

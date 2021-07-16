@@ -34,4 +34,13 @@ abstract class BaseService implements ServiceContract
             CDN::tags()->getTagsHash($response),
         );
     }
+
+    public function match(string $patten, string $string): bool
+    {
+        $patten = str_replace('\\', '_', $patten);
+
+        $string = str_replace('\\', '_', $string);
+
+        return fnmatch($patten, $string);
+    }
 }
