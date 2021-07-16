@@ -310,9 +310,10 @@ class CacheControl extends BaseService implements ServiceContract
             return $response;
         }
 
-        collect($response->headers->getCookies())->each(function (
-            $cookie
-        ) use ($response, $strip) {
+        collect($response->headers->getCookies())->each(function ($cookie) use (
+            $response,
+            $strip
+        ) {
             if ($this->matchAny($cookie->getName(), $strip)) {
                 $response->headers->removeCookie($cookie->getName());
             }
