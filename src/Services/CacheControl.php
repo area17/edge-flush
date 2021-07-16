@@ -25,10 +25,12 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
-        return $this->addHeadersToResponse(
-            $response,
-            'cache-control',
-            $this->getCacheStrategy($response),
+        return $this->stripCookies(
+            $this->addHeadersToResponse(
+                $response,
+                'cache-control',
+                $this->getCacheStrategy($response),
+            ),
         );
     }
 
@@ -294,5 +296,28 @@ class CacheControl extends BaseService implements ServiceContract
         return (collect(config('cdn.routes.cachable'))->isEmpty() ||
             collect(config('cdn.routes.cachable'))->contains($filter)) &&
             !collect(config('cdn.routes.not-cachable'))->contains($filter);
+    }
+
+    public function stripCookies($response)
+    {
+        $strip = config('cdn.strip_cookies');
+
+        /**
+         * We only strip cookies from cachable responses because those cookies (potentially logged in users), if cached by the CDN
+         * would be the same for everyone hitting the website.
+         */
+        if (!filled($strip) || !$this->isCachable($response)) {
+            return $response;
+        }
+
+        collect($response->headers->getCookies())->each(function (
+            $cookie
+        ) use ($response, $strip) {
+            if ($this->matchAny($cookie->getName(), $strip)) {
+                $response->headers->removeCookie($cookie->getName());
+            }
+        });
+
+        return $response;
     }
 }

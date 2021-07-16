@@ -35,6 +35,15 @@ abstract class BaseService implements ServiceContract
         );
     }
 
+    public function matchAny(string $string, array $patterns): bool
+    {
+        return collect($patterns)->reduce(
+            fn($matched, $pattern) => $matched ||
+                $this->match($pattern, $string),
+            false,
+        );
+    }
+
     public function match(string $patten, string $string): bool
     {
         $patten = str_replace('\\', '_', $patten);

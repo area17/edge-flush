@@ -271,4 +271,12 @@ return [
 
         'wait_before_warming' => Constants::MINUTE * 2,
     ],
+
+    /**
+     * When a page is to be cached by the CDN this package will strip the following cookies from all responses.
+     */
+    'strip_cookies' => [
+        'XSRF-TOKEN',
+        Str::slug(env('APP_NAME', 'laravel'), '_') . '*',
+    ],
 ];

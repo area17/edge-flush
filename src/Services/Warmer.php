@@ -33,10 +33,7 @@ class Warmer
     public function warm($urls)
     {
         while ($urls->count() > 0) {
-            $chunk = $urls->splice(
-                0,
-                config('cdn.warmer.concurrent_requests'),
-            );
+            $chunk = $urls->splice(0, config('cdn.warmer.concurrent_requests'));
 
             $this->dispatchWarmRequests($chunk);
 
