@@ -115,7 +115,7 @@ class CDNTest extends TestCase
             'strategy 1' => CacheControl::getCacheStrategy($response),
 
             'strategy 2' => CacheControl::setStrategy(
-                'do-not-cache',
+                'micro-cache',
             )->getCacheStrategy($response),
 
             'strategy 3' => CacheControl::setStrategy('api')->getCacheStrategy(

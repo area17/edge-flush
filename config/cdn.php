@@ -32,11 +32,11 @@ return [
      *
      * Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
      *
-     * The default "do-not-cache" strategy takes in consideration that a 5 seconds cache
+     * The default "micro-cache" strategy takes in consideration that a 5 seconds cache
      * is better than NO-CACHE, and if your application gets hit by a DDoS attack
      * only 1 request every 5 seconds (per page) will hit your servers.
      *
-     *  Warning: "cache" and "do-not-cache" strategies are built-in and used by the package.
+     *  Warning: "cache" and "micro-cache" strategies are built-in and used by the package.
      *           Do not delete them.
      *
      * These are the supported directives:
@@ -61,7 +61,9 @@ return [
     'strategies' => [
         'cache' => ['max-age', 'public'], // built-in
 
-        'do-not-cache' => ['max-age=5', 'public'], // built-in
+        'micro-cache' => ['max-age=5', 'public'], // built-in
+
+        'zero-cache' => ['max-age=0', 'no-cache'], // custom
 
         'api' => ['max-age=20', 'public', 'no-store'], // custom
     ],
@@ -137,8 +139,8 @@ return [
     ],
 
     /**
-     * Allowed routes. You can also tell the package if you want to cache nor not cache
-     * routes without names.
+     * Allowed routes. You can also tell the package if you want to cache
+     * routes that have no name.
      */
     'routes' => [
         'cachable' => [],
@@ -146,6 +148,15 @@ return [
         'not-cachable' => ['*.ticket', 'newsletter*', 'api.*'],
 
         'cache_nameless_routes' => true,
+    ],
+
+    /**
+     * Allowed URLs.
+     */
+    'urls' => [
+        'cachable' => ['**/**'],
+
+        'not-cachable' => ['**/debug/**']
     ],
 
     /**
