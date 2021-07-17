@@ -25,12 +25,11 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
+        $strategy = $this->getCacheStrategy($response);
+
         return $this->stripCookies(
-            $this->addHeadersToResponse(
-                $response,
-                'cache-control',
-                $this->getCacheStrategy($response),
-            ),
+            $this->addHeadersToResponse($response, 'cache-control', $strategy),
+            $strategy,
         );
     }
 
@@ -76,7 +75,7 @@ class CacheControl extends BaseService implements ServiceContract
 
         return $this->isCachable($response)
             ? $this->buildStrategy('cache')
-            : $this->buildStrategy('micro-cache');
+            : $this->buildStrategy('dont-cache');
     }
 
     /**
@@ -190,7 +189,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function buildStrategy(string $strategy): string
     {
-        return collect(config("cdn.strategies.$strategy"))
+        return collect($this->getStrategyArray($strategy))
             ->map(
                 fn(string $header) => [
                     'header' => $header,
@@ -312,11 +311,11 @@ class CacheControl extends BaseService implements ServiceContract
         $filter = fn(string $pattern) => CDN::match($pattern, $url);
 
         return (collect(config('cdn.urls.cachable'))->isEmpty() ||
-                collect(config('cdn.urls.cachable'))->contains($filter)) &&
+            collect(config('cdn.urls.cachable'))->contains($filter)) &&
             !collect(config('cdn.urls.not-cachable'))->contains($filter);
     }
 
-    public function stripCookies($response)
+    public function stripCookies($response, $strategy)
     {
         $strip = config('cdn.strip_cookies');
 
@@ -324,7 +323,7 @@ class CacheControl extends BaseService implements ServiceContract
          * We only strip cookies from cachable responses because those cookies (potentially logged in users), if cached by the CDN
          * would be the same for everyone hitting the website.
          */
-        if (!filled($strip) || !$this->isCachable($response)) {
+        if (!filled($strip) || !$this->willBeCached($response, $strategy)) {
             return $response;
         }
 
@@ -338,5 +337,33 @@ class CacheControl extends BaseService implements ServiceContract
         });
 
         return $response;
+    }
+
+    public function getStrategyArray($strategy)
+    {
+        $strategy = config("cdn.built-in-strategies.$strategy", $strategy);
+
+        return config("cdn.strategies.$strategy", []);
+    }
+
+    public function willBeCached($response, $strategy)
+    {
+        return $this->isCachable($response) &&
+            $this->strategyDoesntContainsNoStoreDirectives($strategy);
+    }
+
+    public function strategyDoesntContainsNoStoreDirectives()
+    {
+        return collect(explode(',', $strategy))->reduce(function (
+            $willCache,
+            $element
+        ) {
+            $element = trim($element);
+
+            return $willCache &&
+                $element !== 'max-age=0' &&
+                $element !== 'no-store';
+        },
+        true);
     }
 }

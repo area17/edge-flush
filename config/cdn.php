@@ -12,6 +12,16 @@ return [
     'enabled' => env('CDN_ENABLED', false),
 
     /**
+     * Configure here the default strategies used internally.
+     * You can still manually set the current strategy at run-time.
+     */
+    'built-in-strategies' => [
+        'cache' => 'dynamic',
+
+        'dont-cache' => 'micro',
+    ],
+
+    /**
      * Service classes
      *
      * Supported CDN services: Akamai, CloudFront
@@ -35,10 +45,7 @@ return [
      * The default "micro-cache" strategy takes in consideration that a 5 seconds cache
      * is better than NO-CACHE, and if your application gets hit by a DDoS attack
      * only 1 request every 5 seconds (per page) will hit your servers.
-     *
-     *  Warning: "cache" and "micro-cache" strategies are built-in and used by the package.
-     *           Do not delete them.
-     *
+
      * These are the supported directives:
      *
      *   public
@@ -59,11 +66,11 @@ return [
      *
      */
     'strategies' => [
-        'cache' => ['max-age', 'public'], // built-in
+        'dynamic' => ['max-age', 'public'], // built-in
 
-        'micro-cache' => ['max-age=5', 'public'], // built-in
+        'micro' => ['max-age=5', 'public'], // built-in
 
-        'zero-cache' => ['max-age=0', 'no-cache'], // custom
+        'zero' => ['max-age=0', 'no-cache'], // custom
 
         'api' => ['max-age=20', 'public', 'no-store'], // custom
     ],
@@ -156,7 +163,7 @@ return [
     'urls' => [
         'cachable' => ['**/**'],
 
-        'not-cachable' => ['**/debug/**']
+        'not-cachable' => ['**/debug/**'],
     ],
 
     /**
