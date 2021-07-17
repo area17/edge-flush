@@ -7,17 +7,19 @@
 
 This package was created to help managing CDN granular caching and invalidations. While using Akamai or CloudFront, we usually bust the whole cache when we update something on our backend. This pacakge will do it granularly by doing the following: 
 
-- To allow granular invalidation this package will crete a collection of all models that impacts one page and when one of those models change, all pages that had that model rendered in previous requests will be purged from CDN.
-- Allow granular control of Cache-Control headers: you will be able to configure it differently per request, telling the CDN to store some pages for one week and others for 5 seconds, for example.
-- Allow defining different strategies for Cache-Control: web pages may have a different cache strategy than api endpoints.
+- Granular invalidation this package will create a collection of all models that impacts one page and when one of those models change, all pages that had that model rendered in previous requests will be purged from CDN.
+- Granular control of Cache-Control headers: you will be able to configure it differently per request, telling the CDN to store some pages for one week and others for 5 seconds, for example.
+- Define different strategies for Cache-Control: web pages may have a different cache strategy than api endpoints.
 - Prevents from caching pages containing forms.
 - Caches only frontend pages, leaving the CMS uncashed, if needed.
-- Allow disabling caching for some pages using a middlware.
-- Configure HTTP methods that allow caching or not: cache GET but not POST.
-- Configure HTTP response status codes that allow caching or not: Cache 200 and 301 but not 400+ status codes.
-- Configure what routes can and cannot be cached by CDN.
-- Configure what type of responses can be cached: cache Response but not JsonResponse, for example.
-- Configure what Model classes can be cached or not.  
+- Re-warm pages purged from cache.
+- Strip cookies from cachable responses.
+- Disable caching for some pages using a middlware.
+- Define HTTP methods that allow caching or not: cache GET but not POST.
+- Define HTTP response status codes that allow caching or not: Cache 200 and 301 but not 400+ status codes.
+- Define what routes can and cannot be cached by CDN.
+- Define what type of responses can be cached: cache Response but not JsonResponse, for example.
+- Define what Model classes can be cached or not.  
 - Remember what pages have been cached and command your CDN service to burst only those when you save something on your backend.
 - Supports CloudFront invalidations.
 - Supports Akamai EdgeCacheTags invalidations.
