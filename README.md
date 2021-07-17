@@ -115,6 +115,13 @@ protected function schedule(Schedule $schedule)
 }
 ```
 
+You need to enable the package and the warmer on your `.env` file
+
+``` sh
+CDN_ENABLED=true
+CDN_WARMER_ENABLED=true
+```
+
 ## CDN third-party service configuration
 
 Please check the respective environment variables needed for supported services to work:
