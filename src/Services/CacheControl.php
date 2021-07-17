@@ -61,6 +61,7 @@ class CacheControl extends BaseService implements ServiceContract
             'notValidForm' => $this->doesNotContainAValidForm($response),
             'middlewareAllowCaching' => $this->middlewaresAllowCaching(),
             'routeIsCachable' => $this->routeIsCachable(),
+            'urlIsCachable' => $this->urlIsCachable(),
             'responseIsCachable' => $this->responseIsCachable($response),
             'methodIsCachable' => $this->methodIsCachable(),
             'statusCodeIsCachable' => $this->statusCodeIsCachable($response),
@@ -75,7 +76,7 @@ class CacheControl extends BaseService implements ServiceContract
 
         return $this->isCachable($response)
             ? $this->buildStrategy('cache')
-            : $this->buildStrategy('do-not-cache');
+            : $this->buildStrategy('micro-cache');
     }
 
     /**
@@ -296,6 +297,23 @@ class CacheControl extends BaseService implements ServiceContract
         return (collect(config('cdn.routes.cachable'))->isEmpty() ||
             collect(config('cdn.routes.cachable'))->contains($filter)) &&
             !collect(config('cdn.routes.not-cachable'))->contains($filter);
+    }
+
+    /**
+     * @psalm-suppress PossiblyInvalidMethodCall|PossiblyNullReference
+     */
+    public function urlIsCachable(): bool
+    {
+        $url = request()->url();
+
+        /**
+         * @param callable(string $pattern): boolean $filter
+         */
+        $filter = fn(string $pattern) => CDN::match($pattern, $url);
+
+        return (collect(config('cdn.urls.cachable'))->isEmpty() ||
+                collect(config('cdn.urls.cachable'))->contains($filter)) &&
+            !collect(config('cdn.urls.not-cachable'))->contains($filter);
     }
 
     public function stripCookies($response)
