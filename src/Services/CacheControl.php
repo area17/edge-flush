@@ -352,7 +352,7 @@ class CacheControl extends BaseService implements ServiceContract
             $this->strategyDoesntContainsNoStoreDirectives($strategy);
     }
 
-    public function strategyDoesntContainsNoStoreDirectives()
+    public function strategyDoesntContainsNoStoreDirectives($strategy)
     {
         return collect(explode(',', $strategy))->reduce(function (
             $willCache,
