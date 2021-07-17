@@ -203,8 +203,6 @@ class Tags
             // TODO: what happens here on Akamai?
             $this->deleteTags($tags);
         }
-
-        $this->deleteTags($tags); /// TODO: remove this before fixing invaliate
     }
 
     protected function invalidateEntireCache()

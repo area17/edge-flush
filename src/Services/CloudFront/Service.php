@@ -81,15 +81,15 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    /**
-     * @param array $paths
-     * @return mixed
-     */
-    protected function createInvalidationRequest(array $paths = [])
+    protected function createInvalidationRequest(array $paths = []): bool
     {
-        if (count($paths) > 0) {
-            try {
-                $result = $this->client->createInvalidation([
+        if (count($paths) === 0) {
+            return false;
+        }
+
+        try {
+            $result = $this->client->createInvalidation(
+                dd([
                     'DistributionId' => $this->getDistributionId(),
                     'InvalidationBatch' => [
                         'Paths' => [
@@ -98,18 +98,18 @@ class Service extends BaseService implements CDNService
                         ],
                         'CallerReference' => time(),
                     ],
-                ]);
-            } catch (\Exception $e) {
-                Log::error(
-                    'CDN: CloudFront invalidation request failed: ' .
-                        $e->getMessage(),
-                );
+                ]),
+            );
+        } catch (\Exception $e) {
+            Log::error(
+                'CDN: CloudFront invalidation request failed: ' .
+                    $e->getMessage(),
+            );
 
-                return false;
-            }
-
-            return $result;
+            return false;
         }
+
+        return filled($result);
     }
 
     protected function instantiate(): void
