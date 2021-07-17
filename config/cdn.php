@@ -270,7 +270,8 @@ return [
     ],
 
     /**
-     * When a page is to be cached by the CDN this package will strip the following cookies from all responses.
+     * When a page is to be cached by the CDN this package will strip the following
+     * cookies from all responses.
      */
     'strip_cookies' => [
         'XSRF-TOKEN',
