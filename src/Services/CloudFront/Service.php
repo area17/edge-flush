@@ -4,6 +4,8 @@ namespace A17\CDN\Services\CloudFront;
 
 use A17\CDN\CDN;
 use Aws\AwsClient;
+use A17\CDN\Models\Tag;
+use A17\CDN\Models\Url;
 use A17\CDN\Services\BaseService;
 use A17\CDN\Contracts\CDNService;
 use Illuminate\Support\Collection;
@@ -25,7 +27,7 @@ class Service extends BaseService implements CDNService
     public function invalidate(Collection $items): bool
     {
         $items = collect($items)
-            ->map(fn($item) => is_object($item) ? $item->url : $item)
+            ->map(fn($item) => $this->getInvalidationPath($item))
             ->unique()
             ->toArray();
 
@@ -88,18 +90,16 @@ class Service extends BaseService implements CDNService
         }
 
         try {
-            $result = $this->client->createInvalidation(
-                dd([
-                    'DistributionId' => $this->getDistributionId(),
-                    'InvalidationBatch' => [
-                        'Paths' => [
-                            'Quantity' => count($paths),
-                            'Items' => $paths,
-                        ],
-                        'CallerReference' => time(),
+            $result = $this->client->createInvalidation([
+                'DistributionId' => $this->getDistributionId(),
+                'InvalidationBatch' => [
+                    'Paths' => [
+                        'Quantity' => count($paths),
+                        'Items' => $paths,
                     ],
-                ]),
-            );
+                    'CallerReference' => time(),
+                ],
+            ]);
         } catch (\Exception $e) {
             Log::error(
                 'CDN: CloudFront invalidation request failed: ' .
@@ -115,5 +115,18 @@ class Service extends BaseService implements CDNService
     protected function instantiate(): void
     {
         $this->client = static::getClient();
+    }
+
+    public function getInvalidationPath($item)
+    {
+        $url = $item instanceof Url ? $item->url : $item->url->url ?? null;
+
+        if (!is_string($url)) {
+            return null;
+        }
+
+        $url = parse_url($url);
+
+        return $url['path'] ?? '/';
     }
 }
