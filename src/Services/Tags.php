@@ -239,4 +239,27 @@ class Tags
 
         return true;
     }
+
+    public function invalidateAll()
+    {
+        $count = 0;
+
+        do {
+            if ($count++ > 0) {
+                sleep(2);
+            }
+
+            if ($success = CDN::cdn()->invalidateAll()) {
+                break;
+            }
+        } while ($count < 3);
+
+        if ($success) {
+            Tag::truncate();
+
+            Url::whereNotNull('id')->update([
+                'was_purged_at' => now(),
+            ]);
+        }
+    }
 }

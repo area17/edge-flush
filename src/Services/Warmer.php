@@ -61,8 +61,16 @@ class Warmer
 
     protected function dispatchWarmRequests($urls)
     {
+        //        Promise::inspectAll(
+        //            $urls->map(fn($url) => $this->guzzle->getAsync($url->url)),
+        //        );
+
         Promise::inspectAll(
-            $urls->map(fn($url) => $this->guzzle->getAsync($url->url)),
+            $urls->map(function ($url) {
+                info(['warming', $url->url]);
+
+                return $this->guzzle->getAsync($url->url);
+            }),
         );
     }
 

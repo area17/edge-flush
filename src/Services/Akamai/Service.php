@@ -50,6 +50,13 @@ class Service extends BaseService implements CDNService
         return true;
     }
 
+    public function invalidateAll(): bool
+    {
+        return $this->createInvalidationRequest(
+            config('cdn.services.akamai.invalidate_all_paths'),
+        );
+    }
+
     /**
      * @param mixed $body
      * @return string

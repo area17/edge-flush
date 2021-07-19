@@ -230,6 +230,7 @@ return [
             'access_token' => env('CDN_AKAMAI_ACCESS_TOKEN'),
             'client_token' => env('CDN_AKAMAI_CLIENT_TOKEN'),
             'client_secret' => env('CDN_AKAMAI_CLIENT_SECRET'),
+            'invalidate_all_paths' => ['*'],
         ],
 
         'cloud_front' => [
@@ -248,6 +249,8 @@ return [
                 'CDN_AWS_CLOUDFRONT_SECRET',
                 env('AWS_SECRET_ACCESS_KEY'),
             ),
+
+            'invalidate_all_paths' => ['/*'],
         ],
     ],
 

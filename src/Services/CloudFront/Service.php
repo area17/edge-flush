@@ -34,17 +34,11 @@ class Service extends BaseService implements CDNService
         return $this->createInvalidationRequest($items);
     }
 
-    protected function dispatchInvalidation(): void
+    public function invalidateAll(): bool
     {
-        if (!$this->hasInProgressInvalidation()) {
-            if (!$this->createInvalidationRequest(['/*'])) {
-                Log::debug('Cloudfront invalidation request failed');
-            }
-        } else {
-            Log::debug(
-                'Cloudfront : there are already some invalidations in progress',
-            );
-        }
+        return $this->createInvalidationRequest(
+            config('cdn.services.cloud_front.invalidate_all_paths'),
+        );
     }
 
     protected function getDistributionId(): ?string
