@@ -57,12 +57,11 @@ class CacheControl extends BaseService implements ServiceContract
         return collect([
             'enabled' => CDN::enabled(),
             'isFrontend' => $this->isFrontend(),
-            'notValidForm' => $this->doesNotContainAValidForm($response),
+            'notValidForm' => $this->doesNotContainsAValidForm($response),
             'middlewareAllowCaching' => $this->middlewaresAllowCaching(),
             'routeIsCachable' => $this->routeIsCachable(),
             'urlIsCachable' => $this->urlIsCachable(),
             'responseIsCachable' => $this->responseIsCachable($response),
-            'methodIsCachable' => $this->methodIsCachable(),
             'statusCodeIsCachable' => $this->statusCodeIsCachable($response),
         ]);
     }
@@ -73,9 +72,17 @@ class CacheControl extends BaseService implements ServiceContract
             return $this->buildStrategy($this->strategy);
         }
 
+        if (!$this->methodIsCachable()) {
+            return $this->buildStrategy('zero-cache');
+        }
+
+        if ($this->containsValidForm($response)) {
+            return $this->buildStrategy('zero-cache');
+        }
+
         return $this->isCachable($response)
             ? $this->buildStrategy('cache')
-            : $this->buildStrategy('dont-cache');
+            : $this->buildStrategy('micro-cache');
     }
 
     /**
@@ -103,7 +110,7 @@ class CacheControl extends BaseService implements ServiceContract
         return $this->getDefaultMaxAge();
     }
 
-    protected function doesNotContainAValidForm(Response $response): bool
+    protected function containsValidForm(Response $response): bool
     {
         $hasForm = false;
 
@@ -120,7 +127,7 @@ class CacheControl extends BaseService implements ServiceContract
             }, true);
         }
 
-        return !$hasForm;
+        return $hasForm;
     }
 
     /**

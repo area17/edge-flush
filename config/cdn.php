@@ -18,7 +18,9 @@ return [
     'built-in-strategies' => [
         'cache' => 'dynamic',
 
-        'dont-cache' => 'micro',
+        'micro-cache' => 'micro',
+
+        'zero-cache' => 'micro',
     ],
 
     /**
@@ -70,7 +72,7 @@ return [
 
         'micro' => ['max-age=5', 'public'], // built-in
 
-        'zero' => ['max-age=0', 'no-cache'], // custom
+        'zero' => ['max-age=0', 'no-store'], // built-in
 
         'api' => ['max-age=20', 'public', 'no-store'], // custom
     ],
