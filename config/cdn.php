@@ -20,7 +20,7 @@ return [
 
         'micro-cache' => 'micro',
 
-        'zero-cache' => 'micro',
+        'zero-cache' => 'zero',
     ],
 
     /**
