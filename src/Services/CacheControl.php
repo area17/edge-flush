@@ -57,7 +57,8 @@ class CacheControl extends BaseService implements ServiceContract
         return collect([
             'enabled' => CDN::enabled(),
             'isFrontend' => $this->isFrontend(),
-            'notValidForm' => $this->doesNotContainsAValidForm($response),
+            'notValidForm' => !$this->containsValidForm($response),
+            'methodIsCachable' => $this->methodIsCachable($response),
             'middlewareAllowCaching' => $this->middlewaresAllowCaching(),
             'routeIsCachable' => $this->routeIsCachable(),
             'urlIsCachable' => $this->urlIsCachable(),
