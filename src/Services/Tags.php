@@ -7,10 +7,12 @@ use A17\CDN\Models\Tag;
 use A17\CDN\Models\Url;
 use A17\CDN\Jobs\StoreTags;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use A17\CDN\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\ResponseCache\ResponseCache;
 use Symfony\Component\HttpFoundation\Response;
 
 class Tags
@@ -79,9 +81,33 @@ class Tags
     /**
      * @psalm-suppress UndefinedInterfaceMethod
      */
-    public function getTagsHash(Response $response)
+    public function getTagsHash(Response $response, Request $request)
     {
-        $models = $this->getTags();
+        $tag = $this->makeEdgeTag($models = $this->getTags());
+
+        if (CDN::cacheControl()->isCachable($response)) {
+            StoreTags::dispatch(
+                $models,
+                [
+                    'cdn' => $tag,
+
+                    'response_cache' => CDN::responseCache()->makeResponseCacheTag(
+                        CDN::getRequest(),
+                    ),
+                ],
+                url()->full(),
+            );
+        }
+
+        return $tag;
+    }
+
+    /**
+     * @psalm-suppress UndefinedInterfaceMethod
+     */
+    public function makeEdgeTag($models = null)
+    {
+        $models ??= $this->getTags();
 
         /**
          * @psalm-suppress InvalidScalarArgument
@@ -91,10 +117,6 @@ class Tags
             [app()->environment(), sha1(collect($models)->join(', '))],
             config('cdn.tags.format'),
         );
-
-        if (CDN::cacheControl()->isCachable($response)) {
-            StoreTags::dispatch($models, $tag, url()->full());
-        }
 
         return $tag;
     }
@@ -131,10 +153,10 @@ class Tags
 
     public function storeCacheTags(
         array $models,
-        string $tag,
+        array $tags,
         string $url
     ): void {
-        collect($models)->each(function (string $model) use ($tag, $url) {
+        collect($models)->each(function (string $model) use ($tags, $url) {
             $url = Url::firstOrCreate(
                 ['url_hash' => sha1($url)],
                 [
@@ -151,7 +173,8 @@ class Tags
 
             $tag = Tag::firstOrCreate([
                 'model' => $model,
-                'tag' => $tag,
+                'tag' => $tags['cdn'],
+                'response_cache_hash' => $tags['response_cache'],
                 'url_id' => $url->id,
             ]);
         });
@@ -205,6 +228,8 @@ class Tags
 
     protected function dispatchInvalidations(Collection $tags): void
     {
+        CDN::responseCache()->invalidate($tags);
+
         if (CDN::cdn()->invalidate($tags)) {
             // TODO: what happens here on Akamai?
             $this->deleteTags($tags);

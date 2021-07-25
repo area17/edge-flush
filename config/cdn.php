@@ -37,6 +37,8 @@ return [
         'tags' => A17\CDN\Services\Tags::class,
 
         'warmer' => A17\CDN\Services\Warmer::class,
+
+        'response-cache' => A17\CDN\Services\ResponseCache\Service::class,
     ],
 
     /**

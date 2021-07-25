@@ -31,7 +31,7 @@ abstract class BaseService implements ServiceContract
         return $this->addHeadersToResponse(
             $response,
             'tags',
-            CDN::tags()->getTagsHash($response),
+            CDN::tags()->getTagsHash($response, CDN::getRequest()),
         );
     }
 

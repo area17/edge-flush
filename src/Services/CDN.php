@@ -3,7 +3,9 @@
 namespace A17\CDN\Services;
 
 use Faker\Provider\Base;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use A17\CDN\Services\ResponseCache\Service as ResponseCache;
 
 class CDN extends BaseService
 {
@@ -15,13 +17,18 @@ class CDN extends BaseService
 
     public Warmer $warmer;
 
+    public ResponseCache $responseCache;
+
+    public Request $request;
+
     public bool $enabled;
 
     public function __construct(
         BaseService $cdnService,
         CacheControl $cacheControl,
         Tags $tags,
-        Warmer $warmer
+        Warmer $warmer,
+        ResponseCache $responseCache
     ) {
         $this->cdnService = $cdnService;
 
@@ -30,6 +37,8 @@ class CDN extends BaseService
         $this->tags = $tags;
 
         $this->warmer = $warmer;
+
+        $this->responseCache = $responseCache;
 
         $this->enabled = config('cdn.enabled', true);
     }
@@ -46,7 +55,7 @@ class CDN extends BaseService
         }
 
         return $this->cacheControl->makeResponse(
-            $this->cdnService->makeResponse($response),
+            $this->cdnService->makeResponse($response)
         );
     }
 
@@ -73,5 +82,22 @@ class CDN extends BaseService
     public function warmer(): Warmer
     {
         return $this->warmer;
+    }
+
+    public function responseCache(): ResponseCache
+    {
+        return $this->responseCache;
+    }
+
+    public function setRequest(Request $request): self
+    {
+        $this->request = $request;
+
+        return $this;
+    }
+
+    public function getRequest()
+    {
+        return $this->request;
     }
 }

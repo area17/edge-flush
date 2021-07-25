@@ -9,7 +9,7 @@ class Tag extends Model
 {
     protected $table = 'cdn_cache_tags';
 
-    protected $fillable = ['model', 'tag', 'url_id'];
+    protected $fillable = ['model', 'tag', 'url_id', 'response_cache_hash'];
 
     protected $with = ['url'];
 

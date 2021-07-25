@@ -16,18 +16,18 @@ class StoreTags implements ShouldQueue
 
     public array $models;
 
-    public string $tag;
+    public array $tags;
 
     public string $url;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(array $models, string $tag, string $url)
+    public function __construct(array $models, array $tags, string $url)
     {
         $this->models = $models;
 
-        $this->tag = $tag;
+        $this->tags = $tags;
 
         $this->url = $url;
     }
@@ -39,6 +39,6 @@ class StoreTags implements ShouldQueue
      */
     public function handle()
     {
-        CDN::tags()->storeCacheTags($this->models, $this->tag, $this->url);
+        CDN::tags()->storeCacheTags($this->models, $this->tags, $this->url);
     }
 }

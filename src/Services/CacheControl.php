@@ -4,6 +4,7 @@ namespace A17\CDN\Services;
 
 use A17\CDN\CDN;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use A17\CDN\Support\Constants;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
@@ -163,7 +164,7 @@ class CacheControl extends BaseService implements ServiceContract
      */
     protected function middlewaresAllowCaching(): bool
     {
-        $middleware = blank($route = request()->route())
+        $middleware = blank($route = CDN::getRequest()->route())
             ? 'no-middleware'
             : $route->action['middleware'] ?? null;
 
@@ -265,10 +266,10 @@ class CacheControl extends BaseService implements ServiceContract
     {
         return (collect(config('cdn.methods.cachable'))->isEmpty() ||
             collect(config('cdn.methods.cachable'))->contains(
-                request()->getMethod(),
+                CDN::getRequest()->getMethod(),
             )) &&
             !collect(config('cdn.methods.not-cachable'))->contains(
-                request()->getMethod(),
+                CDN::getRequest()->getMethod(),
             );
     }
 
@@ -288,7 +289,7 @@ class CacheControl extends BaseService implements ServiceContract
      */
     public function routeIsCachable(): bool
     {
-        $route = request()->route();
+        $route = CDN::getRequest()->route();
 
         $route = filled($route) ? $route->getName() : null;
 
@@ -311,7 +312,7 @@ class CacheControl extends BaseService implements ServiceContract
      */
     public function urlIsCachable(): bool
     {
-        $url = request()->url();
+        $url = CDN::getRequest()->url();
 
         /**
          * @param callable(string $pattern): boolean $filter
@@ -354,8 +355,10 @@ class CacheControl extends BaseService implements ServiceContract
         return config("cdn.strategies.$strategy", []);
     }
 
-    public function willBeCached($response, $strategy)
+    public function willBeCached($response = null, $strategy = null)
     {
+        $strategy ??= $this->getCacheStrategy($response);
+
         return $this->isCachable($response) &&
             $this->strategyDoesntContainsNoStoreDirectives($strategy);
     }

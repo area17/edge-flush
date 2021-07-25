@@ -17,6 +17,6 @@ class Middleware
     {
         $response = $next($request);
 
-        return CDN::makeResponse($response);
+        return CDN::setRequest($request)->makeResponse($response);
     }
 }

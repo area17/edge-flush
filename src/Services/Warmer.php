@@ -67,8 +67,6 @@ class Warmer
 
         Promise::inspectAll(
             $urls->map(function ($url) {
-                info(['warming', $url->url]);
-
                 return $this->guzzle->getAsync($url->url);
             }),
         );

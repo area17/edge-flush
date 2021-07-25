@@ -56,6 +56,7 @@ class ServiceProvider extends IlluminateServiceProvider
                 $app->make(config('cdn.classes.cache-control')),
                 $app->make(config('cdn.classes.tags')),
                 $app->make(config('cdn.classes.warmer')),
+                $app->make(config('cdn.classes.response-cache')),
             );
         });
     }
