@@ -24,6 +24,7 @@ This package was created to help managing CDN granular caching and invalidations
 - Supports CloudFront invalidations.
 - Supports Akamai EdgeCacheTags invalidations.
 - Allow override of Services and easy implementation to support new CDN Services.
+- Spatie's Laravel Response Cache granular invalidations.
 
 ## Installation
 
@@ -143,6 +144,10 @@ protected function schedule(Schedule $schedule)
 ```
 
 Note that the most hit (or frequently updated) pages will be warmed first. 
+
+## Laravel Response Cache integration
+
+If you have Response Cache installed, this package will automatically store its tags per page and when a model is changed it will not only purge the CDN pages related to this page but also bust the Response Cache internal cache. After, when the warmer passes back to warm those pages, Response Cache should also cache those pages again. This ensures that even if CDN hits your origin from a different not-yet-cached-region, responses will be still be blazing fast.
 
 ## Changelog
 
