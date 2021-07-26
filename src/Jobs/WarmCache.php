@@ -1,8 +1,8 @@
 <?php
 
-namespace A17\CDN\Jobs;
+namespace A17\EdgeFlush\Jobs;
 
-use A17\CDN\CDN;
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Collection;
 use Illuminate\Queue\SerializesModels;
@@ -21,6 +21,6 @@ class WarmCache implements ShouldQueue
      */
     public function handle()
     {
-        CDN::warmer()->execute();
+        EdgeFlush::warmer()->execute();
     }
 }

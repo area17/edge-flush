@@ -1,8 +1,8 @@
 <?php
 
-namespace A17\CDN\Tests;
+namespace A17\EdgeFlush\Tests;
 
-use A17\CDN\ServiceProvider;
+use A17\EdgeFlush\ServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -13,7 +13,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn(string $modelName) => 'A17\\CDN\\Database\\Factories\\' .
+            fn(string $modelName) => 'A17\\EdgeFlush\\Database\\Factories\\' .
                 class_basename($modelName) .
                 'Factory',
         );

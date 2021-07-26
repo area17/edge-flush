@@ -1,10 +1,10 @@
 <?php
 
-namespace A17\CDN\Services;
+namespace A17\EdgeFlush\Services;
 
-use A17\CDN\CDN;
-use A17\CDN\Models\Tag;
-use A17\CDN\Models\Url;
+use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Tag;
+use A17\EdgeFlush\Models\Url;
 use GuzzleHttp\Client as Guzzle;
 use SebastianBergmann\Timer\Timer;
 use GuzzleHttp\Promise\Utils as Promise;
@@ -16,8 +16,8 @@ class Warmer
     public function __construct()
     {
         $this->guzzle = new Guzzle([
-            'timeout' => config('cdn.warmer.connection_timeout') / 1000, // Guzzle expects seconds
-            'connect_timeout' => config('cdn.warmer.connection_timeout'),
+            'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+            'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
         ]);
     }
 
@@ -33,7 +33,7 @@ class Warmer
     public function warm($urls)
     {
         while ($urls->count() > 0) {
-            $chunk = $urls->splice(0, config('cdn.warmer.concurrent_requests'));
+            $chunk = $urls->splice(0, config('edge-flush.warmer.concurrent_requests'));
 
             $this->dispatchWarmRequests($chunk);
 
@@ -43,7 +43,7 @@ class Warmer
 
     public function enabled()
     {
-        return CDN::enabled() && config('cdn.warmer.enabled');
+        return EdgeFlush::enabled() && config('edge-flush.warmer.enabled');
     }
 
     public function getColdUrls()
@@ -52,9 +52,9 @@ class Warmer
             ->where(
                 'was_purged_at',
                 '<',
-                now()->subMillis(config('cdn.warmer.wait_before_warming')),
+                now()->subMillis(config('edge-flush.warmer.wait_before_warming')),
             )
-            ->take(config('cdn.warmer.max_urls'))
+            ->take(config('edge-flush.warmer.max_urls'))
             ->orderBy('hits', 'desc')
             ->get();
     }

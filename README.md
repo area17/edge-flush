@@ -1,14 +1,17 @@
-# Laravel CDN Cache Control and Invalidations
+# EdgeFlush
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/area17/cdn.svg?style=flat-square)](https://packagist.org/packages/area17/cdn)
-[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/area17/cdn/run-tests?label=tests)](https://github.com/area17/cdn/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/area17/cdn/Check%20&%20fix%20styling?label=code%20style)](https://github.com/area17/cdn/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/area17/cdn.svg?style=flat-square)](https://packagist.org/packages/area17/cdn)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/area17/edge-flush.svg?style=flat-square)](https://packagist.org/packages/area17/edge-flush)
+[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/run-tests?label=tests)](https://github.com/area17/edge-flush/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/Check%20&%20fix%20styling?label=code%20style)](https://github.com/area17/edge-flush/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/area17/edge-flush.svg?style=flat-square)](https://packagist.org/packages/area17/edge-flush)
 
-This package was created to help managing CDN granular caching and invalidations. While using Akamai or CloudFront, we usually bust the whole cache when we update something on our backend. This pacakge will do it granularly by doing the following: 
+EdgeFlush is Laravel package intended to help developers manage CDN granular caching and invalidations. Having Akamai, CloudFront (or any other CDN) in front of a website, data modification usually forces us to bust the whole cache, leading to a website slow (for the first users) until the whole cache is rebuilt, and if the "first user" is Google Bot, for example, this can also impact on your website's rank. This pacakge aims to do invalidations granularly. 
 
-- Granular invalidation this package will create a collection of all models that impacts one page and when one of those models change, all pages that had that model rendered in previous requests will be purged from CDN.
+## Feature list 
+
+- Granular invalidation: this package will create a collection of all models that impacts one page and when one of those models change, all pages that had that model rendered in previous requests will be purged from CDN.
 - Granular control of Cache-Control headers: you will be able to configure it differently per request, telling the CDN to store some pages for one week and others for 5 seconds, for example.
+- Single Akamai Edge Cache Tag relating to all models touched by a page render.
 - Define different strategies for Cache-Control: web pages may have a different cache strategy than api endpoints.
 - Prevents from caching pages containing forms.
 - Caches only frontend pages, leaving the CMS uncashed, if needed.
@@ -31,13 +34,13 @@ This package was created to help managing CDN granular caching and invalidations
 You can install the package via composer:
 
 ```bash
-composer require area17/cdn
+composer require area17/edge-flush
 ```
 
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --provider="A17\CDN\ServiceProvider"
+php artisan vendor:publish --provider="A17\EdgeFlush\ServiceProvider"
 ```
 
 And run the migrations:
@@ -58,19 +61,19 @@ CloudFront: aws/aws-sdk-php
 
 ## Usage
 
-Do a full read on the `config/cdn.php` there's a lot of configuration items and we tried to document them all.
+Do a full read on the `config/edge-flush.php` there's a lot of configuration items and we tried to document them all.
 
-Define your CDN service class on `config/cdn.php`:
+Define your CDN service class on `config/edge-flush.php`:
 
 ``` php
 'classes' => [
-    'cdn' => A17\CDN\Services\CloudFront\Service::class,
+    'cdn' => A17\EdgeFlush\Services\CloudFront\Service::class,
     
     ...
 ]
 ```
 
-Add the trait `A17\CDN\Behaviours\CachedOnCDN` to your models and repositories.
+Add the trait `A17\EdgeFlush\Behaviours\CachedOnCDN` to your models and repositories.
 
 Call `$this->invalidateCDNCache($model)` every time a model (on your base model or repository save() method). This example takes in consideration [Twill's](https://twill.io/) repositories:
 
@@ -98,7 +101,7 @@ Add the Middlware to the `Kernel.php` file:
 
 ```
 protected $middleware = [
-    \A17\CDN\Middleware::class,
+    \A17\EdgeFlush\Middleware::class,
     ...
 ];
 ```
@@ -129,8 +132,8 @@ CDN_WARMER_ENABLED=true
 
 Please check the respective environment variables needed for supported services to work:
 
-- [Akamai](https://github.com/area17/cdn/blob/unstable/config/cdn.php#L188)
-- [CloudFront](https://github.com/area17/cdn/blob/unstable/config/cdn.php#L195)
+- [Akamai](https://github.com/area17/edge-flush/blob/unstable/config/edge-flush.php#L188)
+- [CloudFront](https://github.com/area17/edge-flush/blob/unstable/config/edge-flush.php#L195)
 
 ## Rewarming cache
 
@@ -144,6 +147,14 @@ protected function schedule(Schedule $schedule)
 ```
 
 Note that the most hit (or frequently updated) pages will be warmed first. 
+
+## Akamai Edge Cache Tags
+
+Akamai has a 128 bytes limit for the tag list, so if one page is impacted by lots of models, we would have no other way than busting the whole cache every time. This package creates a single Edge Cache Tag that relates to all models touched when the page was rendered, and adds it yo the response header:
+
+```
+edge-cache-tag: app-production-7e0ae085d699003a64e5fa7b75daae3d78ace842
+```
 
 ## Laravel Response Cache integration
 

@@ -1,15 +1,15 @@
 <?php
 
-namespace A17\CDN\Services;
+namespace A17\EdgeFlush\Services;
 
 use Faker\Provider\Base;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use A17\CDN\Services\ResponseCache\Service as ResponseCache;
+use A17\EdgeFlush\Services\ResponseCache\Service as ResponseCache;
 
-class CDN extends BaseService
+class EdgeFlush extends BaseService
 {
-    public BaseService $cdnService;
+    public BaseService $cdn;
 
     public CacheControl $cacheControl;
 
@@ -24,13 +24,13 @@ class CDN extends BaseService
     public bool $enabled;
 
     public function __construct(
-        BaseService $cdnService,
+        BaseService $cdn,
         CacheControl $cacheControl,
         Tags $tags,
         Warmer $warmer,
         ResponseCache $responseCache
     ) {
-        $this->cdnService = $cdnService;
+        $this->cdn = $cdn;
 
         $this->cacheControl = $cacheControl;
 
@@ -40,7 +40,7 @@ class CDN extends BaseService
 
         $this->responseCache = $responseCache;
 
-        $this->enabled = config('cdn.enabled', true);
+        $this->enabled = config('edge-flush.enabled', true);
     }
 
     public function enabled(): bool
@@ -55,7 +55,7 @@ class CDN extends BaseService
         }
 
         return $this->cacheControl->makeResponse(
-            $this->cdnService->makeResponse($response)
+            $this->cdn->makeResponse($response)
         );
     }
 
@@ -66,7 +66,7 @@ class CDN extends BaseService
 
     public function cdn(): BaseService
     {
-        return $this->cdnService;
+        return $this->cdn;
     }
 
     public function cacheControl(): CacheControl

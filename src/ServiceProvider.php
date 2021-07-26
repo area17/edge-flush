@@ -1,10 +1,10 @@
 <?php
 
-namespace A17\CDN;
+namespace A17\EdgeFlush;
 
-use A17\CDN\Services\CDN;
-use A17\CDN\Services\CacheControl;
-use A17\CDN\Exceptions\CDN as CDNException;
+use A17\EdgeFlush\Services\EdgeFlush;
+use A17\EdgeFlush\Services\CacheControl;
+use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushxception;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
 class ServiceProvider extends IlluminateServiceProvider
@@ -27,7 +27,7 @@ class ServiceProvider extends IlluminateServiceProvider
     {
         $this->publishes(
             [
-                __DIR__ . '/../config/cdn.php' => config_path('cdn.php'),
+                __DIR__ . '/../config/edge-flush.php' => config_path('edge-flush.php'),
             ],
             'config',
         );
@@ -35,28 +35,28 @@ class ServiceProvider extends IlluminateServiceProvider
 
     protected function mergeConfig(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/cdn.php', 'cdn');
+        $this->mergeConfigFrom(__DIR__ . '/../config/edge-flush.php', 'edge-flush');
     }
 
     public function configureContainer(): void
     {
-        $this->app->singleton('a17.cdn.service', function ($app) {
-            $service = config('cdn.classes.cdn');
+        $this->app->singleton('a17.edge-flush.service', function ($app) {
+            $service = config('edge-flush.classes.cdn');
 
             if (blank($service)) {
-                CDNException::missingService($service);
+                EdgeFlushxception::missingService($service);
             }
 
             if (!class_exists($service)) {
-                CDNException::classNotFound($service);
+                EdgeFlushxception::classNotFound($service);
             }
 
-            return new CDN(
+            return new EdgeFlush(
                 app($service),
-                $app->make(config('cdn.classes.cache-control')),
-                $app->make(config('cdn.classes.tags')),
-                $app->make(config('cdn.classes.warmer')),
-                $app->make(config('cdn.classes.response-cache')),
+                $app->make(config('edge-flush.classes.cache-control')),
+                $app->make(config('edge-flush.classes.tags')),
+                $app->make(config('edge-flush.classes.warmer')),
+                $app->make(config('edge-flush.classes.response-cache')),
             );
         });
     }

@@ -1,12 +1,11 @@
 <?php
 
-namespace A17\CDN\Services\Akamai;
+namespace A17\EdgeFlush\Services\Akamai;
 
-use A17\CDN\CDN;
-use A17\CDN\Services\BaseService;
-use A17\CDN\Contracts\CDNService;
+use A17\EdgeFlush\Services\BaseService;
+use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
-use A17\CDN\Services\TagsContainer;
+use A17\EdgeFlush\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +25,7 @@ class Service extends BaseService implements CDNService
      */
     protected function getHost(): ?string
     {
-        return config('cdn.services.akamai.host');
+        return config('edge-flush.services.akamai.host');
     }
 
     public function getInvalidationURL(): string
@@ -52,8 +51,8 @@ class Service extends BaseService implements CDNService
 
     public function invalidateAll(): bool
     {
-        return $this->createInvalidationRequest(
-            config('cdn.services.akamai.invalidate_all_paths'),
+        return $this->invalidate(
+            config('edge-flush.services.akamai.invalidate_all_paths'),
         );
     }
 
@@ -72,9 +71,9 @@ class Service extends BaseService implements CDNService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            config('cdn.services.akamai.client_token'),
-            config('cdn.services.akamai.client_secret'),
-            config('cdn.services.akamai.access_token'),
+            config('edge-flush.services.akamai.client_token'),
+            config('edge-flush.services.akamai.client_secret'),
+            config('edge-flush.services.akamai.access_token'),
         );
 
         $auth->setPath($this->getApiPath());

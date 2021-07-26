@@ -1,9 +1,9 @@
 <?php
 
-namespace A17\CDN\Tests;
+namespace A17\EdgeFlush\Tests;
 
-use A17\CDN\CDN;
-use A17\CDN\CacheControl;
+use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\CacheControl;
 
 class CDNTest extends TestCase
 {
@@ -88,13 +88,13 @@ class CDNTest extends TestCase
     public function getValues($response)
     {
         return [
-            'enabled' => CDN::enabled(),
+            'enabled' => EdgeFlush::enabled(),
 
             'isCachable' => CacheControl::isCachable($response),
 
             'routeIsCachable' => CacheControl::routeIsCachable(),
 
-            'enabled' => CDN::enabled(),
+            'enabled' => EdgeFlush::enabled(),
 
             'max-age 1' => CacheControl::getMaxAge(),
 

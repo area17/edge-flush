@@ -1,13 +1,13 @@
 <?php
 
-namespace A17\CDN\Models;
+namespace A17\EdgeFlush\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Tag extends Model
 {
-    protected $table = 'cdn_cache_tags';
+    protected $table = 'edge_flush_tags';
 
     protected $fillable = ['model', 'tag', 'url_id', 'response_cache_hash'];
 

@@ -1,15 +1,15 @@
 <?php
 
-namespace A17\CDN\Behaviours;
+namespace A17\EdgeFlush\Behaviours;
 
-use A17\CDN\CDN;
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Database\Eloquent\Model;
 
 trait CachedOnCDN
 {
     public function invalidateCDNCache(Model $model): void
     {
-        CDN::tags()->invalidateTagsFor($model);
+        EdgeFlush::tags()->invalidateTagsFor($model);
     }
 
     public function getCDNCacheTag(): string
@@ -21,6 +21,6 @@ trait CachedOnCDN
 
     public function cacheModelOnCDN(Model $model): void
     {
-        CDN::tags()->addTag($model);
+        EdgeFlush::tags()->addTag($model);
     }
 }

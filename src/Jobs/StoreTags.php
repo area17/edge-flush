@@ -1,8 +1,8 @@
 <?php
 
-namespace A17\CDN\Jobs;
+namespace A17\EdgeFlush\Jobs;
 
-use A17\CDN\CDN;
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Collection;
 use Illuminate\Queue\SerializesModels;
@@ -39,6 +39,6 @@ class StoreTags implements ShouldQueue
      */
     public function handle()
     {
-        CDN::tags()->storeCacheTags($this->models, $this->tags, $this->url);
+        EdgeFlush::tags()->storeCacheTags($this->models, $this->tags, $this->url);
     }
 }

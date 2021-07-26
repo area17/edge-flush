@@ -1,6 +1,6 @@
 <?php
 
-namespace A17\CDN\Database\Factories;
+namespace A17\EdgeFlush\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 

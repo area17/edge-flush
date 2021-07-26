@@ -1,8 +1,8 @@
 <?php
 
-namespace A17\CDN\Jobs;
+namespace A17\EdgeFlush\Jobs;
 
-use A17\CDN\CDN;
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -32,6 +32,6 @@ class InvalidateTags implements ShouldQueue
      */
     public function handle()
     {
-        CDN::tags()->invalidateCacheTags($this->tags);
+        EdgeFlush::tags()->invalidateCacheTags($this->tags);
     }
 }

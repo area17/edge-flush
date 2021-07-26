@@ -1,13 +1,12 @@
 <?php
 
-namespace A17\CDN\Services\CloudFront;
+namespace A17\EdgeFlush\Services\CloudFront;
 
-use A17\CDN\CDN;
 use Aws\AwsClient;
-use A17\CDN\Models\Tag;
-use A17\CDN\Models\Url;
-use A17\CDN\Services\BaseService;
-use A17\CDN\Contracts\CDNService;
+use A17\EdgeFlush\Models\Tag;
+use A17\EdgeFlush\Models\Url;
+use A17\EdgeFlush\Services\BaseService;
+use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
@@ -37,25 +36,25 @@ class Service extends BaseService implements CDNService
     public function invalidateAll(): bool
     {
         return $this->createInvalidationRequest(
-            config('cdn.services.cloud_front.invalidate_all_paths'),
+            config('edge-flush.services.cloud_front.invalidate_all_paths'),
         );
     }
 
     protected function getDistributionId(): ?string
     {
-        return config('cdn.services.cloud_front.distribution_id');
+        return config('edge-flush.services.cloud_front.distribution_id');
     }
 
     public function getClient(): CloudFrontClient
     {
         return new CloudFrontClient([
-            'region' => config('cdn.services.cloud_front.region'),
+            'region' => config('edge-flush.services.cloud_front.region'),
 
-            'version' => config('cdn.services.cloud_front.sdk_version'),
+            'version' => config('edge-flush.services.cloud_front.sdk_version'),
 
             'credentials' => [
-                'key' => config('cdn.services.cloud_front.key'),
-                'secret' => config('cdn.services.cloud_front.secret'),
+                'key' => config('edge-flush.services.cloud_front.key'),
+                'secret' => config('edge-flush.services.cloud_front.secret'),
             ],
         ]);
     }
@@ -96,7 +95,7 @@ class Service extends BaseService implements CDNService
             ]);
         } catch (\Exception $e) {
             Log::error(
-                'CDN: CloudFront invalidation request failed: ' .
+                'EdgeFlush: CloudFront invalidation request failed: ' .
                     $e->getMessage(),
             );
 

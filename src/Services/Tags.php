@@ -1,14 +1,14 @@
 <?php
 
-namespace A17\CDN\Services;
+namespace A17\EdgeFlush\Services;
 
-use A17\CDN\CDN;
-use A17\CDN\Models\Tag;
-use A17\CDN\Models\Url;
-use A17\CDN\Jobs\StoreTags;
+use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Tag;
+use A17\EdgeFlush\Models\Url;
+use A17\EdgeFlush\Jobs\StoreTags;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use A17\CDN\Jobs\InvalidateTags;
+use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +28,7 @@ class Tags
     {
         if (
             $this->wasNotProcessed($model) &&
-            CDN::enabled() &&
+            EdgeFlush::enabled() &&
             filled($tag = $this->makeTag($model))
         ) {
             $this->tags[$tag] = $tag;
@@ -46,12 +46,12 @@ class Tags
         ]);
 
         Url::join(
-            'cdn_cache_tags',
-            'cdn_cache_tags.url_id',
+            'edge_flush_cache_tags',
+            'edge_flush_cache_tags.url_id',
             '=',
-            'cdn_cache_urls.id',
+            'edge_flush_cache_urls.id',
         )
-            ->whereIn('cdn_cache_tags.tag', $tags)
+            ->whereIn('edge_flush_cache_tags.tag', $tags)
             ->update([
                 'was_purged_at' => now(),
             ]);
@@ -85,14 +85,14 @@ class Tags
     {
         $tag = $this->makeEdgeTag($models = $this->getTags());
 
-        if (CDN::cacheControl()->isCachable($response)) {
+        if (EdgeFlush::cacheControl()->isCachable($response)) {
             StoreTags::dispatch(
                 $models,
                 [
                     'cdn' => $tag,
 
-                    'response_cache' => CDN::responseCache()->makeResponseCacheTag(
-                        CDN::getRequest(),
+                    'response_cache' => EdgeFlush::responseCache()->makeResponseCacheTag(
+                        EdgeFlush::getRequest(),
                     ),
                 ],
                 url()->full(),
@@ -115,7 +115,7 @@ class Tags
         $tag = str_replace(
             ['%environment%', '%sha1%'],
             [app()->environment(), sha1(collect($models)->join(', '))],
-            config('cdn.tags.format'),
+            config('edge-flush.tags.format'),
         );
 
         return $tag;
@@ -141,8 +141,8 @@ class Tags
         /**
          * @param callable(string $pattern): boolean $pattern
          */
-        return collect(config('cdn.tags.excluded-model-classes'))->contains(
-            fn(string $pattern) => CDN::match($pattern, $tag),
+        return collect(config('edge-flush.tags.excluded-model-classes'))->contains(
+            fn(string $pattern) => EdgeFlush::match($pattern, $tag),
         );
     }
 
@@ -171,7 +171,7 @@ class Tags
                 $url->save();
             }
 
-            $tag = Tag::firstOrCreate([
+            Tag::firstOrCreate([
                 'model' => $model,
                 'tag' => $tags['cdn'],
                 'response_cache_hash' => $tags['response_cache'],
@@ -199,7 +199,7 @@ class Tags
             return;
         }
 
-        if (config('cdn.invalidations.type') === 'batch') {
+        if (config('edge-flush.invalidations.type') === 'batch') {
             $this->makeTagsObsolete($tags);
 
             return;
@@ -212,7 +212,7 @@ class Tags
     {
         $count = Tag::where('obsolete', true)->count();
 
-        if ($count > config('cdn.invalidations.batch.max_tags')) {
+        if ($count > config('edge-flush.invalidations.batch.max_tags')) {
             $this->invalidateEntireCache();
 
             return;
@@ -228,9 +228,9 @@ class Tags
 
     protected function dispatchInvalidations(Collection $tags): void
     {
-        CDN::responseCache()->invalidate($tags);
+        EdgeFlush::responseCache()->invalidate($tags);
 
-        if (CDN::cdn()->invalidate($tags)) {
+        if (EdgeFlush::cdn()->invalidate($tags)) {
             // TODO: what happens here on Akamai?
             $this->deleteTags($tags);
         }
@@ -238,13 +238,13 @@ class Tags
 
     protected function invalidateEntireCache()
     {
-        CDN::cdn()->invalidate(
-            collect(config('cdn.invalidations.batch.site_roots')),
+        EdgeFlush::cdn()->invalidate(
+            collect(config('edge-flush.invalidations.batch.site_roots')),
         );
     }
 
     /*
-     * Optimized for speed, 2000 calls to CDN::tags()->addTag($model) are now only 8ms
+     * Optimized for speed, 2000 calls to EdgeFlush::tags()->addTag($model) are now only 8ms
      */
     protected function wasNotProcessed(Model $model): bool
     {
@@ -274,7 +274,7 @@ class Tags
                 sleep(2);
             }
 
-            if ($success = CDN::cdn()->invalidateAll()) {
+            if ($success = EdgeFlush::cdn()->invalidateAll()) {
                 break;
             }
         } while ($count < 3);

@@ -1,6 +1,6 @@
 <?php
 
-namespace A17\CDN\Support;
+namespace A17\EdgeFlush\Support;
 
 class Constants
 {

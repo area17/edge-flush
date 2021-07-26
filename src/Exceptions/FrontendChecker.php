@@ -1,6 +1,6 @@
 <?php
 
-namespace A17\CDN\Exceptions;
+namespace A17\EdgeFlush\Exceptions;
 
 class FrontendChecker extends \Exception
 {

@@ -1,9 +1,9 @@
 <?php
 
-namespace A17\CDN\Services\ResponseCache;
+namespace A17\EdgeFlush\Services\ResponseCache;
 
-use A17\CDN\Services\BaseService;
-use A17\CDN\Contracts\CDNService;
+use A17\EdgeFlush\Services\BaseService;
+use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Spatie\ResponseCache\Hasher\RequestHasher;

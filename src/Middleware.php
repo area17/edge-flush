@@ -1,6 +1,6 @@
 <?php
 
-namespace A17\CDN;
+namespace A17\EdgeFlush;
 
 use Closure;
 
@@ -17,6 +17,6 @@ class Middleware
     {
         $response = $next($request);
 
-        return CDN::setRequest($request)->makeResponse($response);
+        return EdgeFlush::setRequest($request)->makeResponse($response);
     }
 }

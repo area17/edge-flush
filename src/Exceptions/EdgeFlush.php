@@ -1,8 +1,8 @@
 <?php
 
-namespace A17\CDN\Exceptions;
+namespace A17\EdgeFlush\Exceptions;
 
-class CDN extends \Exception
+class EdgeFlush extends \Exception
 {
     public static function missingService($type): void
     {

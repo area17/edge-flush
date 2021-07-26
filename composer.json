@@ -1,12 +1,15 @@
 {
-    "name": "area17/cdn",
+    "name": "area17/edge-flush",
     "description": "CDN Cache Control and Invalidation",
     "keywords": [
         "area17",
         "laravel",
-        "cdn"
+        "cdn",
+        "edge cache",
+        "akamai",
+        "cloudfront"
     ],
-    "homepage": "https://github.com/area17/cdn",
+    "homepage": "https://github.com/area17/edge-flush",
     "license": "MIT",
     "authors": [
         {
@@ -37,13 +40,13 @@
     },
     "autoload": {
         "psr-4": {
-            "A17\\CDN\\": "src",
-            "A17\\CDN\\Database\\Factories\\": "database/factories"
+            "A17\\EdgeFlush\\": "src",
+            "A17\\EdgeFlush\\Database\\Factories\\": "database/factories"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "A17\\CDN\\Tests\\": "tests"
+            "A17\\EdgeFlush\\Tests\\": "tests"
         }
     },
     "scripts": {
@@ -57,11 +60,11 @@
     "extra": {
         "laravel": {
             "providers": [
-                "A17\\CDN\\ServiceProvider"
+                "A17\\EdgeFlush\\ServiceProvider"
             ],
             "aliases": {
-                "CDN": "A17\\CDN\\CDN",
-                "CacheControl": "A17\\CDN\\CacheControl"
+                "EdgeFlush": "A17\\EdgeFlush\\EdgeFlush",
+                "CacheControl": "A17\\EdgeFlush\\CacheControl"
             }
         }
     },

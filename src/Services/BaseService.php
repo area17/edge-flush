@@ -1,10 +1,10 @@
 <?php
 
-namespace A17\CDN\Services;
+namespace A17\EdgeFlush\Services;
 
-use A17\CDN\CDN;
+use A17\EdgeFlush\EdgeFlush;
 use Symfony\Component\HttpFoundation\Response;
-use A17\CDN\Contracts\Service as ServiceContract;
+use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
 {
@@ -16,7 +16,7 @@ abstract class BaseService implements ServiceContract
         string $service,
         string $value
     ): Response {
-        collect(config("cdn.headers.$service"))->each(
+        collect(config("edge-flush.headers.$service"))->each(
             fn(string $header) => $response->header(
                 $header,
                 collect($value)->join(', '),
@@ -31,7 +31,7 @@ abstract class BaseService implements ServiceContract
         return $this->addHeadersToResponse(
             $response,
             'tags',
-            CDN::tags()->getTagsHash($response, CDN::getRequest()),
+            EdgeFlush::tags()->getTagsHash($response, EdgeFlush::getRequest()),
         );
     }
 

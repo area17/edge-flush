@@ -1,6 +1,6 @@
 <?php
 
-namespace A17\CDN\Services;
+namespace A17\EdgeFlush\Services;
 
 use Illuminate\Support\Str;
 

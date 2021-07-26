@@ -2,14 +2,14 @@
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Response;
-use A17\CDN\Support\Constants;
+use A17\EdgeFlush\Support\Constants;
 use Illuminate\Http\JsonResponse;
 
 return [
     /**
      * Enable/disable the pacakge
      */
-    'enabled' => env('CDN_ENABLED', false),
+    'enabled' => env('EDGE_FLUSH_ENABLED', false),
 
     /**
      * Configure here the default strategies used internally.
@@ -30,15 +30,15 @@ return [
      *
      */
     'classes' => [
-        'cdn' => A17\CDN\Services\Akamai\Service::class,
+        'cdn' => A17\EdgeFlush\Services\Akamai\Service::class,
 
-        'cache-control' => A17\CDN\Services\CacheControl::class,
+        'cache-control' => A17\EdgeFlush\Services\CacheControl::class,
 
-        'tags' => A17\CDN\Services\Tags::class,
+        'tags' => A17\EdgeFlush\Services\Tags::class,
 
-        'warmer' => A17\CDN\Services\Warmer::class,
+        'warmer' => A17\EdgeFlush\Services\Warmer::class,
 
-        'response-cache' => A17\CDN\Services\ResponseCache\Service::class,
+        'response-cache' => A17\EdgeFlush\Services\ResponseCache\Service::class,
     ],
 
     /**
@@ -112,7 +112,7 @@ return [
      *    'frontend-checker' => true,
      *
      */
-    'frontend-checker' => A17\CDN\Services\FrontendChecker::class,
+    'frontend-checker' => A17\EdgeFlush\Services\FrontendChecker::class,
 
     /**
      * List of cache control headers to add to responses
@@ -230,27 +230,27 @@ return [
      */
     'services' => [
         'akamai' => [
-            'host' => env('CDN_AKAMAI_HOST'),
-            'access_token' => env('CDN_AKAMAI_ACCESS_TOKEN'),
-            'client_token' => env('CDN_AKAMAI_CLIENT_TOKEN'),
-            'client_secret' => env('CDN_AKAMAI_CLIENT_SECRET'),
+            'host' => env('EDGE_FLUSH_AKAMAI_HOST'),
+            'access_token' => env('EDGE_FLUSH_AKAMAI_ACCESS_TOKEN'),
+            'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN'),
+            'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET'),
             'invalidate_all_paths' => ['*'],
         ],
 
         'cloud_front' => [
-            'sdk_version' => env('CDN_CLOUD_FRONT_SDK_VERSION', '2016-01-13'),
+            'sdk_version' => env('EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION', '2016-01-13'),
 
             'region' => env(
-                'CDN_AWS_DEFAULT_REGION',
+                'EDGE_FLUSH_AWS_DEFAULT_REGION',
                 env('AWS_DEFAULT_REGION', 'us-east-1'),
             ),
 
-            'distribution_id' => env('CDN_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
+            'distribution_id' => env('EDGE_FLUSH_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
 
-            'key' => env('CDN_AWS_CLOUDFRONT_KEY', env('AWS_ACCESS_KEY_ID')),
+            'key' => env('EDGE_FLUSH_AWS_CLOUDFRONT_KEY', env('AWS_ACCESS_KEY_ID')),
 
             'secret' => env(
-                'CDN_AWS_CLOUDFRONT_SECRET',
+                'EDGE_FLUSH_AWS_CLOUDFRONT_SECRET',
                 env('AWS_SECRET_ACCESS_KEY'),
             ),
 
@@ -279,7 +279,7 @@ return [
      *
      */
     'warmer' => [
-        'enabled' => env('CDN_WARMER_ENABLED', false),
+        'enabled' => env('EDGE_FLUSH_WARMER_ENABLED', false),
 
         'max_urls' => 100,
 
@@ -295,7 +295,7 @@ return [
     ],
 
     /**
-     * When a page is to be cached by the CDN this package will strip the following
+     * When a page is to be cached by the CDN, this package will strip the following
      * cookies from all responses.
      */
     'strip_cookies' => [

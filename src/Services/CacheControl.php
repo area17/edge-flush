@@ -1,16 +1,16 @@
 <?php
 
-namespace A17\CDN\Services;
+namespace A17\EdgeFlush\Services;
 
-use A17\CDN\CDN;
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use A17\CDN\Support\Constants;
+use A17\EdgeFlush\Support\Constants;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
-use A17\CDN\Contracts\Service as ServiceContract;
+use A17\EdgeFlush\Contracts\Service as ServiceContract;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use A17\CDN\Exceptions\FrontendChecker as FrontendCheckerException;
+use A17\EdgeFlush\Exceptions\FrontendChecker as FrontendCheckerException;
 
 class CacheControl extends BaseService implements ServiceContract
 {
@@ -56,10 +56,10 @@ class CacheControl extends BaseService implements ServiceContract
     public function getCachableMatrix(Response $response): Collection
     {
         return collect([
-            'enabled' => CDN::enabled(),
+            'enabled' => EdgeFlush::enabled(),
             'isFrontend' => $this->isFrontend(),
             'notValidForm' => !$this->containsValidForm($response),
-            'methodIsCachable' => $this->methodIsCachable($response),
+            'methodIsCachable' => $this->methodIsCachable(),
             'middlewareAllowCaching' => $this->middlewaresAllowCaching(),
             'routeIsCachable' => $this->routeIsCachable(),
             'urlIsCachable' => $this->urlIsCachable(),
@@ -116,9 +116,9 @@ class CacheControl extends BaseService implements ServiceContract
     {
         $hasForm = false;
 
-        if (config('cdn.valid_forms.enabled', false)) {
+        if (config('edge-flush.valid_forms.enabled', false)) {
             $hasForm = collect(
-                config('cdn.valid_forms.strings', false),
+                config('edge-flush.valid_forms.strings', false),
             )->reduce(function (bool $hasForm, string $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
@@ -137,7 +137,7 @@ class CacheControl extends BaseService implements ServiceContract
      */
     protected function isFrontend(): bool
     {
-        $checker = config('cdn.frontend-checker');
+        $checker = config('edge-flush.frontend-checker');
 
         if (is_callable($checker)) {
             return $checker();
@@ -164,7 +164,7 @@ class CacheControl extends BaseService implements ServiceContract
      */
     protected function middlewaresAllowCaching(): bool
     {
-        $middleware = blank($route = CDN::getRequest()->route())
+        $middleware = blank($route = EdgeFlush::getRequest()->route())
             ? 'no-middleware'
             : $route->action['middleware'] ?? null;
 
@@ -177,14 +177,14 @@ class CacheControl extends BaseService implements ServiceContract
             return $this;
         }
 
-        if (config('cdn.max-age.strategy') === 'min') {
+        if (config('edge-flush.max-age.strategy') === 'min') {
             $this->maxAge = min(
                 $maxAge,
                 $this->maxAge ?? $this->getDefaultMaxAge(),
             );
         }
 
-        if (config('cdn.max-age.strategy') === 'last') {
+        if (config('edge-flush.max-age.strategy') === 'last') {
             $this->maxAge = $maxAge;
         }
 
@@ -193,7 +193,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getDefaultMaxAge(): int
     {
-        return (int) config('cdn.max-age.default', Constants::WEEK);
+        return (int) config('edge-flush.max-age.default', Constants::WEEK);
     }
 
     public function buildStrategy(string $strategy): string
@@ -250,11 +250,11 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function responseIsCachable(Response $response): bool
     {
-        return (collect(config('cdn.responses.cachable'))->isEmpty() ||
-            collect(config('cdn.responses.cachable'))->contains(
+        return (collect(config('edge-flush.responses.cachable'))->isEmpty() ||
+            collect(config('edge-flush.responses.cachable'))->contains(
                 get_class($response),
             )) &&
-            !collect(config('cdn.responses.not-cachable'))->contains(
+            !collect(config('edge-flush.responses.not-cachable'))->contains(
                 get_class($response),
             );
     }
@@ -264,22 +264,22 @@ class CacheControl extends BaseService implements ServiceContract
      */
     public function methodIsCachable(): bool
     {
-        return (collect(config('cdn.methods.cachable'))->isEmpty() ||
-            collect(config('cdn.methods.cachable'))->contains(
-                CDN::getRequest()->getMethod(),
+        return (collect(config('edge-flush.methods.cachable'))->isEmpty() ||
+            collect(config('edge-flush.methods.cachable'))->contains(
+                EdgeFlush::getRequest()->getMethod(),
             )) &&
-            !collect(config('cdn.methods.not-cachable'))->contains(
-                CDN::getRequest()->getMethod(),
+            !collect(config('edge-flush.methods.not-cachable'))->contains(
+                EdgeFlush::getRequest()->getMethod(),
             );
     }
 
     public function statusCodeIsCachable(Response $response): bool
     {
-        return (collect(config('cdn.statuses.cachable'))->isEmpty() ||
-            collect(config('cdn.statuses.cachable'))->contains(
+        return (collect(config('edge-flush.statuses.cachable'))->isEmpty() ||
+            collect(config('edge-flush.statuses.cachable'))->contains(
                 $response->getStatusCode(),
             )) &&
-            !collect(config('cdn.statuses.not-cachable'))->contains(
+            !collect(config('edge-flush.statuses.not-cachable'))->contains(
                 $response->getStatusCode(),
             );
     }
@@ -289,22 +289,22 @@ class CacheControl extends BaseService implements ServiceContract
      */
     public function routeIsCachable(): bool
     {
-        $route = CDN::getRequest()->route();
+        $route = EdgeFlush::getRequest()->route();
 
         $route = filled($route) ? $route->getName() : null;
 
         if (blank($route)) {
-            return config('cdn.routes.cache_nameless_routes', false);
+            return config('edge-flush.routes.cache_nameless_routes', false);
         }
 
         /**
          * @param callable(string $pattern): boolean $filter
          */
-        $filter = fn(string $pattern) => CDN::match($pattern, $route);
+        $filter = fn(string $pattern) => EdgeFlush::match($pattern, $route);
 
-        return (collect(config('cdn.routes.cachable'))->isEmpty() ||
-            collect(config('cdn.routes.cachable'))->contains($filter)) &&
-            !collect(config('cdn.routes.not-cachable'))->contains($filter);
+        return (collect(config('edge-flush.routes.cachable'))->isEmpty() ||
+            collect(config('edge-flush.routes.cachable'))->contains($filter)) &&
+            !collect(config('edge-flush.routes.not-cachable'))->contains($filter);
     }
 
     /**
@@ -312,21 +312,21 @@ class CacheControl extends BaseService implements ServiceContract
      */
     public function urlIsCachable(): bool
     {
-        $url = CDN::getRequest()->url();
+        $url = EdgeFlush::getRequest()->url();
 
         /**
          * @param callable(string $pattern): boolean $filter
          */
-        $filter = fn(string $pattern) => CDN::match($pattern, $url);
+        $filter = fn(string $pattern) => EdgeFlush::match($pattern, $url);
 
-        return (collect(config('cdn.urls.cachable'))->isEmpty() ||
-            collect(config('cdn.urls.cachable'))->contains($filter)) &&
-            !collect(config('cdn.urls.not-cachable'))->contains($filter);
+        return (collect(config('edge-flush.urls.cachable'))->isEmpty() ||
+            collect(config('edge-flush.urls.cachable'))->contains($filter)) &&
+            !collect(config('edge-flush.urls.not-cachable'))->contains($filter);
     }
 
     public function stripCookies($response, $strategy)
     {
-        $strip = config('cdn.strip_cookies');
+        $strip = config('edge-flush.strip_cookies');
 
         /**
          * We only strip cookies from cachable responses because those cookies (potentially logged in users), if cached by the CDN
@@ -350,9 +350,9 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getStrategyArray($strategy)
     {
-        $strategy = config("cdn.built-in-strategies.$strategy", $strategy);
+        $strategy = config("edge-flush.built-in-strategies.$strategy", $strategy);
 
-        return config("cdn.strategies.$strategy", []);
+        return config("edge-flush.strategies.$strategy", []);
     }
 
     public function willBeCached($response = null, $strategy = null)
