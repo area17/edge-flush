@@ -31,13 +31,13 @@ EdgeFlush is Laravel package intended to help developers manage CDN granular cac
 
 ## Installation
 
-You can install the package via composer:
+Install the package via composer:
 
 ```bash
 composer require area17/edge-flush
 ```
 
-You can publish the config file with:
+Publish the config file with:
 
 ```bash
 php artisan vendor:publish --provider="A17\EdgeFlush\ServiceProvider"
@@ -49,13 +49,16 @@ And run the migrations:
 php artisan migrate
 ```
 
-
 ## Dependencies
 
-The supported CDN services have these package dependencies that you need to install yourself:
+The supported CDN services have these package dependencies that you need to choose according to your setup:
 
-Akamai: akamai-open/edgegrid-auth
-CloudFront: aws/aws-sdk-php
+Akamai: [akamai-open/edgegrid-auth](https://github.com/akamai/AkamaiOPEN-edgegrid-php)
+CloudFront: [aws/aws-sdk-php](https://github.com/aws/aws-sdk-php)
+
+If you want to add another caching layer on your origin, you can also install this one:
+
+[Response Cache](#laravel-response-cache-integration): [spatie/laravel-responsecache](https://github.com/spatie/laravel-responsecache)
 
 ## Usage
 
