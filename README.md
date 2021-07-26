@@ -5,29 +5,29 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/Check%20&%20fix%20styling?label=code%20style)](https://github.com/area17/edge-flush/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/area17/edge-flush.svg?style=flat-square)](https://packagist.org/packages/area17/edge-flush)
 
-EdgeFlush is Laravel package intended to help developers manage CDN granular caching and invalidations. Having Akamai, CloudFront (or any other CDN) in front of a website, data modification usually forces us to bust the whole cache, leading to a website slow (for the first users) until the whole cache is rebuilt, and if the "first user" is Google Bot, for example, this can also impact on your website's rank. This pacakge aims to do invalidations granularly. 
+EdgeFlush is Laravel package intended to help developers manage CDN granular caching and invalidations. Having Akamai, CloudFront (or any other CDN) in front of a website, data modification usually forces us to bust the whole cache, leading to a website slow (for the first users) until the whole cache is rebuilt, and if the "first user" is Google Bot, for example, this can also impact on your website's rank. This pacakge aims to do invalidations granularly.
 
-## Feature list 
+## Feature list
 
 - Granular invalidation: this package will create a collection of all models that impacts one page and when one of those models change, all pages that had that model rendered in previous requests will be purged from CDN.
 - Granular control of Cache-Control headers: you will be able to configure it differently per request, telling the CDN to store some pages for one week and others for 5 seconds, for example.
-- Single Akamai Edge Cache Tag relating to all models touched by a page render.
+- Single [Akamai Edge Cache Tag](#akamai-edge-cache-tags) relating to all models touched by a page render.
 - Define different strategies for Cache-Control: web pages may have a different cache strategy than api endpoints.
 - Prevents from caching pages containing forms.
 - Caches only frontend pages, leaving the CMS uncashed, if needed.
-- Re-warm pages purged from cache.
+- [Re-warm](#rewarming-cache) pages purged from cache.
 - Strip cookies from cachable responses.
 - Disable caching for some pages using a middlware.
 - Define HTTP methods that allow caching or not: cache GET but not POST.
 - Define HTTP response status codes that allow caching or not: Cache 200 and 301 but not 400+ status codes.
 - Define what routes can and cannot be cached by CDN.
 - Define what type of responses can be cached: cache Response but not JsonResponse, for example.
-- Define what Model classes can be cached or not.  
+- Define what Model classes can be cached or not.
 - Remember what pages have been cached and command your CDN service to burst only those when you save something on your backend.
 - Supports CloudFront invalidations.
 - Supports Akamai EdgeCacheTags invalidations.
 - Allow override of Services and easy implementation to support new CDN Services.
-- Spatie's Laravel Response Cache granular invalidations.
+- [Spatie's Laravel Response Cache](#laravel-response-cache-integration) granular invalidations.
 
 ## Installation
 
@@ -48,8 +48,6 @@ And run the migrations:
 ```bash
 php artisan migrate
 ```
-
-## Configuration
 
 
 ## Dependencies
@@ -86,7 +84,7 @@ public function afterSave($object, $fields)
 }
 ```
 
-Call `$this->cacheModelOnCDN($model)` method on model's `getAttribute()`: 
+Call `$this->cacheModelOnCDN($model)` method on model's `getAttribute()`:
 
 ``` php
 public function getAttribute($key)
@@ -106,13 +104,13 @@ protected $middleware = [
 ];
 ```
 
-Cache-Control max-age is set automatically, but if you need to change it depending on the current request you can use the following method: 
+Cache-Control max-age is set automatically, but if you need to change it depending on the current request you can use the following method:
 
 ``` php
 CacheControl::setMaxAge(5000);
 ```
 
-If you want to invalidate your paths in batches, add a scheduler setting the desired frequency for this to happen: 
+If you want to invalidate your paths in batches, add a scheduler setting the desired frequency for this to happen:
 
 ``` php
 protected function schedule(Schedule $schedule)
@@ -124,8 +122,8 @@ protected function schedule(Schedule $schedule)
 You need to enable the package and the warmer on your `.env` file
 
 ``` sh
-CDN_ENABLED=true
-CDN_WARMER_ENABLED=true
+EDGE_FLUSH_ENABLED=true
+EDGE_FLUSH_WARMER_ENABLED=true
 ```
 
 ## CDN third-party service configuration
@@ -146,7 +144,7 @@ protected function schedule(Schedule $schedule)
 }
 ```
 
-Note that the most hit (or frequently updated) pages will be warmed first. 
+Note that the most hit (or frequently updated) pages will be warmed first.
 
 ## Akamai Edge Cache Tags
 
