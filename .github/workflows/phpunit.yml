@@ -2,9 +2,9 @@ name: phpunit
 
 on:
   push:
-    branches: [main]
+    branches: [unstable]
   pull_request:
-    branches: [main]
+    branches: [unstable]
 
 jobs:
   test:
