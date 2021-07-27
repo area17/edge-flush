@@ -5,9 +5,9 @@ namespace A17\EdgeFlush\Services;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Constants;
+use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use A17\EdgeFlush\Exceptions\FrontendChecker as FrontendCheckerException;
@@ -91,7 +91,7 @@ class CacheControl extends BaseService implements ServiceContract
     {
         return $this->_content = filled($this->_content)
             ? $this->_content
-            : $this->minifyContent($response->content());
+            : $this->minifyContent($response->getContent());
     }
 
     public function getMaxAge(): int

@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 use A17\EdgeFlush\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
 class Service extends BaseService implements CDNService

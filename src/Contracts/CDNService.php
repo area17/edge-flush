@@ -3,7 +3,7 @@
 namespace A17\EdgeFlush\Contracts;
 
 use Illuminate\Support\Collection;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 interface CDNService extends Service
 {

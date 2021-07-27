@@ -3,7 +3,7 @@
 namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\EdgeFlush;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
@@ -14,7 +14,7 @@ abstract class BaseService implements ServiceContract
         string $value
     ): Response {
         collect(config("edge-flush.headers.$service"))->map(
-            fn(string $header) => $response->header(
+            fn(string $header) => $response->headers->set(
                 $header,
                 collect($value)->join(', '),
             ),

@@ -4,8 +4,8 @@ namespace A17\EdgeFlush\Services;
 
 use Faker\Provider\Base;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use A17\EdgeFlush\Contracts\CDNService;
+use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Services\ResponseCache\Service as ResponseCache;
 
 class EdgeFlush extends BaseService

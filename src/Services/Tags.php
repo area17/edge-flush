@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ResponseCache\ResponseCache;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class Tags
 {

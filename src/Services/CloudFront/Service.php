@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class Service extends BaseService implements CDNService
 {
