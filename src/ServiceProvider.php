@@ -4,6 +4,7 @@ namespace A17\EdgeFlush;
 
 use A17\EdgeFlush\Services\EdgeFlush;
 use A17\EdgeFlush\Services\CacheControl;
+use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushxception;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
@@ -27,7 +28,9 @@ class ServiceProvider extends IlluminateServiceProvider
     {
         $this->publishes(
             [
-                __DIR__ . '/../config/edge-flush.php' => config_path('edge-flush.php'),
+                __DIR__ . '/../config/edge-flush.php' => config_path(
+                    'edge-flush.php',
+                ),
             ],
             'config',
         );
@@ -35,7 +38,10 @@ class ServiceProvider extends IlluminateServiceProvider
 
     protected function mergeConfig(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/edge-flush.php', 'edge-flush');
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/edge-flush.php',
+            'edge-flush',
+        );
     }
 
     public function configureContainer(): void
@@ -58,6 +64,10 @@ class ServiceProvider extends IlluminateServiceProvider
                 $app->make(config('edge-flush.classes.warmer')),
                 $app->make(config('edge-flush.classes.response-cache')),
             );
+        });
+
+        $this->app->singleton('a17.edge-flush.cache-control', function ($app) {
+            return EdgeFlushFacade::cacheControl();
         });
     }
 }

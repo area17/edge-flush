@@ -3,8 +3,8 @@
 namespace A17\EdgeFlush\Tests;
 
 use A17\EdgeFlush\ServiceProvider;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TestCase extends Orchestra
 {

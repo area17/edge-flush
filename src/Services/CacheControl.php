@@ -304,7 +304,9 @@ class CacheControl extends BaseService implements ServiceContract
 
         return (collect(config('edge-flush.routes.cachable'))->isEmpty() ||
             collect(config('edge-flush.routes.cachable'))->contains($filter)) &&
-            !collect(config('edge-flush.routes.not-cachable'))->contains($filter);
+            !collect(config('edge-flush.routes.not-cachable'))->contains(
+                $filter,
+            );
     }
 
     /**
@@ -350,7 +352,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getStrategyArray($strategy)
     {
-        $strategy = config("edge-flush.built-in-strategies.$strategy", $strategy);
+        $strategy = config(
+            "edge-flush.built-in-strategies.$strategy",
+            $strategy,
+        );
 
         return config("edge-flush.strategies.$strategy", []);
     }

@@ -141,9 +141,9 @@ class Tags
         /**
          * @param callable(string $pattern): boolean $pattern
          */
-        return collect(config('edge-flush.tags.excluded-model-classes'))->contains(
-            fn(string $pattern) => EdgeFlush::match($pattern, $tag),
-        );
+        return collect(
+            config('edge-flush.tags.excluded-model-classes'),
+        )->contains(fn(string $pattern) => EdgeFlush::match($pattern, $tag));
     }
 
     protected function tagIsNotExcluded(string $tag): bool

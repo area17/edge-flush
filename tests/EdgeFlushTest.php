@@ -4,37 +4,42 @@ namespace A17\EdgeFlush\Tests;
 
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\CacheControl;
+use A17\EdgeFlush\ServiceProvider;
 
-class CDNTest extends TestCase
+class EdgeFlushTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        EdgeFlush::setRequest(new \Illuminate\Http\Request());
+    }
+
     protected $enabledValues = [
-        'enabled' => true,
-        'isCachable' => true,
+        'enabled' => false,
+        'isCachable' => false,
         'routeIsCachable' => true,
-        'max-age 1' => 604800,
+        'max-age 1' => 604800000,
         'max-age 2' => 2500,
         'max-age 3' => 1500,
         'max-age' => [
-            'enabled' => true,
-            'isFrontend' => true,
+            'enabled' => false,
+            'isFrontend' => false,
             'notValidForm' => true,
+            'methodIsCachable' => true,
             'middlewareAllowCaching' => true,
             'routeIsCachable' => true,
+            'urlIsCachable' => true,
             'responseIsCachable' => true,
-            'methodIsCachable' => true,
             'statusCodeIsCachable' => true,
         ],
         'headers' => [
-            'cache-control' => [
-                'max-age=1500, must-revalidate, no-store, public',
-            ],
+            'cache-control' => ['max-age=5, public'],
             'content-type' => ['application/json'],
-            'x-cache-control' => [
-                'max-age=1500, must-revalidate, no-store, public',
-            ],
+            'x-cache-control' => ['max-age=5, public'],
         ],
-        'strategy 1' => 'max-age=1500, must-revalidate, no-store, public',
-        'strategy 2' => 'no-store, private',
+        'strategy 1' => 'max-age=5, public',
+        'strategy 2' => 'max-age=5, public',
         'strategy 3' => 'max-age=20, no-store, public',
         0 => true,
     ];
@@ -43,32 +48,33 @@ class CDNTest extends TestCase
         'enabled' => false,
         'isCachable' => false,
         'routeIsCachable' => true,
-        'max-age 1' => 604800,
+        'max-age 1' => 604800000,
         'max-age 2' => 2500,
         'max-age 3' => 1500,
         'max-age' => [
             'enabled' => false,
-            'isFrontend' => true,
+            'isFrontend' => false,
             'notValidForm' => true,
+            'methodIsCachable' => true,
             'middlewareAllowCaching' => true,
             'routeIsCachable' => true,
+            'urlIsCachable' => true,
             'responseIsCachable' => true,
-            'methodIsCachable' => true,
             'statusCodeIsCachable' => true,
         ],
         'headers' => [
-            'cache-control' => ['no-store, private'],
+            'cache-control' => ['max-age=5, public'],
             'content-type' => ['application/json'],
-            'x-cache-control' => ['no-store, private'],
+            'x-cache-control' => ['max-age=5, public'],
         ],
-        'strategy 1' => 'no-store, private',
-        'strategy 2' => 'no-store, private',
+        'strategy 1' => 'max-age=5, public',
+        'strategy 2' => 'max-age=5, public',
         'strategy 3' => 'max-age=20, no-store, public',
         0 => true,
     ];
 
     /** @test */
-    public function cdn_can_be_enabled()
+    public function edge_flush_can_be_enabled()
     {
         $response = response()->json([]);
 
@@ -76,11 +82,11 @@ class CDNTest extends TestCase
     }
 
     /** @test */
-    public function cdn_can_be_disabled()
+    public function edge_flush_can_be_disabled()
     {
         $response = response()->json([]);
 
-        config(['cdn.enabled' => false]);
+        config(['edge-flush.enabled' => false]);
 
         $this->assertEquals($this->getValues($response), $this->disabledValues);
     }
@@ -107,8 +113,10 @@ class CDNTest extends TestCase
             'max-age' => CacheControl::getCachableMatrix($response)->toArray(),
 
             'headers' => $this->extractHeaders(
-                CacheControl::addHttpHeadersToResponse(
+                CacheControl::addHeadersToResponse(
                     $response,
+                    'cache-control',
+                    CacheControl::getCacheStrategy($response),
                 )->headers->all(),
             ),
 

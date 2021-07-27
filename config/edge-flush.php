@@ -238,16 +238,24 @@ return [
         ],
 
         'cloud_front' => [
-            'sdk_version' => env('EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION', '2016-01-13'),
+            'sdk_version' => env(
+                'EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION',
+                '2016-01-13',
+            ),
 
             'region' => env(
                 'EDGE_FLUSH_AWS_DEFAULT_REGION',
                 env('AWS_DEFAULT_REGION', 'us-east-1'),
             ),
 
-            'distribution_id' => env('EDGE_FLUSH_AWS_CLOUDFRONT_DISTRIBUTION_ID'),
+            'distribution_id' => env(
+                'EDGE_FLUSH_AWS_CLOUDFRONT_DISTRIBUTION_ID',
+            ),
 
-            'key' => env('EDGE_FLUSH_AWS_CLOUDFRONT_KEY', env('AWS_ACCESS_KEY_ID')),
+            'key' => env(
+                'EDGE_FLUSH_AWS_CLOUDFRONT_KEY',
+                env('AWS_ACCESS_KEY_ID'),
+            ),
 
             'secret' => env(
                 'EDGE_FLUSH_AWS_CLOUDFRONT_SECRET',

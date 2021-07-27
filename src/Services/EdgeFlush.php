@@ -55,7 +55,7 @@ class EdgeFlush extends BaseService
         }
 
         return $this->cacheControl->makeResponse(
-            $this->cdn->makeResponse($response)
+            $this->cdn->makeResponse($response),
         );
     }
 

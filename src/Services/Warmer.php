@@ -33,7 +33,10 @@ class Warmer
     public function warm($urls)
     {
         while ($urls->count() > 0) {
-            $chunk = $urls->splice(0, config('edge-flush.warmer.concurrent_requests'));
+            $chunk = $urls->splice(
+                0,
+                config('edge-flush.warmer.concurrent_requests'),
+            );
 
             $this->dispatchWarmRequests($chunk);
 
@@ -52,7 +55,9 @@ class Warmer
             ->where(
                 'was_purged_at',
                 '<',
-                now()->subMillis(config('edge-flush.warmer.wait_before_warming')),
+                now()->subMillis(
+                    config('edge-flush.warmer.wait_before_warming'),
+                ),
             )
             ->take(config('edge-flush.warmer.max_urls'))
             ->orderBy('hits', 'desc')
