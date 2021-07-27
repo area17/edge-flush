@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 use A17\EdgeFlush\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
 class Service extends BaseService implements CDNService
@@ -21,7 +21,7 @@ class Service extends BaseService implements CDNService
     }
 
     /**
-     * @return \Illuminate\Config\Repository|\Illuminate\Contracts\Foundation\Application|mixed
+     * @return string|null
      */
     protected function getHost(): ?string
     {

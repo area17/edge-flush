@@ -2,7 +2,7 @@
 
 namespace A17\EdgeFlush\Contracts;
 
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
 
 interface Service
 {

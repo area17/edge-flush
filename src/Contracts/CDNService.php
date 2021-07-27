@@ -3,9 +3,9 @@
 namespace A17\EdgeFlush\Contracts;
 
 use Illuminate\Support\Collection;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
 
-interface CDNService
+interface CDNService extends Service
 {
     public function invalidate(Collection $items): bool;
 

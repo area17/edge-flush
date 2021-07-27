@@ -66,7 +66,7 @@ class ServiceProvider extends IlluminateServiceProvider
             );
         });
 
-        $this->app->singleton('a17.edge-flush.cache-control', function ($app) {
+        $this->app->singleton('a17.edge-flush.cache-control', function () {
             return EdgeFlushFacade::cacheControl();
         });
     }

@@ -3,20 +3,17 @@
 namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\EdgeFlush;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
 {
-    /**
-     * @psalm-suppress UndefinedMethod
-     */
     public function addHeadersToResponse(
         Response $response,
         string $service,
         string $value
     ): Response {
-        collect(config("edge-flush.headers.$service"))->each(
+        collect(config("edge-flush.headers.$service"))->map(
             fn(string $header) => $response->header(
                 $header,
                 collect($value)->join(', '),

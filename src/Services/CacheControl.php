@@ -5,9 +5,9 @@ namespace A17\EdgeFlush\Services;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use A17\EdgeFlush\Support\Constants;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
-use Symfony\Component\HttpFoundation\Response;
+use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use A17\EdgeFlush\Exceptions\FrontendChecker as FrontendCheckerException;
@@ -87,20 +87,11 @@ class CacheControl extends BaseService implements ServiceContract
             : $this->buildStrategy('micro-cache');
     }
 
-    /**
-     * @psalm-suppress UndefinedMethod
-     */
     protected function getContent(Response $response): string
     {
-        if (
-            !filled($this->_content) &&
-            filled($response) &&
-            !($response instanceof BinaryFileResponse)
-        ) {
-            $this->_content = $this->minifyContent($response->content());
-        }
-
-        return $this->_content;
+        return $this->_content = filled($this->_content)
+            ? $this->_content
+            : $this->minifyContent($response->content());
     }
 
     public function getMaxAge(): int
@@ -132,9 +123,6 @@ class CacheControl extends BaseService implements ServiceContract
         return $hasForm;
     }
 
-    /**
-     * @psalm-suppress InvalidReturnType
-     */
     protected function isFrontend(): bool
     {
         $checker = config('edge-flush.frontend-checker');
@@ -151,6 +139,9 @@ class CacheControl extends BaseService implements ServiceContract
             return app($checker)->runningOnFrontend();
         }
 
+        /**
+         * @phpstan-ignore-next-line
+         */
         FrontendCheckerException::unsupportedType(gettype($checker));
     }
 
@@ -159,9 +150,6 @@ class CacheControl extends BaseService implements ServiceContract
         return str_replace(' ', '', $content);
     }
 
-    /**
-     * @psalm-suppress PossiblyNullPropertyFetch
-     */
     protected function middlewaresAllowCaching(): bool
     {
         $middleware = blank($route = EdgeFlush::getRequest()->route())
@@ -259,9 +247,6 @@ class CacheControl extends BaseService implements ServiceContract
             );
     }
 
-    /**
-     * @psalm-suppress PossiblyNullReference|PossiblyInvalidMethodCall
-     */
     public function methodIsCachable(): bool
     {
         return (collect(config('edge-flush.methods.cachable'))->isEmpty() ||
@@ -284,9 +269,6 @@ class CacheControl extends BaseService implements ServiceContract
             );
     }
 
-    /**
-     * @psalm-suppress PossiblyInvalidMethodCall|PossiblyNullReference
-     */
     public function routeIsCachable(): bool
     {
         $route = EdgeFlush::getRequest()->route();
@@ -309,9 +291,6 @@ class CacheControl extends BaseService implements ServiceContract
             );
     }
 
-    /**
-     * @psalm-suppress PossiblyInvalidMethodCall|PossiblyNullReference
-     */
     public function urlIsCachable(): bool
     {
         $url = EdgeFlush::getRequest()->url();

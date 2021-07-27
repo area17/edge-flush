@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ResponseCache\ResponseCache;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
 
 class Tags
 {
@@ -21,9 +21,6 @@ class Tags
 
     public $processedTags = [];
 
-    /**
-     * @psalm-suppress ArgumentTypeCoercion
-     */
     public function addTag(Model $model): void
     {
         if (
@@ -57,10 +54,6 @@ class Tags
             ]);
     }
 
-    /**
-     * @param string|null $tag
-     * @return mixed
-     */
     protected function getAllTagsForModel(?string $modelString)
     {
         if (filled($modelString)) {
@@ -78,9 +71,6 @@ class Tags
             ->toArray();
     }
 
-    /**
-     * @psalm-suppress UndefinedInterfaceMethod
-     */
     public function getTagsHash(Response $response, Request $request)
     {
         $tag = $this->makeEdgeTag($models = $this->getTags());
@@ -102,16 +92,10 @@ class Tags
         return $tag;
     }
 
-    /**
-     * @psalm-suppress UndefinedInterfaceMethod
-     */
     public function makeEdgeTag($models = null)
     {
         $models ??= $this->getTags();
 
-        /**
-         * @psalm-suppress InvalidScalarArgument
-         */
         $tag = str_replace(
             ['%environment%', '%sha1%'],
             [app()->environment(), sha1(collect($models)->join(', '))],

@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - '**.php'
-      - 'psalm.xml.dist'
+      - 'phpstan.neon'
 
 jobs:
-  psalm:
-    name: psalm
+  phpstan:
+    name: phpstan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -29,5 +29,5 @@ jobs:
       - name: Run composer install
         run: composer install -n --prefer-dist
 
-      - name: Run psalm
-        run: ./vendor/bin/psalm --output-format=github
+      - name: Run phpstan
+        run: ./vendor/bin/phpstan analyse
