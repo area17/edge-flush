@@ -1,8 +1,8 @@
 # EdgeFlush
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/area17/edge-flush.svg?style=flat-square)](https://packagist.org/packages/area17/edge-flush)
-[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/run-tests?label=tests)](https://github.com/area17/edge-flush/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/Check%20&%20fix%20styling?label=code%20style)](https://github.com/area17/edge-flush/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3Amain)
+[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/run-tests?label=tests)](https://github.com/area17/edge-flush/actions?query=workflow%3Aphpunit+branch%3A1.x)
+[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/area17/edge-flush/Check%20&%20fix%20styling?label=code%20style)](https://github.com/area17/edge-flush/actions?query=workflow%3A"Check+%26+fix+styling"+branch%3A1.x)
 [![Total Downloads](https://img.shields.io/packagist/dt/area17/edge-flush.svg?style=flat-square)](https://packagist.org/packages/area17/edge-flush)
 
 EdgeFlush is Laravel package intended to help developers manage CDN granular caching and invalidations. Having Akamai, CloudFront (or any other CDN) in front of a website, data modification usually forces us to bust the whole cache, leading to a website slow (for the first users) until the whole cache is rebuilt, and if the "first user" is Google Bot, for example, this can also impact on your website's rank. This pacakge aims to do invalidations granularly.
