@@ -258,12 +258,12 @@ class Tags
                 sleep(2);
             }
 
-            if ($success = EdgeFlush::cdn()->invalidateAll()) {
-                break;
-            }
-        } while ($count < 3);
+            $success = EdgeFlush::cdn()->invalidateAll();
+        } while ($count < 3 && !$success);
 
         if ($success) {
+            EdgeFlush::responseCache()->invalidateAll();
+
             Tag::truncate();
 
             Url::whereNotNull('id')->update([

@@ -2,10 +2,10 @@
 
 namespace A17\EdgeFlush\Services\ResponseCache;
 
-use A17\EdgeFlush\Services\BaseService;
-use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use A17\EdgeFlush\Services\BaseService;
+use A17\EdgeFlush\Contracts\CDNService;
 use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\Facades\ResponseCache;
 
@@ -22,18 +22,24 @@ class Service extends BaseService implements CDNService
         return true;
     }
 
-    public function invalidateAll(): bool
-    {
-        return true;
+public function invalidateAll(): bool
+{
+    if ($this->enabled()) {
+        /**
+         * This is a call to a Laravel Façade which will try to
+         * instantiate the class
+         */
+        ResponseCache::clear();
     }
+
+    return true;
+}
 
     public function makeResponseCacheTag($request): ?string
     {
-        if (!$this->enabled()) {
-            return null;
-        }
-
-        return app(RequestHasher::class)->getHashFor($request);
+        return $this->enabled()
+            ? app(RequestHasher::class)->getHashFor($request)
+            : null;
     }
 
     public function enabled()

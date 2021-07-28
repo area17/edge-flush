@@ -2,9 +2,10 @@
 
 namespace A17\EdgeFlush\Tests;
 
-use A17\EdgeFlush\ServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Spatie\ResponseCache\ResponseCacheServiceProvider;
+use A17\EdgeFlush\ServiceProvider as EdgeFlushServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -21,7 +22,7 @@ class TestCase extends Orchestra
 
     protected function getPackageProviders($app)
     {
-        return [ServiceProvider::class];
+        return [EdgeFlushServiceProvider::class, ResponseCacheServiceProvider::class];
     }
 
     public function getEnvironmentSetUp($app)
