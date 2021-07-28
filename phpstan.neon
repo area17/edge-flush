@@ -9,9 +9,9 @@ parameters:
   # The level 8 is the highest level
   level: 5
 
-  excludePaths:
-    - /**/**/Services/ResponseCache/Service.php
-
   checkMissingIterableValueType: false
 
   reportUnmatchedIgnoredErrors: false
+
+  stubFiles:
+    - stubs/phpstan/Facades.stub
