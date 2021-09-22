@@ -22,18 +22,18 @@ class Service extends BaseService implements CDNService
         return true;
     }
 
-public function invalidateAll(): bool
-{
-    if ($this->enabled()) {
-        /**
-         * This is a call to a Laravel Façade which will try to
-         * instantiate the class
-         */
-        ResponseCache::clear();
-    }
+    public function invalidateAll(): bool
+    {
+        if ($this->enabled()) {
+            /**
+             * This is a call to a Laravel Façade which will try to
+             * instantiate the class
+             */
+            ResponseCache::clear();
+        }
 
-    return true;
-}
+        return true;
+    }
 
     public function makeResponseCacheTag($request): ?string
     {

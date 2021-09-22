@@ -289,6 +289,8 @@ return [
     'warmer' => [
         'enabled' => env('EDGE_FLUSH_WARMER_ENABLED', false),
 
+        'types' => ['internal', 'external'], // or external
+
         'max_urls' => 100,
 
         'max_time' => Constants::MILLISECOND * 750,
