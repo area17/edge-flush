@@ -289,7 +289,7 @@ return [
     'warmer' => [
         'enabled' => env('EDGE_FLUSH_WARMER_ENABLED', false),
 
-        'types' => ['internal', 'external'], // or external
+        'types' => ['internal', 'external'],
 
         'max_urls' => 100,
 
