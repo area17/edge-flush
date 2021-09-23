@@ -166,7 +166,7 @@ edge-cache-tag: app-production-7e0ae085d699003a64e5fa7b75daae3d78ace842
 
 If you have Response Cache installed, this package will automatically store its tags per page and when a model is changed it will not only purge the CDN pages related to this page but also bust the Response Cache internal cache. After, when the warmer passes back to warm those pages, Response Cache should also cache those pages again. This ensures that even if CDN hits your origin from a different not-yet-cached-region, responses will be still be blazing fast.
 
-To allow EdgeFlush to warm pages on Jobs, as ResponseCache only allows cached pages to be warmed if they are requested by a browser, you need to use this profile on `config/responsecache.php`:
+To allow EdgeFlush to warm pages on Jobs, as ResponseCache only allows cached pages to be warmed if they are requested by a browser, you need to use EdgeCache Profile and Hasher on `config/responsecache.php`:
 
 ``` php
 return [
@@ -179,9 +179,16 @@ return [
      *  You can provide your own class given that it implements the
      *  CacheProfile interface.
      */
-     
+
     'cache_profile' =>
         A17\EdgeFlush\Services\ResponseCache\CacheAllSuccessfulGetRequests::class,
+
+    /*
+     * This class is responsible for generating a hash for a request. This hash
+     * is used to look up an cached response.
+     */
+    
+    'hasher' => \A17\EdgeFlush\Services\ResponseCache\Hasher::class,
         
     ...
 ];    

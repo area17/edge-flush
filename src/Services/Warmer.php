@@ -95,7 +95,7 @@ class Warmer
 
         $request = Request::create($parsed['path'], 'GET', $parameters);
 
-        $request->headers->set('X-EDGE-FLUSH-WARMING', true);
+        $request->headers->set('X-EDGE-FLUSH-WARMING-URL', $url);
 
         Route::dispatch($request);
     }
