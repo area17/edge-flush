@@ -8,14 +8,22 @@ use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
 use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\Facades\ResponseCache;
+use Spatie\ResponseCache\ResponseCacheRepository;
 
 class Service extends BaseService implements CDNService
 {
+    protected ResponseCacheRepository $cache;
+
+    public function __construct(ResponseCacheRepository $cache)
+    {
+        $this->cache = $cache;
+    }
+
     public function invalidate(Collection $items): bool
     {
         if ($this->enabled()) {
             $items->each(
-                fn($item) => Cache::forget($item->response_cache_hash),
+                fn($item) => $this->forget($item->response_cache_hash),
             );
         }
 
@@ -45,5 +53,10 @@ class Service extends BaseService implements CDNService
     public function enabled()
     {
         return class_exists(ResponseCache::class);
+    }
+
+    public function forget($hash): void
+    {
+        $this->cache->has($hash) && $this->cache->forget($hash);
     }
 }

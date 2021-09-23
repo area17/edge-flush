@@ -43,12 +43,12 @@ class Tags
         ]);
 
         Url::join(
-            'edge_flush_cache_tags',
-            'edge_flush_cache_tags.url_id',
+            'edge_flush_tags',
+            'edge_flush_tags.url_id',
             '=',
-            'edge_flush_cache_urls.id',
+            'edge_flush_urls.id',
         )
-            ->whereIn('edge_flush_cache_tags.tag', $tags)
+            ->whereIn('edge_flush_tags.tag', $tags)
             ->update([
                 'was_purged_at' => now(),
             ]);
@@ -107,17 +107,13 @@ class Tags
 
     public function makeTag(Model $model): ?string
     {
-        $tag = null;
-
         try {
-            $tag = method_exists($model, 'getCDNCacheTag')
+            return method_exists($model, 'getCDNCacheTag')
                 ? $model->getCDNCacheTag()
                 : null;
         } catch (\Exception $exception) {
-            // TODO: should we ignore errors here?
+            return null;
         }
-
-        return $tag;
     }
 
     protected function tagIsExcluded(string $tag): bool

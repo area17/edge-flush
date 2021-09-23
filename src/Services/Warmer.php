@@ -3,26 +3,19 @@
 namespace A17\EdgeFlush\Services;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Env;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
-use Illuminate\Routing\Route;
 use GuzzleHttp\Client as Guzzle;
 use SebastianBergmann\Timer\Timer;
+use Illuminate\Support\Facades\Route;
 use GuzzleHttp\Promise\Utils as Promise;
 
 class Warmer
 {
     protected $guzzle;
-
-    public function __construct()
-    {
-        $this->guzzle = new Guzzle([
-            'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
-            'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
-        ]);
-    }
 
     public function execute()
     {
@@ -89,24 +82,42 @@ class Warmer
 
     public function dispatchInternalWarmRequests($urls)
     {
-        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url));
+        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url->url));
     }
 
-    public function dispatchInternalWarmRequest($fullUrl)
+    public function dispatchInternalWarmRequest($url)
     {
-        parse_str(parse_url($fullUrl)['query'] ?? '', $parameters);
+        $parsed = parse_url($url);
 
-        Route::dispatch(
-            Request::create(Str::before($url, '?'), 'GET', $parameters),
-        );
+        parse_str($parsed['query'] ?? '', $parameters);
+
+        $parameters['edge_flush_warming'] = true;
+
+        $request = Request::create($parsed['path'], 'GET', $parameters);
+
+        $request->headers->set('X-EDGE-FLUSH-WARMING', true);
+
+        Route::dispatch($request);
     }
 
     public function dispatchExternalWarmRequests($urls)
     {
         Promise::inspectAll(
             $urls->map(function ($url) {
-                return $this->guzzle->getAsync($url->url);
+                return $this->getGuzzle()->getAsync($url->url);
             }),
         );
+    }
+
+    public function getGuzzle()
+    {
+        if (filled($this->guzzle)) {
+            return $this->guzzle;
+        }
+
+        return $this->guzzle = new Guzzle([
+            'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+            'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
+        ]);
     }
 }
