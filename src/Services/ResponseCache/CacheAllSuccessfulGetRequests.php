@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\ResponseCache;
 
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Spatie\ResponseCache\CacheProfiles\CacheAllSuccessfulGetRequests as SpatieCacheAllSuccessfulGetRequests;
 
 class CacheAllSuccessfulGetRequests extends SpatieCacheAllSuccessfulGetRequests

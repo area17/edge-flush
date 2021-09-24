@@ -62,7 +62,7 @@ class Warmer
 
     protected function dispatchWarmRequests($urls)
     {
-        foreach (config('edge-flush.warmer.types') as $type) {
+        foreach (config('edge-flush.warmer.types', []) as $type) {
             if ($type === 'internal') {
                 $this->dispatchInternalWarmRequests($urls);
             }
@@ -91,13 +91,11 @@ class Warmer
 
         parse_str($parsed['query'] ?? '', $parameters);
 
-        $parameters['edge_flush_warming'] = true;
-
         $request = Request::create($parsed['path'], 'GET', $parameters);
 
         $request->headers->set('X-EDGE-FLUSH-WARMING-URL', $url);
 
-        Route::dispatch($request);
+        app()->handle($request);
     }
 
     public function dispatchExternalWarmRequests($urls)

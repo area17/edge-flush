@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\ResponseCache;
 
 use Illuminate\Http\Request;
+use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\CacheProfiles\CacheProfile;
 use Spatie\ResponseCache\Hasher\DefaultHasher as SpatieHasher;
 

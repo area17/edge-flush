@@ -19,12 +19,10 @@ class Service extends BaseService implements CDNService
         $this->cache = $cache;
     }
 
-    public function invalidate(Collection $items): bool
+    public function invalidate(Collection $tags): bool
     {
         if ($this->enabled()) {
-            $items->each(
-                fn($item) => $this->forget($item->response_cache_hash),
-            );
+            $tags->each(fn($tag) => $this->forget($tag->response_cache_hash));
         }
 
         return true;
