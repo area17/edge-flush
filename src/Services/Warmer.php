@@ -95,6 +95,8 @@ class Warmer
 
         $request->headers->set('X-EDGE-FLUSH-WARMING-URL', $url);
 
+        $this->addHeaders($request, config('edge-flush.warmer.headers'));
+
         app()->handle($request);
     }
 
@@ -117,5 +119,10 @@ class Warmer
             'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
             'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
         ]);
+    }
+
+    public function addHeaders($request, $headers)
+    {
+        collect($headers)->each(fn($value, $key) => $request->headers->set($key, $value));
     }
 }
