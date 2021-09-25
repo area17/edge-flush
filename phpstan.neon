@@ -14,4 +14,4 @@ parameters:
   reportUnmatchedIgnoredErrors: false
 
   stubFiles:
-    - stubs/phpstan/Facades.stub
+    - stubs/phpstan/larastan-Facades.php
