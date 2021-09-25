@@ -302,6 +302,11 @@ return [
         'warm_all_on_purge' => true,
 
         'wait_before_warming' => Constants::MINUTE * 2,
+
+        'headers' => [
+            'PHP_AUTH_USER' => env('HTTP_AUTH_USER'),
+            'PHP_AUTH_PW' => env('HTTP_AUTH_PASSWORD'),
+        ],
     ],
 
     /**
