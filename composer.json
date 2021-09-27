@@ -46,6 +46,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "A17\\EdgeFlush\\Tests\\": "tests",
             "Spatie\\ResponseCache\\": "vendor/spatie/laravel-responsecache/src"
         }
     },
