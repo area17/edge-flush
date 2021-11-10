@@ -101,4 +101,14 @@ class EdgeFlush extends BaseService
     {
         return $this->request;
     }
+
+    public function enable()
+    {
+        $this->enabled = true;
+    }
+
+    public function disable()
+    {
+        $this->enabled = false;
+    }
 }

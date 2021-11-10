@@ -12,18 +12,20 @@ class EdgeFlushTest extends TestCase
     {
         parent::setUp();
 
+        config(['edge-flush.enabled' => true]);
+
         EdgeFlush::setRequest(new \Illuminate\Http\Request());
     }
 
     protected $enabledValues = [
-        'enabled' => false,
+        'enabled' => true,
         'isCachable' => false,
         'routeIsCachable' => true,
         'max-age 1' => 604800000,
         'max-age 2' => 2500,
         'max-age 3' => 1500,
         'max-age' => [
-            'enabled' => false,
+            'enabled' => true,
             'isFrontend' => false,
             'notValidForm' => true,
             'methodIsCachable' => true,
@@ -63,9 +65,8 @@ class EdgeFlushTest extends TestCase
             'statusCodeIsCachable' => true,
         ],
         'headers' => [
-            'cache-control' => ['max-age=5, public'],
+            'cache-control' => ['no-cache, private'],
             'content-type' => ['application/json'],
-            'x-cache-control' => ['max-age=5, public'],
         ],
         'strategy 1' => 'max-age=5, public',
         'strategy 2' => 'max-age=5, public',
@@ -76,6 +77,8 @@ class EdgeFlushTest extends TestCase
     /** @test */
     public function edge_flush_can_be_enabled()
     {
+        EdgeFlush::enable();
+
         $response = response()->json([]);
 
         $this->assertEquals($this->getValues($response), $this->enabledValues);
@@ -84,6 +87,8 @@ class EdgeFlushTest extends TestCase
     /** @test */
     public function edge_flush_can_be_disabled()
     {
+        EdgeFlush::disable();
+
         $response = response()->json([]);
 
         config(['edge-flush.enabled' => false]);

@@ -24,11 +24,6 @@ class CacheControl extends BaseService implements ServiceContract
 
     protected $strategy;
 
-    public function __construct()
-    {
-        $this->instantiate();
-    }
-
     public function makeResponse(Response $response): Response
     {
         if (!EdgeFlush::enabled()) {
