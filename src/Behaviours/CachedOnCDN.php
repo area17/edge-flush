@@ -9,7 +9,7 @@ trait CachedOnCDN
 {
     public function invalidateCDNCache(Model $model): void
     {
-        EdgeFlush::tags()->invalidateTagsFor($model);
+        $this->enabled() && EdgeFlush::tags()->invalidateTagsFor($model);
     }
 
     public function getCDNCacheTag(): string
@@ -21,6 +21,11 @@ trait CachedOnCDN
 
     public function cacheModelOnCDN(Model $model): void
     {
-        EdgeFlush::tags()->addTag($model);
+        $this->enabled() && EdgeFlush::tags()->addTag($model);
+    }
+
+    public function enabled()
+    {
+        return config('edge-flush.enabled');
     }
 }

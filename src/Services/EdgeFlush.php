@@ -41,7 +41,7 @@ class EdgeFlush extends BaseService
 
         $this->responseCache = $responseCache;
 
-        $this->enabled = config('edge-flush.enabled', true);
+        $this->enabled = config('edge-flush.enabled', false);
     }
 
     public function enabled(): bool

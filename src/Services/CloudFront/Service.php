@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\CloudFront;
 
 use Aws\AwsClient;
+use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
 use A17\EdgeFlush\Services\BaseService;
@@ -20,11 +21,17 @@ class Service extends BaseService implements CDNService
 
     public function __construct()
     {
-        $this->instantiate();
+        if (EdgeFlush::enabled()) {
+            $this->instantiate();
+        }
     }
 
     public function invalidate(Collection $items): bool
     {
+        if (!EdgeFlush::enabled()) {
+            return false;
+        }
+
         $items = collect($items)
             ->map(fn($item) => $this->getInvalidationPath($item))
             ->unique()
@@ -35,6 +42,10 @@ class Service extends BaseService implements CDNService
 
     public function invalidateAll(): bool
     {
+        if (!EdgeFlush::enabled()) {
+            return false;
+        }
+
         return $this->createInvalidationRequest(
             config('edge-flush.services.cloud_front.invalidate_all_paths'),
         );
@@ -45,8 +56,12 @@ class Service extends BaseService implements CDNService
         return config('edge-flush.services.cloud_front.distribution_id');
     }
 
-    public function getClient(): CloudFrontClient
+    public function getClient(): ?CloudFrontClient
     {
+        if (!config('edge-flush.enabled')) {
+            return null;
+        }
+
         return new CloudFrontClient([
             'region' => config('edge-flush.services.cloud_front.region'),
 
@@ -107,10 +122,12 @@ class Service extends BaseService implements CDNService
 
     protected function instantiate(): void
     {
+        parent::instantiate();
+
         $this->client = static::getClient();
     }
 
-    public function getInvalidationPath($item)
+    protected function getInvalidationPath($item)
     {
         $url = $item instanceof Url ? $item->url : $item->url->url ?? null;
 

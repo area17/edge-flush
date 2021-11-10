@@ -2,6 +2,7 @@
 
 namespace A17\EdgeFlush\Services\ResponseCache;
 
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use A17\EdgeFlush\Services\BaseService;
@@ -14,14 +15,9 @@ class Service extends BaseService implements CDNService
 {
     protected ResponseCacheRepository $cache;
 
-    public function __construct(ResponseCacheRepository $cache)
-    {
-        $this->cache = $cache;
-    }
-
     public function invalidate(Collection $tags): bool
     {
-        if ($this->enabled()) {
+        if (EdgeFlush::enabled()) {
             $tags->each(fn($tag) => $this->forget($tag->response_cache_hash));
         }
 

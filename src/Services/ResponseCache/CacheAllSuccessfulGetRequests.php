@@ -27,7 +27,13 @@ class CacheAllSuccessfulGetRequests extends SpatieCacheAllSuccessfulGetRequests
         $isCacheable = parent::hasCacheableResponseCode($response);
 
         if (!$isCacheable) {
-            Log::error(sprintf('Response is not cacheable: %s - %s', $response->getStatusCode(), $response->getContent()));
+            Log::error(
+                sprintf(
+                    'Response is not cacheable: %s - %s',
+                    $response->getStatusCode(),
+                    $response->getContent(),
+                ),
+            );
         }
 
         return $isCacheable;

@@ -2,14 +2,19 @@
 
 namespace A17\EdgeFlush\Services\Akamai;
 
+use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Services\Tags;
+use A17\EdgeFlush\Services\Warmer;
 use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Services\CacheControl;
 use A17\EdgeFlush\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\Response;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
+use A17\EdgeFlush\Services\ResponseCache\Service as ResponseCache;
 
 class Service extends BaseService implements CDNService
 {
@@ -35,6 +40,10 @@ class Service extends BaseService implements CDNService
 
     public function invalidate(Collection $items): bool
     {
+        if (!EdgeFlush::enabled()) {
+            return false;
+        }
+
         $body = [
             'objects' => collect($items)
                 ->map(fn($item) => is_object($item) ? $item->tag : $item)

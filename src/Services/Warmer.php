@@ -123,6 +123,8 @@ class Warmer
 
     public function addHeaders($request, $headers)
     {
-        collect($headers)->each(fn($value, $key) => $request->headers->set($key, $value));
+        collect($headers)->each(
+            fn($value, $key) => $request->headers->set($key, $value),
+        );
     }
 }

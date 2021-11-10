@@ -13,6 +13,10 @@ abstract class BaseService implements ServiceContract
         string $service,
         string $value
     ): Response {
+        if (!EdgeFlush::enabled()) {
+            return $response;
+        }
+
         collect(config("edge-flush.headers.$service"))->map(
             fn(string $header) => $response->headers->set(
                 $header,
@@ -25,6 +29,10 @@ abstract class BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
+        if (!EdgeFlush::enabled()) {
+            return $response;
+        }
+
         return $this->addHeadersToResponse(
             $response,
             'tags',
