@@ -26,7 +26,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return $response;
         }
 
@@ -60,7 +60,7 @@ class CacheControl extends BaseService implements ServiceContract
     public function getCachableMatrix(Response $response): Collection
     {
         return collect([
-            'enabled' => EdgeFlush::enabled(),
+            'enabled' => $this->enabled(),
             'isFrontend' => $this->isFrontend(),
             'notValidForm' => !$this->containsValidForm($response),
             'methodIsCachable' => $this->methodIsCachable(),

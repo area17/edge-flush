@@ -22,8 +22,6 @@ class EdgeFlush extends BaseService
 
     public Request $request;
 
-    public bool $enabled;
-
     public function __construct(
         CDNService $cdn,
         CacheControl $cacheControl,
@@ -42,11 +40,6 @@ class EdgeFlush extends BaseService
         $this->responseCache = $responseCache;
 
         $this->enabled = config('edge-flush.enabled', false);
-    }
-
-    public function enabled(): bool
-    {
-        return $this->enabled;
     }
 
     public function makeResponse(Response $response): Response
@@ -100,15 +93,5 @@ class EdgeFlush extends BaseService
     public function getRequest()
     {
         return $this->request;
-    }
-
-    public function enable()
-    {
-        $this->enabled = true;
-    }
-
-    public function disable()
-    {
-        $this->enabled = false;
     }
 }

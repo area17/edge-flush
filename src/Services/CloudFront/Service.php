@@ -21,14 +21,14 @@ class Service extends BaseService implements CDNService
 
     public function __construct()
     {
-        if (EdgeFlush::enabled()) {
+        if ($this->enabled()) {
             $this->instantiate();
         }
     }
 
     public function invalidate(Collection $items): bool
     {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return false;
         }
 
@@ -42,7 +42,7 @@ class Service extends BaseService implements CDNService
 
     public function invalidateAll(): bool
     {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return false;
         }
 

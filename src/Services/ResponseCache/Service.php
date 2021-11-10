@@ -17,7 +17,7 @@ class Service extends BaseService implements CDNService
 
     public function invalidate(Collection $tags): bool
     {
-        if (EdgeFlush::enabled()) {
+        if ($this->enabled()) {
             $tags->each(fn($tag) => $this->forget($tag->response_cache_hash));
         }
 
@@ -26,13 +26,15 @@ class Service extends BaseService implements CDNService
 
     public function invalidateAll(): bool
     {
-        if ($this->enabled()) {
-            /**
-             * This is a call to a Laravel Façade which will try to
-             * instantiate the class
-             */
-            ResponseCache::clear();
+        if (!$this->enabled()) {
+            return false;
         }
+
+        /**
+         * This is a call to a Laravel Façade which will try to
+         * instantiate the class
+         */
+        ResponseCache::clear();
 
         return true;
     }
@@ -46,7 +48,7 @@ class Service extends BaseService implements CDNService
 
     public function enabled()
     {
-        return class_exists(ResponseCache::class);
+        return $this->enabled() && class_exists(ResponseCache::class);
     }
 
     public function forget($hash): void

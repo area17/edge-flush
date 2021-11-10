@@ -247,6 +247,10 @@ class Tags
 
     public function invalidateAll()
     {
+        if (!EdgeFlush::enabled()) {
+            return false;
+        }
+
         $count = 0;
 
         do {

@@ -40,7 +40,7 @@ class Service extends BaseService implements CDNService
 
     public function invalidate(Collection $items): bool
     {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return false;
         }
 
@@ -60,6 +60,10 @@ class Service extends BaseService implements CDNService
 
     public function invalidateAll(): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         return $this->invalidate(
             config('edge-flush.services.akamai.invalidate_all_paths'),
         );

@@ -8,12 +8,14 @@ use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
 {
+    protected $enabled;
+
     public function addHeadersToResponse(
         Response $response,
         string $service,
         string $value
     ): Response {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return $response;
         }
 
@@ -29,7 +31,7 @@ abstract class BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return $response;
         }
 
@@ -56,5 +58,20 @@ abstract class BaseService implements ServiceContract
         $string = str_replace('\\', '_', $string);
 
         return fnmatch($patten, $string);
+    }
+
+    public function enabled()
+    {
+        return $this->enabled ??= config('edge-flush.enabled');
+    }
+
+    public function enable()
+    {
+        $this->enabled = true;
+    }
+
+    public function disable()
+    {
+        $this->enabled = false;
     }
 }
