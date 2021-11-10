@@ -2,6 +2,10 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.0.2 - 2021-11-10
+### Fixed
+- Disabled state generating recursion
+
 ## 1.0.1 - 2021-11-10
 ### Added
 - Alow disabling on runtime
