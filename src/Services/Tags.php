@@ -245,7 +245,7 @@ class Tags
         return true;
     }
 
-    public function invalidateAll()
+    public function invalidateAll(): bool
     {
         if (!EdgeFlush::enabled()) {
             return false;
@@ -261,14 +261,18 @@ class Tags
             $success = EdgeFlush::cdn()->invalidateAll();
         } while ($count < 3 && !$success);
 
-        if ($success) {
-            EdgeFlush::responseCache()->invalidateAll();
-
-            Tag::truncate();
-
-            Url::whereNotNull('id')->update([
-                'was_purged_at' => now(),
-            ]);
+        if (!$success) {
+            return false;
         }
+
+        EdgeFlush::responseCache()->invalidateAll();
+
+        Tag::truncate();
+
+        Url::whereNotNull('id')->update([
+            'was_purged_at' => now(),
+        ]);
+
+        return true;
     }
 }

@@ -48,7 +48,7 @@ class Service extends BaseService implements CDNService
 
     public function enabled()
     {
-        return $this->enabled() && class_exists(ResponseCache::class);
+        return EdgeFlush::enabled() && class_exists(ResponseCache::class);
     }
 
     public function forget($hash): void
