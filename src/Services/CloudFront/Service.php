@@ -122,8 +122,6 @@ class Service extends BaseService implements CDNService
 
     protected function instantiate(): void
     {
-        parent::instantiate();
-
         $this->client = static::getClient();
     }
 
