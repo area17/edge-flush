@@ -24,8 +24,8 @@ trait CachedOnCDN
         EdgeFlush::tags()->addTag($model);
     }
 
-    public function edgeFlushIsEnabled()
+    public function edgeFlushIsEnabled(): bool
     {
-        return config('edge-flush.enabled');
+        return config('edge-flush.enabled', false);
     }
 }
