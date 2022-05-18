@@ -143,10 +143,9 @@ class CacheControl extends BaseService implements ServiceContract
             return app($checker)->runningOnFrontend();
         }
 
-        /**
-         * @phpstan-ignore-next-line
-         */
         FrontendCheckerException::unsupportedType(gettype($checker));
+
+        return false;
     }
 
     protected function minifyContent(string $content): string
