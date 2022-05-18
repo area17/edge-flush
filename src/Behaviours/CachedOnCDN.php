@@ -21,7 +21,7 @@ trait CachedOnCDN
 
     public function cacheModelOnCDN(Model $model): void
     {
-        $this->enabled() && EdgeFlush::tags()->addTag($model);
+        EdgeFlush::tags()->addTag($model);
     }
 
     public function enabled()

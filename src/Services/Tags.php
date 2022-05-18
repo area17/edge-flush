@@ -8,6 +8,7 @@ use A17\EdgeFlush\Models\Url;
 use A17\EdgeFlush\Jobs\StoreTags;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -137,6 +138,8 @@ class Tags
         string $url
     ): void {
         collect($models)->each(function (string $model) use ($tags, $url) {
+            $url = Helpers::sanitizeUrl($url);
+
             $url = Url::firstOrCreate(
                 ['url_hash' => sha1($url)],
                 [
@@ -274,5 +277,9 @@ class Tags
         ]);
 
         return true;
+    }
+
+    public function sanitizeUrl()
+    {
     }
 }
