@@ -13,6 +13,8 @@ class CreateEdgeFlushTagsTable extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('edge_flush_tags');
+
         Schema::create('edge_flush_tags', function (Blueprint $table) {
             $table->id();
 

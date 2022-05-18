@@ -1,4 +1,4 @@
-<?php
+g<?php
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
@@ -13,6 +13,8 @@ class CreateEdgeFlushUrlsTable extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('edge_flush_urls');
+
         Schema::create('edge_flush_urls', function (Blueprint $table) {
             $table->id();
 
