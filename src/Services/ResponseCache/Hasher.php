@@ -11,7 +11,7 @@ class Hasher extends SpatieHasher implements RequestHasher
 {
     public function getHashFor(Request $request): string
     {
-        $cacheNameSuffix = $this->getCacheNameSuffix($request);
+        $cacheName = $this->getCacheNameSuffix($request);
 
         $host = $this->getHost($request);
 
@@ -19,9 +19,7 @@ class Hasher extends SpatieHasher implements RequestHasher
 
         $method = $request->getMethod();
 
-        info('hash '.'responsecache-' . md5("$host-$uri-$method-$cacheNameSuffix")."= $host-$uri-$method-$cacheNameSuffix");
-
-        return 'responsecache-' . md5("$host-$uri-$method-$cacheNameSuffix");
+        return 'responsecache-' . md5("$host-$uri-$method-$cacheName");
     }
 
     public function getHost($request)
