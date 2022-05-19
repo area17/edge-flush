@@ -183,7 +183,7 @@ class Tags
         }
 
         if (config('edge-flush.invalidations.type') === 'batch') {
-            $this->makeTagsObsolete($tags);
+            $this->markTagsAsObsolete($tags);
 
             return;
         }
@@ -204,7 +204,7 @@ class Tags
         $this->dispatchInvalidations(Tag::where('obsolete', true)->get());
     }
 
-    protected function makeTagsObsolete(array $tags): void
+    protected function markTagsAsObsolete(array $tags): void
     {
         Tag::whereIn('tag', $tags)->update(['obsolete' => true]);
     }
