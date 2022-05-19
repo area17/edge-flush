@@ -13,12 +13,13 @@ class Hasher extends SpatieHasher implements RequestHasher
     {
         $cacheNameSuffix = $this->getCacheNameSuffix($request);
 
-        return 'responsecache-' .
-            md5(
-                "{$this->getHost(
-                    $request,
-                )}-{$request->getRequestUri()}-{$request->getMethod()}/$cacheNameSuffix",
-            );
+        $host = $this->getHost($request);
+
+        $uri = $request->getRequestUri();
+
+        $method = $request->getMethod();
+
+        return 'responsecache-' . md5("$host-$uri-$method-$cacheNameSuffix");
     }
 
     public function getHost($request)
