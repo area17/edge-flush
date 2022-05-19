@@ -11,10 +11,7 @@ class Helpers
      */
     public static function sanitizeUrl(string $url): string
     {
-        if (
-            config('edge-flush.urls.query.fully_cachable') ||
-            blank($routes = config('edge-flush.urls.query.allow_routes'))
-        ) {
+        if (config('edge-flush.urls.query.fully_cachable')) {
             return $url;
         }
 
@@ -25,6 +22,8 @@ class Helpers
         if (blank($query)) {
             return $url;
         }
+
+        $routes = config('edge-flush.urls.query.allow_routes');
 
         $list = $routes[$parsed['path'] ?? null] ?? null;
 
