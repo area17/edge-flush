@@ -15,6 +15,11 @@ class Service extends BaseService implements CDNService
 {
     protected ResponseCacheRepository $cache;
 
+    public function __construct()
+    {
+        $this->cache = app(ResponseCacheRepository::class);
+    }
+
     public function invalidate(Collection $tags): bool
     {
         if ($this->enabled()) {
