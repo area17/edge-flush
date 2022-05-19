@@ -32,8 +32,16 @@ class InvalidateTags implements ShouldQueue
      */
     public function handle()
     {
-        filled($this->model)
-            ? EdgeFlush::tags()->invalidateTagsForModel($this->model)
-            : EdgeFlush::tags()->invalidateTags();
+        try {
+            filled($this->model)
+                ? EdgeFlush::tags()->invalidateTagsForModel($this->model)
+                : EdgeFlush::tags()->invalidateTags();
+        } catch (\Throwable) {
+            /**
+             * If an error happens during an invalidation on the CDN service,
+             * we release the job back to the queue
+             */
+            $this->release();
+        }
     }
 }
