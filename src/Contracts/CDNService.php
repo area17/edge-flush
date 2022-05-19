@@ -10,4 +10,6 @@ interface CDNService extends Service
     public function invalidate(Collection $items): bool;
 
     public function invalidateAll(): bool;
+
+    public function getInvalidationPathsForTags(Collection $tags): Collection;
 }

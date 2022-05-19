@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\EdgeFlush;
+use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
@@ -73,5 +74,10 @@ abstract class BaseService implements ServiceContract
     public function disable()
     {
         $this->enabled = false;
+    }
+
+    public function getInvalidationPathsForTags(Collection $tags): Collection
+    {
+        return $tags;
     }
 }

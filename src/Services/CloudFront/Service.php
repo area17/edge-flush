@@ -26,18 +26,15 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    public function invalidate(Collection $items): bool
+    public function invalidate(Collection $tags): bool
     {
         if (!$this->enabled()) {
             return false;
         }
 
-        $items = collect($items)
-            ->map(fn($item) => $this->getInvalidationPath($item))
-            ->unique()
-            ->toArray();
-
-        return $this->createInvalidationRequest($items);
+        return $this->createInvalidationRequest(
+            $this->getInvalidationPathsForTags($tags),
+        );
     }
 
     public function invalidateAll(): bool
@@ -91,7 +88,7 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    protected function createInvalidationRequest(array $paths = []): bool
+    protected function createInvalidationRequest(Collection $paths): bool
     {
         if (count($paths) === 0) {
             return false;
@@ -103,7 +100,7 @@ class Service extends BaseService implements CDNService
                 'InvalidationBatch' => [
                     'Paths' => [
                         'Quantity' => count($paths),
-                        'Items' => $paths,
+                        'Items' => $paths->keys(),
                     ],
                     'CallerReference' => time(),
                 ],
@@ -136,5 +133,12 @@ class Service extends BaseService implements CDNService
         $url = parse_url($url);
 
         return $url['path'] ?? '/';
+    }
+
+    public function getInvalidationPathsForTags(Collection $tags): Collection
+    {
+        return collect($tags)->mapWithKeys(
+            fn($tag) => [$this->getInvalidationPath($tag) => $tag],
+        );
     }
 }

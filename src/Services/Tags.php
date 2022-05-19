@@ -171,17 +171,17 @@ class Tags
     public function invalidateTagsForModel($model): void
     {
         $tags = $this->getAllTagsForModel($this->makeTag($model))
-                     ->pluck('tag')
-                     ->toArray();
+            ->pluck('tag')
+            ->toArray();
 
         if (blank($tags)) {
             return;
         }
 
-        $this->invalidateCacheTags($tags);
+        $this->invalidateTags($tags);
     }
 
-    public function invalidateCacheTags($tags): void
+    public function invalidateTags($tags = null): void
     {
         if (blank($tags)) {
             $this->invalidateObsoleteTags();
@@ -200,15 +200,44 @@ class Tags
 
     protected function invalidateObsoleteTags(): void
     {
-        $count = Tag::where('obsolete', true)->count();
+        $max = config('edge-flush.invalidations.batch.flush_roots_if_exceeds');
 
-        if ($count > config('edge-flush.invalidations.batch.max_tags')) {
+        /**
+         * Try to limit a bit the number of records we are reaching
+         * Invalidate the most accessed pages first
+         */
+        $tags = Tag::select('edge_flush_tags.*')->where('edge_flush_tags.obsolete', true)
+            ->join(
+                'edge_flush_urls',
+                'edge_flush_tags.url_id',
+                '=',
+                'edge_flush_urls.id',
+            )
+            ->orderBy('edge_flush_urls.hits', 'desc')
+            ->take($max * 2)
+            ->get();
+
+        /**
+         * Get the actual list of paths that will be invalidated
+         */
+        $paths = EdgeFlush::cdn()->getInvalidationPathsForTags($tags);
+
+        /**
+         * If it's above max, flush the whole website
+         */
+        if ($paths->count() > $max) {
             $this->invalidateEntireCache();
 
             return;
         }
 
-        $this->dispatchInvalidations(Tag::where('obsolete', true)->get());
+        /**
+         * Let's dispatch invalidations only for what's configured
+         *
+         */
+        $this->dispatchInvalidations(
+            $tags->take(config('edge-flush.invalidations.batch.size')),
+        );
     }
 
     protected function markTagsAsObsolete(array $tags): void
@@ -218,6 +247,10 @@ class Tags
 
     protected function dispatchInvalidations(Collection $tags): void
     {
+        if (!$tags->isEmpty()) {
+            return;
+        }
+
         EdgeFlush::responseCache()->invalidate($tags);
 
         if (EdgeFlush::cdn()->invalidate($tags)) {
@@ -229,7 +262,7 @@ class Tags
     protected function invalidateEntireCache()
     {
         EdgeFlush::cdn()->invalidate(
-            collect(config('edge-flush.invalidations.batch.site_roots')),
+            collect(config('edge-flush.invalidations.batch.roots')),
         );
     }
 
