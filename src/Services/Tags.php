@@ -206,7 +206,8 @@ class Tags
          * Try to limit a bit the number of records we are reaching
          * Invalidate the most accessed pages first
          */
-        $tags = Tag::select('edge_flush_tags.*')->where('edge_flush_tags.obsolete', true)
+        $tags = Tag::select('edge_flush_tags.*')
+            ->where('edge_flush_tags.obsolete', true)
             ->join(
                 'edge_flush_urls',
                 'edge_flush_tags.url_id',
