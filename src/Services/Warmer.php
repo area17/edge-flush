@@ -95,6 +95,8 @@ class Warmer
 
         $request->headers->set('X-EDGE-FLUSH-WARMING-URL', $url);
 
+        $request->headers->set('host', $parsed['host'] ?? 'localhost');
+
         $this->addHeaders($request, config('edge-flush.warmer.headers'));
 
         app()->handle($request);
