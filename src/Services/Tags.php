@@ -86,7 +86,7 @@ class Tags
                         EdgeFlush::getRequest(),
                     ),
                 ],
-                url()->full(),
+                $this->getCurrentUrl($request),
             );
         }
 
@@ -320,7 +320,8 @@ class Tags
         return true;
     }
 
-    public function sanitizeUrl()
+    public function getCurrentUrl($request)
     {
+        return $request->header('X-EDGE-FLUSH-WARMING-URL') ?? url()->full();
     }
 }
