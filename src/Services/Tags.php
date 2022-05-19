@@ -163,18 +163,25 @@ class Tags
         });
     }
 
-    public function invalidateTagsFor(Model $model): void
+    public function dispatchInvalidationsForModel(Model $model): void
     {
-        $tags = $this->getAllTagsForModel($this->makeTag($model))
-            ->pluck('tag')
-            ->toArray();
-
-        if (filled($tags)) {
-            InvalidateTags::dispatch($tags);
-        }
+        InvalidateTags::dispatch($model);
     }
 
-    public function invalidateCacheTags($tags = null): void
+    public function invalidateTagsForModel($model): void
+    {
+        $tags = $this->getAllTagsForModel($this->makeTag($model))
+                     ->pluck('tag')
+                     ->toArray();
+
+        if (blank($tags)) {
+            return;
+        }
+
+        $this->invalidateCacheTags($tags);
+    }
+
+    public function invalidateCacheTags($tags): void
     {
         if (blank($tags)) {
             $this->invalidateObsoleteTags();

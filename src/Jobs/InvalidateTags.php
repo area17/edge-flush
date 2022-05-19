@@ -13,16 +13,16 @@ class InvalidateTags implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tags;
+    public $model;
 
     /**
      * Create a new job instance.
      *
-     * @param array|null $tags
+     * @param array|null $model
      */
-    public function __construct($tags = null)
+    public function __construct($model = null)
     {
-        $this->tags = $tags;
+        $this->model = $model;
     }
 
     /**
@@ -32,6 +32,6 @@ class InvalidateTags implements ShouldQueue
      */
     public function handle()
     {
-        EdgeFlush::tags()->invalidateCacheTags($this->tags);
+        EdgeFlush::tags()->invalidateTagsForModel($this->model);
     }
 }
