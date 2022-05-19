@@ -100,7 +100,7 @@ class Service extends BaseService implements CDNService
                 'InvalidationBatch' => [
                     'Paths' => [
                         'Quantity' => count($paths),
-                        'Items' => $paths->keys(),
+                        'Items' => $paths->keys()->toArray(),
                     ],
                     'CallerReference' => time(),
                 ],

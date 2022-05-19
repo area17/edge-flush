@@ -248,7 +248,7 @@ class Tags
 
     protected function dispatchInvalidations(Collection $tags): void
     {
-        if (!$tags->isEmpty()) {
+        if ($tags->isEmpty()) {
             return;
         }
 
