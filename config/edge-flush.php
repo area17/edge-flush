@@ -220,20 +220,30 @@ return [
      * Invalidations can be sent one by one or in batch. In this section you can configure
      * this and also set the limits.
      *
-     * single invalidations are executed immediately after a model is updated.
-     * batch invalidations are executed every x minutes.
+     * method:
+     *   invalidate: tell CDN to invalidate the page
+     *   delete: tell CDN to delete the page
      *
-     * batch.max_paths: what's is the limit before we invalidate the whole site?
-     * batch.site_root: what's the site root path that should be invalidated?
+     * type:
+     *   single: invalidations are executed immediately after a model is updated.
+     *   batch: invalidations are executed every x minutes.
+     *
+     * batch:
+     *   size: How many invalidations should be sent every time we invalidate?
+     *   flush_roots_if_exceeds: If there are more than this, we should just invalidate the whole site
+     *   roots: What are the paths to invalidate "the whole site"?
      */
     'invalidations' => [
         'method' => 'invalidate', // invalidate, delete
 
-        'type' => 'single', // single, batch
+        'type' => 'batch', // single, batch
 
         'batch' => [
-            'max_tags' => 2999, /// CloudFront limit is 3000
-            'site_roots' => ['/*'],
+            'size' => 2999, /// CloudFront limit is 3000
+
+            'flush_roots_if_exceeds' => 15000,
+
+            'roots' => ['/*'],
         ],
     ],
 
