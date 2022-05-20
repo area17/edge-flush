@@ -137,30 +137,35 @@ class Tags
         array $tags,
         string $url
     ): void {
-        collect($models)->each(function (string $model) use ($tags, $url) {
-            $url = Helpers::sanitizeUrl($url);
+        DB::transaction(
+            fn() => collect($models)->each(function (string $model) use (
+                $tags,
+                $url
+            ) {
+                $url = Helpers::sanitizeUrl($url);
 
-            $url = Url::firstOrCreate(
-                ['url_hash' => sha1($url)],
-                [
-                    'url' => Str::limit($url, 255),
-                    'hits' => 1,
-                ],
-            );
+                $url = Url::firstOrCreate(
+                    ['url_hash' => sha1($url)],
+                    [
+                        'url' => Str::limit($url, 255),
+                        'hits' => 1,
+                    ],
+                );
 
-            if (!$url->wasRecentlyCreated) {
-                $url->hits++;
+                if (!$url->wasRecentlyCreated) {
+                    $url->hits++;
 
-                $url->save();
-            }
+                    $url->save();
+                }
 
-            Tag::firstOrCreate([
-                'model' => $model,
-                'tag' => $tags['cdn'],
-                'response_cache_hash' => $tags['response_cache'],
-                'url_id' => $url->id,
-            ]);
-        });
+                Tag::firstOrCreate([
+                    'model' => $model,
+                    'tag' => $tags['cdn'],
+                    'response_cache_hash' => $tags['response_cache'],
+                    'url_id' => $url->id,
+                ]);
+            }), 5
+        );
     }
 
     public function dispatchInvalidationsForModel(Model $model): void
