@@ -14,4 +14,7 @@ parameters:
   reportUnmatchedIgnoredErrors: false
 
   stubFiles:
-    - stubs/phpstan/larastan-Facades.php
+    - stubs/phpstan/larastan-facades.php
+
+  ignoreErrors:
+      - '#Internal.*#'
