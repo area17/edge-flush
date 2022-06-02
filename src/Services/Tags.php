@@ -37,7 +37,7 @@ class Tags
     {
         $tags = is_string($tags)
             ? [$tags]
-            : ($tags = $tags->pluck('tag')->toArray());
+            : ($tags = $tags->pluck('tag')->unique()->toArray());
 
         Tag::whereIn('tag', $tags)->update([
             'obsolete' => false,
@@ -176,11 +176,23 @@ class Tags
     public function invalidateTagsForModel($model): void
     {
         $tags = $this->getAllTagsForModel($this->makeTag($model))
-            ->pluck('tag')
-            ->toArray();
+                     ->pluck('tag')
+                     ->unique()->filter();
 
-        if (blank($tags)) {
+        if ($tags->isEmpty()) {
             return;
+        }
+
+        if ($this->debug()) {
+            Log::debug(
+                'CDN: invalidating tag for ' .
+                $this->makeTag($model) .
+                '. Found: ' .
+                count($tags ?? []) .
+                ' tags',
+            );
+
+            Log::debug($tags);
         }
 
         $this->invalidateTags($tags);
@@ -316,11 +328,7 @@ class Tags
 
         EdgeFlush::responseCache()->invalidateAll();
 
-        Tag::truncate();
-
-        Url::whereNotNull('id')->update([
-            'was_purged_at' => now(),
-        ]);
+        $this->deleteAllTags();
 
         return true;
     }
@@ -328,5 +336,21 @@ class Tags
     public function getCurrentUrl($request)
     {
         return $request->header('X-EDGE-FLUSH-WARMING-URL') ?? url()->full();
+    }
+
+    protected function deleteAllTags(): void
+    {
+        Tag::whereNotNull('id')->update([
+            'obsolete' => true,
+        ]);
+
+        Url::whereNotNull('id')->update([
+            'was_purged_at' => now(),
+        ]);
+    }
+
+    public function debug()
+    {
+        return config('edge-flush.debug');
     }
 }

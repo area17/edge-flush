@@ -12,6 +12,11 @@ return [
     'enabled' => env('EDGE_FLUSH_ENABLED', false),
 
     /**
+     * Enable/disable the pacakge
+     */
+    'debug' => env('EDGE_FLUSH_DEBUG', false),
+
+    /**
      * Configure here the default strategies used internally.
      * You can still manually set the current strategy at run-time.
      */
@@ -285,6 +290,8 @@ return [
             ),
 
             'invalidate_all_paths' => ['/*'],
+
+            'max_urls' => 3000, // CloudFront has this limit
         ],
     ],
 

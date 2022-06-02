@@ -32,9 +32,9 @@ class Service extends BaseService implements CDNService
             return false;
         }
 
-        return $this->createInvalidationRequest(
-            $this->getInvalidationPathsForTags($tags),
-        );
+        return $this->mustInvalidateAll($tags)
+            ? $this->invalidateAll()
+            : $this->invalidatePaths($tags);
     }
 
     public function invalidateAll(): bool
@@ -90,9 +90,9 @@ class Service extends BaseService implements CDNService
 
     protected function createInvalidationRequest(Collection $paths): bool
     {
-        $paths = array_filter($paths);
+        $paths = $paths->filter();
 
-        if (count($paths) === 0) {
+        if ($paths->isEmpty()) {
             return false;
         }
 
@@ -147,6 +147,19 @@ class Service extends BaseService implements CDNService
     {
         return collect($tags)->mapWithKeys(
             fn($tag) => [$this->getInvalidationPath($tag) => $tag],
+        );
+    }
+
+    public function mustInvalidateAll($tags)
+    {
+        return $this->getInvalidationPathsForTags($tags)->count() >
+            config('edge-flush.services.cloud_front.max_urls');
+    }
+
+    public function invalidatePaths($tags)
+    {
+        return $this->createInvalidationRequest(
+            $this->getInvalidationPathsForTags($tags),
         );
     }
 }
