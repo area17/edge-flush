@@ -4,7 +4,7 @@ namespace A17\EdgeFlush\Exceptions;
 
 class EdgeFlush extends \Exception
 {
-    public static function missingService($type): void
+    public static function missingService(): void
     {
         throw new self(
             'CDN service configuration is missing, please check config/cdn.php.',

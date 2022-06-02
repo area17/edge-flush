@@ -90,7 +90,7 @@ class EdgeFlush extends BaseService
         return $this;
     }
 
-    public function getRequest()
+    public function getRequest(): Request
     {
         return $this->request;
     }

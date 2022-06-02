@@ -39,7 +39,7 @@ class CacheAllSuccessfulGetRequests extends SpatieCacheAllSuccessfulGetRequests
         return $isCacheable;
     }
 
-    public function isWarming($request): bool
+    public function isWarming(Request $request): bool
     {
         return filled($request->header('X-EDGE-FLUSH-WARMING-URL', null));
     }

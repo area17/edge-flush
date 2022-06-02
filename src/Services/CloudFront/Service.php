@@ -6,6 +6,7 @@ use Aws\AwsClient;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
+use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
@@ -127,10 +128,14 @@ class Service extends BaseService implements CDNService
 
     protected function instantiate(): void
     {
-        $this->client = static::getClient();
+        $client = static::getClient();
+
+        if ($client instanceof CloudFrontClient) {
+            $this->client = $client;
+        }
     }
 
-    protected function getInvalidationPath($item)
+    protected function getInvalidationPath(mixed $item): ?string
     {
         if (is_string($item)) {
             return $item;
@@ -142,9 +147,7 @@ class Service extends BaseService implements CDNService
             return null;
         }
 
-        $url = parse_url($url);
-
-        return $url['path'] ?? '/*';
+        return Helpers::parseUrl($url)['path'] ?? '/*';
     }
 
     public function getInvalidationPathsForTags(Collection $tags): Collection
@@ -154,13 +157,13 @@ class Service extends BaseService implements CDNService
         );
     }
 
-    public function mustInvalidateAll($tags)
+    public function mustInvalidateAll(Collection $tags): bool
     {
         return $this->getInvalidationPathsForTags($tags)->count() >
             config('edge-flush.services.cloud_front.max_urls');
     }
 
-    public function invalidatePaths($tags)
+    public function invalidatePaths(Collection $tags): bool
     {
         return $this->createInvalidationRequest(
             $this->getInvalidationPathsForTags($tags),

@@ -10,6 +10,7 @@ use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
 use GuzzleHttp\Client as Guzzle;
 use SebastianBergmann\Timer\Timer;
+use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Facades\Route;
 use GuzzleHttp\Promise\Utils as Promise;
 
@@ -87,7 +88,7 @@ class Warmer
 
     public function dispatchInternalWarmRequest($url)
     {
-        $parsed = parse_url($url);
+        $parsed = Helpers::parseUrl($url);
 
         parse_str($parsed['query'] ?? '', $parameters);
 

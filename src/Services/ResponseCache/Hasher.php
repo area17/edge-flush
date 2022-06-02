@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\ResponseCache;
 
 use Illuminate\Http\Request;
+use A17\EdgeFlush\Support\Helpers;
 use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\CacheProfiles\CacheProfile;
 use Spatie\ResponseCache\Hasher\DefaultHasher as SpatieHasher;
@@ -22,7 +23,7 @@ class Hasher extends SpatieHasher implements RequestHasher
         return 'responsecache-' . md5("$host-$uri-$method-$cacheName");
     }
 
-    public function getHost($request)
+    public function getHost(Request $request): string
     {
         $url = $request->header('X-EDGE-FLUSH-WARMING-URL');
 
@@ -30,8 +31,6 @@ class Hasher extends SpatieHasher implements RequestHasher
             return $request->getHost();
         }
 
-        $url = parse_url($url);
-
-        return $url['host'] ?? '';
+        return Helpers::parseUrl($url)['host'] ?? '';
     }
 }

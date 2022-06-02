@@ -2,7 +2,9 @@
 
 namespace A17\EdgeFlush\Support;
 
+use Throwable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 
 class Helpers
 {
@@ -15,7 +17,7 @@ class Helpers
             return $url;
         }
 
-        $parsed = parse_url($url);
+        $parsed = static::parseUrl($url);
 
         parse_str($parsed['query'] ?? null, $query);
 
@@ -25,7 +27,7 @@ class Helpers
 
         $routes = config('edge-flush.urls.query.allow_routes');
 
-        $list = $routes[$parsed['path'] ?? null] ?? null;
+        $list = $routes[$parsed['path']] ?? null;
 
         if (blank($list)) {
             try {
@@ -53,13 +55,13 @@ class Helpers
      * Deconstruct and rebuild the URL dropping query parameters
      */
     public static function rewriteUrl(
-        $parameters,
-        $dropQueries = [],
-        $url = null
+        mixed $parameters,
+        array|Collection $dropQueries = [],
+        string|null $url = null
     ): string {
         $url = filled($url) ? $url : url()->full();
 
-        $url = parse_url($url);
+        $url = static::parseUrl($url);
 
         if (is_string($parameters)) {
             $parameters = explode('=', $parameters);
@@ -123,5 +125,34 @@ class Helpers
         }
 
         return $url;
+    }
+
+    public static function parseUrl(mixed $url): array
+    {
+        if (is_array($url)) {
+            $url = '';
+        }
+
+        if (is_object($url)) {
+            try {
+                /** @throws Throwable */
+                $url = (string) $url;
+            } catch (Throwable) {
+                $url = '';
+            }
+        }
+
+        $url = parse_url($url);
+
+        return [
+            'scheme' => isset($url['scheme']) ? $url['scheme'] : null,
+            'host' => isset($url['host']) ? $url['host'] : null,
+            'port' => isset($url['port']) ? $url['port'] : null,
+            'user' => isset($url['user']) ? $url['user'] : null,
+            'pass' => isset($url['pass']) ? $url['pass'] : null,
+            'path' => isset($url['path']) ? $url['path'] : null,
+            'query' => isset($url['query']) ? $url['query'] : null,
+            'fragment' => isset($url['fragment']) ? $url['fragment'] : null,
+        ];
     }
 }

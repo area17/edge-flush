@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\Akamai;
 
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Services\Tags;
 use A17\EdgeFlush\Services\Warmer;
 use A17\EdgeFlush\Services\BaseService;
@@ -46,7 +47,9 @@ class Service extends BaseService implements CDNService
 
         $body = [
             'objects' => collect($items)
-                ->map(fn($item) => is_object($item) ? $item->tag : $item)
+                ->map(function ($item) {
+                    return $item instanceof Tag ? $item->tag : $item;
+                })
                 ->unique()
                 ->toArray(),
         ];
@@ -79,7 +82,9 @@ class Service extends BaseService implements CDNService
 
         $auth->setHost($this->getHost());
 
-        $auth->setBody(is_string($body) ? $body : json_encode($body));
+        $body = is_string($body) ? $body : json_encode($body);
+
+        $auth->setBody($body === false ? '' : $body);
 
         $auth->setHttpMethod('POST');
 
