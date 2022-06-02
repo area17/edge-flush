@@ -88,8 +88,12 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    protected function createInvalidationRequest(Collection $paths): bool
+    protected function createInvalidationRequest(mixed $paths): bool
     {
+        if (!$paths instanceof Collection) {
+            $paths = collect($paths);
+        }
+
         $paths = $paths->filter();
 
         if ($paths->isEmpty()) {
@@ -110,9 +114,9 @@ class Service extends BaseService implements CDNService
         } catch (\Exception $e) {
             Log::error(
                 'CDN: CloudFront invalidation request failed: ' .
-                $e->getMessage() .
-                ' - PATHS: ' .
-                json_encode($paths)
+                    $e->getMessage() .
+                    ' - PATHS: ' .
+                    json_encode($paths),
             );
 
             return false;

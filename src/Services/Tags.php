@@ -37,7 +37,10 @@ class Tags
     {
         $tags = is_string($tags)
             ? [$tags]
-            : ($tags = $tags->pluck('tag')->unique()->toArray());
+            : ($tags = $tags
+                ->pluck('tag')
+                ->unique()
+                ->toArray());
 
         Tag::whereIn('tag', $tags)->update([
             'obsolete' => false,
@@ -164,7 +167,8 @@ class Tags
                     'response_cache_hash' => $tags['response_cache'],
                     'url_id' => $url->id,
                 ]);
-            }), 5
+            }),
+            5,
         );
     }
 
@@ -176,8 +180,9 @@ class Tags
     public function invalidateTagsForModel($model): void
     {
         $tags = $this->getAllTagsForModel($this->makeTag($model))
-                     ->pluck('tag')
-                     ->unique()->filter();
+            ->pluck('tag')
+            ->unique()
+            ->filter();
 
         if ($tags->isEmpty()) {
             return;
@@ -186,10 +191,10 @@ class Tags
         if ($this->debug()) {
             Log::debug(
                 'CDN: invalidating tag for ' .
-                $this->makeTag($model) .
-                '. Found: ' .
-                count($tags ?? []) .
-                ' tags',
+                    $this->makeTag($model) .
+                    '. Found: ' .
+                    count($tags ?? []) .
+                    ' tags',
             );
 
             Log::debug($tags);
@@ -198,9 +203,9 @@ class Tags
         $this->invalidateTags($tags);
     }
 
-    public function invalidateTags($tags = null): void
+    public function invalidateTags(mixed $tags = null): void
     {
-        if (blank($tags)) {
+        if (is_null($tags)) {
             $this->invalidateObsoleteTags();
 
             return;
@@ -212,7 +217,9 @@ class Tags
             return;
         }
 
-        $this->dispatchInvalidations(Tag::whereIn('tag', $tags)->get());
+        $this->dispatchInvalidations(
+            Tag::whereIn('tag', $tags->toArray())->get(),
+        );
     }
 
     protected function invalidateObsoleteTags(): void
@@ -258,9 +265,9 @@ class Tags
         );
     }
 
-    protected function markTagsAsObsolete(array $tags): void
+    protected function markTagsAsObsolete(Collection $tags): void
     {
-        Tag::whereIn('tag', $tags)->update(['obsolete' => true]);
+        Tag::whereIn('tag', $tags->toArray())->update(['obsolete' => true]);
     }
 
     protected function dispatchInvalidations(Collection $tags): void
