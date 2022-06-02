@@ -44,7 +44,7 @@ class Service extends BaseService implements CDNService
         return true;
     }
 
-    public function makeResponseCacheTag($request): ?string
+    public function makeResponseCacheTag($request): string|null
     {
         return $this->enabled()
             ? app(RequestHasher::class)->getHashFor($request)

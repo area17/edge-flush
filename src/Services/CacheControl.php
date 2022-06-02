@@ -240,7 +240,7 @@ class CacheControl extends BaseService implements ServiceContract
         return $header;
     }
 
-    public function getStrategy(): ?string
+    public function getStrategy(): string|null
     {
         return $this->strategy ?? null;
     }

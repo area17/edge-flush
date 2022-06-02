@@ -49,12 +49,12 @@ class Service extends BaseService implements CDNService
         );
     }
 
-    protected function getDistributionId(): ?string
+    protected function getDistributionId(): string|null
     {
         return config('edge-flush.services.cloud_front.distribution_id');
     }
 
-    public function getClient(): ?CloudFrontClient
+    public function getClient(): CloudFrontClient|null
     {
         if (!config('edge-flush.enabled')) {
             return null;
@@ -135,7 +135,7 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    protected function getInvalidationPath(mixed $item): ?string
+    protected function getInvalidationPath(mixed $item): string|null
     {
         if (is_string($item)) {
             return $item;

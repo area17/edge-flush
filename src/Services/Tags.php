@@ -109,7 +109,7 @@ class Tags
         return $tag;
     }
 
-    public function makeTag(Model $model): ?string
+    public function makeTag(Model $model): string|null
     {
         try {
             return method_exists($model, 'getCDNCacheTag')

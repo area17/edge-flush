@@ -29,7 +29,7 @@ class Service extends BaseService implements CDNService
     /**
      * @return string|null
      */
-    protected function getHost(): ?string
+    protected function getHost(): string|null
     {
         return config('edge-flush.services.akamai.host');
     }
