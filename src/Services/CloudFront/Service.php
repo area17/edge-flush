@@ -107,8 +107,10 @@ class Service extends BaseService implements CDNService
             ]);
         } catch (\Exception $e) {
             Log::error(
-                'EdgeFlush: CloudFront invalidation request failed: ' .
-                    $e->getMessage(),
+                'CDN: CloudFront invalidation request failed: ' .
+                $e->getMessage() .
+                ' - PATHS: ' .
+                json_encode($paths)
             );
 
             return false;
