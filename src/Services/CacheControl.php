@@ -93,9 +93,22 @@ class CacheControl extends BaseService implements ServiceContract
 
     protected function getContent(Response $response): string
     {
-        return $this->_content = filled($this->_content)
-            ? $this->_content
-            : $this->minifyContent($response->getContent());
+        $getContentFromResponse =
+            !filled($this->_content) &&
+            filled($response) &&
+            !($response instanceof BinaryFileResponse);
+
+        if ($getContentFromResponse) {
+            if (method_exists($response, 'content')) {
+                $this->_content = $response->content();
+            } elseif (method_exists($response, 'getContent')) {
+                $this->_content = $response->getContent();
+            }
+
+            $this->_content = $this->minifyContent($this->_content);
+        }
+
+        return $this->_content ?? '';
     }
 
     public function getMaxAge(): int
