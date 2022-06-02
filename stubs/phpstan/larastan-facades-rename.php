@@ -3,6 +3,7 @@
 namespace Spatie\ResponseCache\Facades;
 
 abstract class Facade {}
+abstract class Facade {}
 
 /**
  * @mixin \Spatie\ResponseCache\ResponseCache
