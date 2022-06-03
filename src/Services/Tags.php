@@ -157,9 +157,7 @@ class Tags
                 );
 
                 if (!$url->wasRecentlyCreated) {
-                    $url->hits++;
-
-                    $url->save();
+                    $url->incrementHits();
                 }
 
                 $this->debug([
