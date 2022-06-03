@@ -103,7 +103,7 @@ class Tags
 
         $tag = str_replace(
             ['%environment%', '%sha1%'],
-            [app()->environment(), sha1(collect($models)->join(', '))],
+            [app()->environment(), sha1(collect($models)->sort()->join(', '))],
             config('edge-flush.tags.format'),
         );
 
@@ -141,6 +141,12 @@ class Tags
         array $tags,
         string $url
     ): void {
+        $this->debug([
+            'model' => $models,
+            'tags' => $tags,
+            'url' => $url,
+        ]);
+
         DB::transaction(
             fn() => collect($models)->each(function (string $model) use (
                 $tags,
@@ -159,13 +165,6 @@ class Tags
                 if (!$url->wasRecentlyCreated) {
                     $url->incrementHits();
                 }
-
-                $this->debug([
-                    'model' => $model,
-                    'tag' => $tags['cdn'],
-                    'response_cache_hash' => $tags['response_cache'],
-                    'url_id' => $url->id,
-                ]);
 
                 Tag::firstOrCreate([
                     'model' => $model,
