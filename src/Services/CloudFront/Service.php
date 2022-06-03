@@ -89,15 +89,11 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    protected function createInvalidationRequest(mixed $paths): bool
+    protected function createInvalidationRequest(array $paths): bool
     {
-        if (!$paths instanceof Collection) {
-            $paths = collect($paths);
-        }
+        $paths = array_filter($paths);
 
-        $paths = $paths->filter();
-
-        if ($paths->isEmpty()) {
+        if (count($paths) === 0) {
             return false;
         }
 
@@ -107,7 +103,7 @@ class Service extends BaseService implements CDNService
                 'InvalidationBatch' => [
                     'Paths' => [
                         'Quantity' => count($paths),
-                        'Items' => $paths->keys()->toArray(),
+                        'Items' => $paths,
                     ],
                     'CallerReference' => time(),
                 ],
@@ -166,7 +162,9 @@ class Service extends BaseService implements CDNService
     public function invalidatePaths(Collection $tags): bool
     {
         return $this->createInvalidationRequest(
-            $this->getInvalidationPathsForTags($tags),
+            $this->getInvalidationPathsForTags($tags)
+                ->keys()
+                ->toArray(),
         );
     }
 }
