@@ -9,6 +9,7 @@ use A17\EdgeFlush\Jobs\StoreTags;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Support\Helpers;
+use Illuminate\Support\Facades\Log;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -161,6 +162,13 @@ class Tags
                     $url->save();
                 }
 
+                $this->debug([
+                    'model' => $model,
+                    'tag' => $tags['cdn'],
+                    'response_cache_hash' => $tags['response_cache'],
+                    'url_id' => $url->id,
+                ]);
+
                 Tag::firstOrCreate([
                     'model' => $model,
                     'tag' => $tags['cdn'],
@@ -188,17 +196,15 @@ class Tags
             return;
         }
 
-        if ($this->debug()) {
-            Log::debug(
-                'CDN: invalidating tag for ' .
-                    $this->makeTag($model) .
-                    '. Found: ' .
-                    count($tags ?? []) .
-                    ' tags',
-            );
+        $this->debug(
+            'CDN: invalidating tag for ' .
+                $this->makeTag($model) .
+                '. Found: ' .
+                count($tags ?? []) .
+                ' tags',
+        );
 
-            Log::debug($tags);
-        }
+        $this->debug($tags);
 
         $this->invalidateTags($tags);
     }
@@ -356,8 +362,20 @@ class Tags
         ]);
     }
 
-    public function debug()
+    public function debug($data = null): bool
     {
-        return config('edge-flush.debug');
+        $debugIsOn = config('edge-flush.debug');
+
+        if (!$debugIsOn) {
+            return false;
+        }
+
+        if (blank($data)) {
+            return $debugIsOn;
+        }
+
+        Log::debug($data);
+
+        return $debugIsOn;
     }
 }
