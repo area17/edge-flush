@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 
 return [
     /**
-     * Enable/disable the pacakge
+     * Enable/disable the package
      */
     'enabled' => env('EDGE_FLUSH_ENABLED', false),
 
@@ -23,9 +23,13 @@ return [
     'built-in-strategies' => [
         'cache' => 'dynamic',
 
+        'zero-cache' => 'zero',
+
         'micro-cache' => 'micro',
 
-        'zero-cache' => 'zero',
+        'small-cache' => 'small',
+
+        'large-cache' => 'large',
     ],
 
     /**
@@ -75,37 +79,46 @@ return [
      *
      */
     'strategies' => [
-        'dynamic' => ['max-age', 'public'], // built-in
+        'dynamic' => ['s-maxage', 'max-age', 'public'], // built-in
 
-        'micro' => ['max-age=5', 'public'], // built-in
+        'zero' => ['s-maxage=0', 'max-age=0', 'no-store'], // built-in
 
-        'zero' => ['max-age=0', 'no-store'], // built-in
+        'micro' => ['s-maxage='. 5 * Constants::SECOND, 'max-age=0', 'public'], // built-in // default is at least to cache a page for 5 seconds
 
-        'api' => ['max-age=20', 'public', 'no-store'], // custom
+        'small' => ['s-maxage='. 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
+
+        'large' => ['s-maxage='. 7 * Constants::DAY, 'max-age=0', 'public'], // built-in
+
+        'api' => ['s-maxage='. 20 * Constants::SECOND, 'max-age=0', 'public', 'no-store'], // custom
     ],
 
     /**
-     * Define how max-age will work.
+     * Define how s-maxage (CDN cache) and max-age (browser cache) will work.
      *
-     * default: in case max-age is not configured at runtime, and
+     * default: in case they are not configured at runtime, and
      * pages are set to be cached, this is the default value.
      *
      * strategy: defines how the setter will behave:
-     *    min = will use the minumum value set
+     *    min = will use the minimum value set
      *    last = will use the last value set
-     *
      */
     'max-age' => [
-        'default' => 1 * Constants::WEEK,
+        'default' => 0,
+
+        'strategy' => 'min', // min, last
+    ],
+
+    's-maxage' => [
+        'default' => /* one */ Constants::WEEK,
 
         'strategy' => 'min', // min, last
     ],
 
     /**
-     * In case max-age is not configured at runtime, and
+     * In case s-maxage and max-age are not configured at runtime, and
      * pages are set to be cached, this is the default value.
      */
-    'cache-control' => ['max-age' => 1 * Constants::WEEK],
+    'cache-control' => ['s-maxage' => /* one */ Constants::WEEK, 'max-age' => 0],
 
     /**
      * We suppose only your frontend application needs to be
@@ -330,7 +343,7 @@ return [
 
         'warm_all_on_purge' => true,
 
-        'wait_before_warming' => Constants::MINUTE * 2,
+        'wait_before_warming' => Constants::MS_MINUTE * 2,
 
         'headers' => [
             'PHP_AUTH_USER' => env('HTTP_AUTH_USER'),

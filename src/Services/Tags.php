@@ -103,7 +103,14 @@ class Tags
 
         $tag = str_replace(
             ['%environment%', '%sha1%'],
-            [app()->environment(), sha1(collect($models)->sort()->join(', '))],
+            [
+                app()->environment(),
+                sha1(
+                    collect($models)
+                        ->sort()
+                        ->join(', '),
+                ),
+            ],
             config('edge-flush.tags.format'),
         );
 

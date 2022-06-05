@@ -22,6 +22,8 @@ class CacheControl extends BaseService implements ServiceContract
 
     protected $maxAge;
 
+    protected $sMaxAge;
+
     protected $strategy;
 
     public function makeResponse(Response $response): Response
@@ -48,6 +50,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function isCachable(Response $response = null): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         if (filled($this->_isCachable)) {
             return $this->_isCachable;
         }
@@ -113,11 +119,28 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getMaxAge(): int
     {
+        if (!$this->enabled()) {
+            return 0;
+        }
+
         if (filled($this->maxAge)) {
             return $this->maxAge;
         }
 
         return $this->getDefaultMaxAge();
+    }
+
+    public function getSMaxAge(): int
+    {
+        if (!$this->enabled()) {
+            return 0;
+        }
+
+        if (filled($this->sMaxAge)) {
+            return $this->sMaxAge;
+        }
+
+        return $this->getDefaultSMaxAge();
     }
 
     protected function containsValidForm(Response $response): bool
@@ -168,6 +191,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     protected function middlewaresAllowCaching(): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         $middleware = blank($route = EdgeFlush::getRequest()->route())
             ? 'no-middleware'
             : $route->action['middleware'] ?? null;
@@ -175,29 +202,64 @@ class CacheControl extends BaseService implements ServiceContract
         return !collect($middleware)->contains('doNotCacheResponse');
     }
 
+    public function setBrowserMaxAge(int $maxAge)
+    {
+        return $this->setMaxAge($maxAge);
+    }
+
+    public function setCDNMaxAge(int $maxAge)
+    {
+        return $this->setSMaxAge($maxAge);
+    }
+
+    public function setSMaxAge(int $maxAge): self
+    {
+        return $this->__setMaxAge($maxAge, 's-maxage');
+    }
+
     public function setMaxAge(int $maxAge): self
+    {
+        return $this->__setMaxAge($maxAge, 'max-age');
+    }
+
+    protected function __setMaxAge(int $maxAge, $field): self
     {
         if (blank($maxAge)) {
             return $this;
         }
 
-        if (config('edge-flush.max-age.strategy') === 'min') {
-            $this->maxAge = min(
-                $maxAge,
-                $this->maxAge ?? $this->getDefaultMaxAge(),
-            );
-        }
+        $strategy = config("edge-flush.$field.strategy");
 
-        if (config('edge-flush.max-age.strategy') === 'last') {
-            $this->maxAge = $maxAge;
+        $property = $field === 's-maxage' ? 'sMaxAge' : 'maxAge';
+
+        $default =
+            $field === 's-maxage'
+                ? $this->getDefaultSMaxAge()
+                : $this->getDefaultMaxAge();
+
+        if ($this->$property === null) {
+            $this->$property = $maxAge;
+        } else {
+            if ($strategy === 'min') {
+                $this->$property = min($maxAge, $this->$property ?? $default);
+            }
+
+            if ($strategy === 'last') {
+                $this->$property = $maxAge;
+            }
         }
 
         return $this;
     }
 
+    public function getDefaultSMaxAge(): int
+    {
+        return (int) config('edge-flush.s-maxage.default', Constants::MS_WEEK);
+    }
+
     public function getDefaultMaxAge(): int
     {
-        return (int) config('edge-flush.max-age.default', Constants::WEEK);
+        return (int) config('edge-flush.max-age.default', 0);
     }
 
     public function buildStrategy(string $strategy): string
@@ -224,7 +286,11 @@ class CacheControl extends BaseService implements ServiceContract
      */
     public function getHeaderValue(string $header)
     {
-        if ($header === 'max-age' || $header === 's-maxage') {
+        if ($header === 's-maxage') {
+            return $this->getSMaxAge();
+        }
+
+        if ($header === 'max-age') {
             return $this->getMaxAge();
         }
 
@@ -254,6 +320,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function responseIsCachable(Response $response): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         return (collect(config('edge-flush.responses.cachable'))->isEmpty() ||
             collect(config('edge-flush.responses.cachable'))->contains(
                 get_class($response),
@@ -265,6 +335,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function methodIsCachable(): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         return (collect(config('edge-flush.methods.cachable'))->isEmpty() ||
             collect(config('edge-flush.methods.cachable'))->contains(
                 EdgeFlush::getRequest()->getMethod(),
@@ -276,6 +350,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function statusCodeIsCachable(Response $response): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         return (collect(config('edge-flush.statuses.cachable'))->isEmpty() ||
             collect(config('edge-flush.statuses.cachable'))->contains(
                 $response->getStatusCode(),
@@ -287,6 +365,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function routeIsCachable(): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         $route = EdgeFlush::getRequest()->route();
 
         $route = filled($route) ? $route->getName() : null;
@@ -309,6 +391,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function urlIsCachable(): bool
     {
+        if (!$this->enabled()) {
+            return false;
+        }
+
         $url = EdgeFlush::getRequest()->url();
 
         /**
@@ -347,6 +433,10 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getStrategyArray($strategy)
     {
+        if (!$this->enabled()) {
+            return config("edge-flush.strategies.zero", []);
+        }
+
         $strategy = config(
             "edge-flush.built-in-strategies.$strategy",
             $strategy,
@@ -372,6 +462,7 @@ class CacheControl extends BaseService implements ServiceContract
             $element = trim($element);
 
             return $willCache &&
+                $element !== 's-maxage=0' &&
                 $element !== 'max-age=0' &&
                 $element !== 'no-store';
         },
