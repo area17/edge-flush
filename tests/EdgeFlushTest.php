@@ -21,10 +21,11 @@ class EdgeFlushTest extends TestCase
         'enabled' => true,
         'isCachable' => false,
         'routeIsCachable' => true,
-        'max-age 1' => 604800000,
+        'max-age 1' => 0,
         'max-age 2' => 2500,
         'max-age 3' => 1500,
-        'max-age' => [
+        'max-age 4' => 1500,
+        'max-age 5' => [
             'enabled' => true,
             'isFrontend' => false,
             'notValidForm' => true,
@@ -35,43 +36,52 @@ class EdgeFlushTest extends TestCase
             'responseIsCachable' => true,
             'statusCodeIsCachable' => true,
         ],
+        's-maxage' => 2000,
         'headers' => [
-            'cache-control' => ['max-age=5, public'],
+            'cache-control' => ['max-age=0, public, s-maxage=5'],
             'content-type' => ['application/json'],
-            'x-cache-control' => ['max-age=5, public'],
+            'x-cache-control' => ['max-age=0, public, s-maxage=5'],
         ],
-        'strategy 1' => 'max-age=5, public',
-        'strategy 2' => 'max-age=5, public',
-        'strategy 3' => 'max-age=20, no-store, public',
-        0 => true,
+        'strategy dynamic' => 'max-age=0, public, s-maxage=5',
+        'strategy zero' => 'max-age=0, no-store, s-maxage=0',
+        'strategy micro' => 'max-age=0, public, s-maxage=5',
+        'strategy small' => 'max-age=0, public, s-maxage=120',
+        'strategy large' => 'max-age=0, public, s-maxage=604800',
+        'strategy api' => 'max-age=0, no-store, public, s-maxage=20',
+        'fnmatch' => true,
     ];
 
     protected $disabledValues = [
         'enabled' => false,
         'isCachable' => false,
-        'routeIsCachable' => true,
-        'max-age 1' => 604800000,
-        'max-age 2' => 2500,
-        'max-age 3' => 1500,
-        'max-age' => [
+        'routeIsCachable' => false,
+        'max-age 1' => 0,
+        'max-age 2' => 0,
+        'max-age 3' => 0,
+        'max-age 4' => 0,
+        'max-age 5' => [
             'enabled' => false,
             'isFrontend' => false,
             'notValidForm' => true,
-            'methodIsCachable' => true,
-            'middlewareAllowCaching' => true,
-            'routeIsCachable' => true,
-            'urlIsCachable' => true,
-            'responseIsCachable' => true,
-            'statusCodeIsCachable' => true,
+            'methodIsCachable' => false,
+            'middlewareAllowCaching' => false,
+            'routeIsCachable' => false,
+            'urlIsCachable' => false,
+            'responseIsCachable' => false,
+            'statusCodeIsCachable' => false,
         ],
+        's-maxage' => 0,
         'headers' => [
             'cache-control' => ['no-cache, private'],
             'content-type' => ['application/json'],
         ],
-        'strategy 1' => 'max-age=5, public',
-        'strategy 2' => 'max-age=5, public',
-        'strategy 3' => 'max-age=20, no-store, public',
-        0 => true,
+        'strategy dynamic' => 'max-age=0, no-store, s-maxage=0',
+        'strategy zero' => 'max-age=0, no-store, s-maxage=0',
+        'strategy micro' => 'max-age=0, no-store, s-maxage=0',
+        'strategy small' => 'max-age=0, no-store, s-maxage=0',
+        'strategy large' => 'max-age=0, no-store, s-maxage=0',
+        'strategy api' => 'max-age=0, no-store, s-maxage=0',
+        'fnmatch' => true,
     ];
 
     /** @test */
@@ -81,7 +91,7 @@ class EdgeFlushTest extends TestCase
 
         $response = response()->json([]);
 
-        $this->assertEquals($this->getValues($response), $this->enabledValues);
+        $this->assertEquals($this->enabledValues, $this->getValues($response));
     }
 
     /** @test */
@@ -93,7 +103,7 @@ class EdgeFlushTest extends TestCase
 
         config(['edge-flush.enabled' => false]);
 
-        $this->assertEquals($this->getValues($response), $this->disabledValues);
+        $this->assertEquals($this->disabledValues, $this->getValues($response));
     }
 
     public function getValues($response)
@@ -113,9 +123,13 @@ class EdgeFlushTest extends TestCase
 
             'max-age 3' => CacheControl::setMaxAge(1500)->getMaxAge(),
 
-            'max-age' => CacheControl::setMaxAge(1600)->getMaxAge(),
+            'max-age 4' => CacheControl::setMaxAge(1600)->getMaxAge(), /// the min strategy should keep it at 1500s
 
-            'max-age' => CacheControl::getCachableMatrix($response)->toArray(),
+            'max-age 5' => CacheControl::getCachableMatrix(
+                $response,
+            )->toArray(),
+
+            's-maxage' => CacheControl::setSMaxAge(2000)->getSMaxAge(),
 
             'headers' => $this->extractHeaders(
                 CacheControl::addHeadersToResponse(
@@ -125,17 +139,29 @@ class EdgeFlushTest extends TestCase
                 )->headers->all(),
             ),
 
-            'strategy 1' => CacheControl::getCacheStrategy($response),
+            'strategy dynamic' => CacheControl::getCacheStrategy($response),
 
-            'strategy 2' => CacheControl::setStrategy(
-                'micro-cache',
+            'strategy zero' => CacheControl::setStrategy(
+                'zero',
             )->getCacheStrategy($response),
 
-            'strategy 3' => CacheControl::setStrategy('api')->getCacheStrategy(
-                $response,
-            ),
+            'strategy micro' => CacheControl::setStrategy(
+                'micro',
+            )->getCacheStrategy($response),
 
-            fnmatch('newsletter*', 'newsletter'),
+            'strategy small' => CacheControl::setStrategy(
+                'small',
+            )->getCacheStrategy($response),
+
+            'strategy large' => CacheControl::setStrategy(
+                'large',
+            )->getCacheStrategy($response),
+
+            'strategy api' => CacheControl::setStrategy(
+                'api',
+            )->getCacheStrategy($response),
+
+            'fnmatch' => fnmatch('newsletter*', 'newsletter'),
         ];
     }
 
