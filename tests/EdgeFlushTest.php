@@ -5,6 +5,7 @@ namespace A17\EdgeFlush\Tests;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\CacheControl;
 use A17\EdgeFlush\ServiceProvider;
+use A17\EdgeFlush\Support\Constants;
 
 class EdgeFlushTest extends TestCase
 {
@@ -36,7 +37,9 @@ class EdgeFlushTest extends TestCase
             'responseIsCachable' => true,
             'statusCodeIsCachable' => true,
         ],
-        's-maxage' => 2000,
+        's-maxage 1' => 31104000,
+        's-maxage 2' => 2591999,
+        's-maxage 3' => 1209599,
         'headers' => [
             'cache-control' => ['max-age=0, public, s-maxage=5'],
             'content-type' => ['application/json'],
@@ -70,7 +73,9 @@ class EdgeFlushTest extends TestCase
             'responseIsCachable' => false,
             'statusCodeIsCachable' => false,
         ],
-        's-maxage' => 0,
+        's-maxage 1' => 0,
+        's-maxage 2' => 0,
+        's-maxage 3' => 0,
         'headers' => [
             'cache-control' => ['no-cache, private'],
             'content-type' => ['application/json'],
@@ -129,7 +134,11 @@ class EdgeFlushTest extends TestCase
                 $response,
             )->toArray(),
 
-            's-maxage' => CacheControl::setSMaxAge(2000)->getSMaxAge(),
+            's-maxage 1' => CacheControl::setSMaxAge(Constants::YEAR)->getSMaxAge(),
+
+            's-maxage 2' => CacheControl::setSMaxAge('1 month')->getSMaxAge(),
+
+            's-maxage 3' => CacheControl::setSMaxAge('2 weeks')->getSMaxAge(),
 
             'headers' => $this->extractHeaders(
                 CacheControl::addHeadersToResponse(

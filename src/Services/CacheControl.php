@@ -2,6 +2,7 @@
 
 namespace A17\EdgeFlush\Services;
 
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Str;
@@ -477,14 +478,14 @@ class CacheControl extends BaseService implements ServiceContract
     public function parseAgeString(string $age): int
     {
         try {
-            $parsed = carbon()->parse($age);
+            $parsed = Carbon::parse($age);
 
             if ($parsed instanceof CarbonInterface) {
                 return now()->diffInSeconds($parsed);
             }
 
             return $age;
-        } catch (\Throwable) {
+        } catch (\Throwable $error) {
             return 0;
         }
     }
