@@ -27,9 +27,9 @@ return [
 
         'micro-cache' => 'micro',
 
-        'small-cache' => 'small',
+        'short-cache' => 'short',
 
-        'large-cache' => 'large',
+        'long-cache' => 'long',
     ],
 
     /**
@@ -85,9 +85,9 @@ return [
 
         'micro' => ['s-maxage='. 5 * Constants::SECOND, 'max-age=0', 'public'], // built-in // default is at least to cache a page for 5 seconds
 
-        'small' => ['s-maxage='. 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
+        'short' => ['s-maxage='. 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
 
-        'large' => ['s-maxage='. 7 * Constants::DAY, 'max-age=0', 'public'], // built-in
+        'long' => ['s-maxage='. 7 * Constants::DAY, 'max-age=0', 'public'], // built-in
 
         'api' => ['s-maxage='. 20 * Constants::SECOND, 'max-age=0', 'public', 'no-store'], // custom
     ],

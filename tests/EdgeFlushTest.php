@@ -45,8 +45,8 @@ class EdgeFlushTest extends TestCase
         'strategy dynamic' => 'max-age=0, public, s-maxage=5',
         'strategy zero' => 'max-age=0, no-store, s-maxage=0',
         'strategy micro' => 'max-age=0, public, s-maxage=5',
-        'strategy small' => 'max-age=0, public, s-maxage=120',
-        'strategy large' => 'max-age=0, public, s-maxage=604800',
+        'strategy short' => 'max-age=0, public, s-maxage=120',
+        'strategy long' => 'max-age=0, public, s-maxage=604800',
         'strategy api' => 'max-age=0, no-store, public, s-maxage=20',
         'fnmatch' => true,
     ];
@@ -78,8 +78,8 @@ class EdgeFlushTest extends TestCase
         'strategy dynamic' => 'max-age=0, no-store, s-maxage=0',
         'strategy zero' => 'max-age=0, no-store, s-maxage=0',
         'strategy micro' => 'max-age=0, no-store, s-maxage=0',
-        'strategy small' => 'max-age=0, no-store, s-maxage=0',
-        'strategy large' => 'max-age=0, no-store, s-maxage=0',
+        'strategy short' => 'max-age=0, no-store, s-maxage=0',
+        'strategy long' => 'max-age=0, no-store, s-maxage=0',
         'strategy api' => 'max-age=0, no-store, s-maxage=0',
         'fnmatch' => true,
     ];
@@ -149,12 +149,12 @@ class EdgeFlushTest extends TestCase
                 'micro',
             )->getCacheStrategy($response),
 
-            'strategy small' => CacheControl::setStrategy(
-                'small',
+            'strategy short' => CacheControl::setStrategy(
+                'short',
             )->getCacheStrategy($response),
 
-            'strategy large' => CacheControl::setStrategy(
-                'large',
+            'strategy long' => CacheControl::setStrategy(
+                'long',
             )->getCacheStrategy($response),
 
             'strategy api' => CacheControl::setStrategy(
