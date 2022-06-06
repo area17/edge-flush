@@ -112,10 +112,14 @@ protected $middleware = [
 ];
 ```
 
-Cache-Control max-age is set automatically, but if you need to change it depending on the current request you can use the following method:
+Cache-Control max-age and s-maxage is set automatically, but if you need to change it depending on the current request you can use the following method:
 
 ``` php
-CacheControl::setMaxAge(5000);
+CacheControl::setMaxAge(5000); // in seconds
+
+CacheControl::setMaxAge('1 month'); // as a DateTime string period
+
+CacheControl::setSMaxAge('2 weeks');
 ```
 
 If you want to invalidate your paths in batches, add a scheduler setting the desired frequency for this to happen:

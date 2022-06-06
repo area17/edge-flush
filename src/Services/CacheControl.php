@@ -2,6 +2,7 @@
 
 namespace A17\EdgeFlush\Services;
 
+use Carbon\CarbonInterface;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -202,29 +203,33 @@ class CacheControl extends BaseService implements ServiceContract
         return !collect($middleware)->contains('doNotCacheResponse');
     }
 
-    public function setBrowserMaxAge(int $maxAge)
+    public function setBrowserMaxAge(int|string $maxAge)
     {
         return $this->setMaxAge($maxAge);
     }
 
-    public function setCDNMaxAge(int $maxAge)
+    public function setCDNMaxAge(int|string $maxAge)
     {
         return $this->setSMaxAge($maxAge);
     }
 
-    public function setSMaxAge(int $maxAge): self
+    public function setSMaxAge(int|string $maxAge): self
     {
         return $this->__setMaxAge($maxAge, 's-maxage');
     }
 
-    public function setMaxAge(int $maxAge): self
+    public function setMaxAge(int|string $maxAge): self
     {
         return $this->__setMaxAge($maxAge, 'max-age');
     }
 
-    protected function __setMaxAge(int $maxAge, $field): self
+    protected function __setMaxAge(int|string $age, $field): self
     {
-        if (blank($maxAge)) {
+        if (is_string($age)) {
+            $age = $this->parseAgeString($age);
+        }
+
+        if (blank($age)) {
             return $this;
         }
 
@@ -238,14 +243,14 @@ class CacheControl extends BaseService implements ServiceContract
                 : $this->getDefaultMaxAge();
 
         if ($this->$property === null) {
-            $this->$property = $maxAge;
+            $this->$property = $age;
         } else {
             if ($strategy === 'min') {
-                $this->$property = min($maxAge, $this->$property ?? $default);
+                $this->$property = min($age, $this->$property ?? $default);
             }
 
             if ($strategy === 'last') {
-                $this->$property = $maxAge;
+                $this->$property = $age;
             }
         }
 
@@ -467,5 +472,20 @@ class CacheControl extends BaseService implements ServiceContract
                 $element !== 'no-store';
         },
         true);
+    }
+
+    public function parseAgeString(string $age): int
+    {
+        try {
+            $parsed = carbon()->parse($age);
+
+            if ($parsed instanceof CarbonInterface) {
+                return now()->diffInSeconds($parsed);
+            }
+
+            return $age;
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 }

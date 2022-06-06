@@ -30,6 +30,8 @@ return [
         'short-cache' => 'short',
 
         'long-cache' => 'long',
+
+        'max-cache' => 'max',
     ],
 
     /**
@@ -88,6 +90,8 @@ return [
         'short' => ['s-maxage='. 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
 
         'long' => ['s-maxage='. 7 * Constants::DAY, 'max-age=0', 'public'], // built-in
+
+        'max' => ['s-maxage=' . 12 * Constants::MONTH, 'max-age=0', 'public'], // built-in
 
         'api' => ['s-maxage='. 20 * Constants::SECOND, 'max-age=0', 'public', 'no-store'], // custom
     ],
