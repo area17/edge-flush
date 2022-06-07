@@ -5,6 +5,7 @@ namespace A17\EdgeFlush\Support;
 use Throwable;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class Helpers
 {
@@ -154,5 +155,22 @@ class Helpers
             'query' => isset($url['query']) ? $url['query'] : null,
             'fragment' => isset($url['fragment']) ? $url['fragment'] : null,
         ];
+    }
+
+    public static function debug($data = null): bool
+    {
+        $debugIsOn = config('edge-flush.debug');
+
+        if (!$debugIsOn) {
+            return false;
+        }
+
+        if (blank($data)) {
+            return $debugIsOn;
+        }
+
+        Log::debug($data);
+
+        return $debugIsOn;
     }
 }

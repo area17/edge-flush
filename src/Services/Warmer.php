@@ -103,11 +103,20 @@ class Warmer
 
     public function dispatchExternalWarmRequests($urls)
     {
-        Promise::inspectAll(
+        $responses = Promise::inspectAll(
             $urls->map(function ($url) {
                 return $this->getGuzzle()->getAsync($url->url);
             }),
         );
+
+        collect($responses)->each(function ($response) {
+            if ($response['state'] === 'rejected')
+            {
+                $context = $response['reason']->getHandlerContext();
+
+                Helpers::debug("WARMER REJECTED: {$context['error']} - {$context['url']}");
+            }
+        });
     }
 
     public function getGuzzle()

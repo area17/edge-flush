@@ -9,7 +9,6 @@ use A17\EdgeFlush\Jobs\StoreTags;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Support\Helpers;
-use Illuminate\Support\Facades\Log;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -148,7 +147,7 @@ class Tags
         array $tags,
         string $url
     ): void {
-        $this->debug([
+        Helpers::debug([
             'model' => $models,
             'tags' => $tags,
             'url' => $url,
@@ -200,7 +199,7 @@ class Tags
             return;
         }
 
-        $this->debug(
+        Helpers::debug(
             'CDN: invalidating tag for ' .
                 $this->makeTag($model) .
                 '. Found: ' .
@@ -208,7 +207,7 @@ class Tags
                 ' tags',
         );
 
-        $this->debug($tags);
+        Helpers::debug($tags);
 
         $this->invalidateTags($tags);
     }
@@ -364,22 +363,5 @@ class Tags
         Url::whereNotNull('id')->update([
             'was_purged_at' => now(),
         ]);
-    }
-
-    public function debug($data = null): bool
-    {
-        $debugIsOn = config('edge-flush.debug');
-
-        if (!$debugIsOn) {
-            return false;
-        }
-
-        if (blank($data)) {
-            return $debugIsOn;
-        }
-
-        Log::debug($data);
-
-        return $debugIsOn;
     }
 }
