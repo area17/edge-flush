@@ -117,9 +117,15 @@ class Warmer
         }
 
         return $this->guzzle = new Guzzle([
+            'headers' => config('edge-flush.warmer.headers'),
             'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
             'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
-        ]);
+            'verify' => config('edge-flush.warmer.check_ssl_certificate'),
+            'auth' => [
+                config('edge-flush.warmer.basic_authentication.username'),
+                config('edge-flush.warmer.basic_authentication.password')
+            ],
+        ] + (array) config('edge-flush.warmer.extra_options'));
     }
 
     public function addHeaders($request, $headers)

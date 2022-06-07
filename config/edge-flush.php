@@ -349,10 +349,19 @@ return [
 
         'wait_before_warming' => Constants::MS_MINUTE * 2,
 
-        'headers' => [
-            'PHP_AUTH_USER' => env('HTTP_AUTH_USER'),
-            'PHP_AUTH_PW' => env('HTTP_AUTH_PASSWORD'),
+        'basic_authentication' => [
+            'username' => ($username = env('HTTP_AUTH_USER')),
+            'password' => ($password = env('HTTP_AUTH_PASSWORD'))
         ],
+
+        'headers' => [
+            'PHP_AUTH_USER' => $username,
+            'PHP_AUTH_PW' => $password,
+        ],
+
+        'check_ssl_certificate' => true,
+
+        'extra_options' => [],
     ],
 
     /**
