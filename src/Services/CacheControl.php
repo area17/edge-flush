@@ -440,7 +440,7 @@ class CacheControl extends BaseService implements ServiceContract
     public function getStrategyArray($strategy)
     {
         if (!$this->enabled()) {
-            return config("edge-flush.strategies.zero", []);
+            return config('edge-flush.strategies.zero', []);
         }
 
         $strategy = config(

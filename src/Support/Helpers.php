@@ -144,7 +144,10 @@ class Helpers
         }
 
         /** Check if the string only a domain name **/
-        if (filter_var($url, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === $url) {
+        if (
+            filter_var($url, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) ===
+            $url
+        ) {
             $url = "https://$url";
         }
 

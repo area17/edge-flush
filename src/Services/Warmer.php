@@ -94,29 +94,36 @@ class Warmer
 
         $request = Request::create($parsed['path'], 'GET', $parameters);
 
-        $request->headers->set('X-EDGE-FLUSH-WARMING-URL', $url);
-
-        $this->addHeaders($request, config('edge-flush.warmer.headers'));
+        $this->addHeaders($request, $this->getHeaders());
 
         app()->handle($request);
     }
 
     public function dispatchExternalWarmRequests($urls)
     {
+        $time_pre = microtime(true);
+
         $responses = Promise::inspectAll(
             $urls->map(function ($url) {
-                Helpers::debug("Warming $url...");
+                Helpers::debug("Warming $url->url...");
 
-                return $this->getGuzzle()->getAsync($url->url);
+                return $this->getGuzzle()->getAsync($url->url, [
+                    'headers' => $this->getHeaders(),
+                ]);
             }),
         );
 
+        $exec_time = microtime(true) - $time_pre;
+
+        dd('time', $exec_time);
+
         collect($responses)->each(function ($response) {
-            if ($response['state'] === 'rejected')
-            {
+            if ($response['state'] === 'rejected') {
                 $context = $response['reason']->getHandlerContext();
 
-                Helpers::debug("WARMER REJECTED: {$context['error']} - {$context['url']}");
+                Helpers::debug(
+                    "WARMER REJECTED: {$context['error']} - {$context['url']}",
+                );
             }
         });
     }
@@ -127,16 +134,37 @@ class Warmer
             return $this->guzzle;
         }
 
-        return $this->guzzle = new Guzzle([
-            'headers' => config('edge-flush.warmer.headers'),
-            'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
-            'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
-            'verify' => config('edge-flush.warmer.check_ssl_certificate'),
-            'auth' => [
-                config('edge-flush.warmer.basic_authentication.username'),
-                config('edge-flush.warmer.basic_authentication.password')
-            ],
-        ] + (array) config('edge-flush.warmer.extra_options'));
+        return $this->guzzle = new Guzzle(
+            [
+                'timeout' =>
+                    config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+
+                'connect_timeout' => config(
+                    'edge-flush.warmer.connection_timeout',
+                ),
+
+                'verify' => config('edge-flush.warmer.check_ssl_certificate'),
+
+                'auth' => [
+                    config('edge-flush.warmer.basic_authentication.username'),
+                    config('edge-flush.warmer.basic_authentication.password'),
+                ],
+
+                'curl' =>
+                    [
+                        CURLOPT_CONNECT_ONLY => config(
+                            'edge-flush.warmer.curl.connect_only',
+                            false,
+                        ),
+
+                        CURLOPT_NOBODY => !config(
+                            'edge-flush.warmer.curl.get_body',
+                            false,
+                        ),
+                    ] +
+                    (array) config('edge-flush.warmer.curl.extra_options', []),
+            ] + (array) config('edge-flush.warmer.extra_options'),
+        );
     }
 
     public function addHeaders($request, $headers)
@@ -144,5 +172,14 @@ class Warmer
         collect($headers)->each(
             fn($value, $key) => $request->headers->set($key, $value),
         );
+    }
+
+    public function getHeaders(): array
+    {
+        return [
+            'X-Edge-Flush-Warming-Url' => $url,
+
+            'X-Edge-Flush-Warming-Time' => (string) now(),
+        ] + config('edge-flush.warmer.headers', []);
     }
 }

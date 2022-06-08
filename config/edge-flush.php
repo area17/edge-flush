@@ -350,10 +350,10 @@ return [
 
         'max_urls' => 100,
 
-        'max_time' => Constants::MILLISECOND * 750,
+        'max_time' => Constants::MILLISECOND * 1000,
 
-        'connection_timeout' => Constants::MILLISECOND * 100,
-
+        'connection_timeout' => Constants::MILLISECOND * 500,
+        
         'concurrent_requests' => 50,
 
         'warm_all_on_purge' => true,
@@ -372,7 +372,15 @@ return [
 
         'check_ssl_certificate' => false, // It's too slow to check SSL certificates
 
-        'extra_options' => [],
+        'curl' => [
+            'connect_only' => false, // only connect to the server?
+
+            'get_body' => false, // get the page data?
+
+            'extra_options' => [] // cURL extra options
+        ],
+
+        'extra_options' => [], // Guzzle extra options
     ],
 
     /**

@@ -134,7 +134,9 @@ class EdgeFlushTest extends TestCase
                 $response,
             )->toArray(),
 
-            's-maxage 1' => CacheControl::setSMaxAge(Constants::YEAR)->getSMaxAge(),
+            's-maxage 1' => CacheControl::setSMaxAge(
+                Constants::YEAR,
+            )->getSMaxAge(),
 
             's-maxage 2' => CacheControl::setSMaxAge('1 month')->getSMaxAge(),
 
