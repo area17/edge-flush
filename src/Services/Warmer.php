@@ -105,6 +105,8 @@ class Warmer
     {
         $responses = Promise::inspectAll(
             $urls->map(function ($url) {
+                Helpers::debug("Warming $url...");
+
                 return $this->getGuzzle()->getAsync($url->url);
             }),
         );
