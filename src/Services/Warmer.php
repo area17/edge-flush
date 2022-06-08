@@ -94,7 +94,7 @@ class Warmer
 
         $request = Request::create($parsed['path'], 'GET', $parameters);
 
-        $this->addHeaders($request, $this->getHeaders());
+        $this->addHeaders($request, $this->getHeaders($url));
 
         app()->handle($request);
     }
@@ -176,7 +176,7 @@ class Warmer
         );
     }
 
-    public function getHeaders(): array
+    public function getHeaders($url): array
     {
         return [
             'X-Edge-Flush-Warming-Url' => $url,
