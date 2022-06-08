@@ -165,7 +165,7 @@ class Helpers
         ];
     }
 
-    public static function debug($data = null): bool
+    public static function debug(string|array|null $data = null): bool
     {
         $debugIsOn = config('edge-flush.debug');
 
@@ -175,6 +175,12 @@ class Helpers
 
         if (blank($data)) {
             return $debugIsOn;
+        }
+
+        if (!is_string($data)) {
+            $data = json_encode($data);
+
+            $data = $data === false ? '' : $data;
         }
 
         Log::debug($data);

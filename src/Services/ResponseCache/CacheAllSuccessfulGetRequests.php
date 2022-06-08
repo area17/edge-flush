@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\ResponseCache;
 
 use Illuminate\Http\Request;
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 use Spatie\ResponseCache\CacheProfiles\CacheAllSuccessfulGetRequests as SpatieCacheAllSuccessfulGetRequests;
@@ -41,6 +42,6 @@ class CacheAllSuccessfulGetRequests extends SpatieCacheAllSuccessfulGetRequests
 
     public function isWarming(Request $request): bool
     {
-        return filled($request->header('X-EDGE-FLUSH-WARMING-URL', null));
+        return EdgeFlush::warmer()->isWarming($request);
     }
 }

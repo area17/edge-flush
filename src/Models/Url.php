@@ -16,7 +16,7 @@ class Url extends Model
 
     protected $fillable = ['url', 'url_hash', 'hits', 'was_purged_at'];
 
-    public function incrementHits()
+    public function incrementHits(): void
     {
         $this->hits++;
 

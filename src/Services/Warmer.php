@@ -108,7 +108,7 @@ class Warmer
                 Helpers::debug("Warming $url->url...");
 
                 return $this->getGuzzle()->getAsync($url->url, [
-                    'headers' => $this->getHeaders(),
+                    'headers' => $this->getHeaders($url->url),
                 ]);
             }),
         );
@@ -183,5 +183,14 @@ class Warmer
 
             'X-Edge-Flush-Warming-Time' => (string) now(),
         ] + config('edge-flush.warmer.headers', []);
+    }
+
+    public function isWarming(Request|null $request = null)
+    {
+        if (blank($request)) {
+            $request = EdgeFlush::getRequest();
+        }
+
+        return filled($request->header('X-Edge-Flush-Warming-Url', null));
     }
 }
