@@ -101,7 +101,7 @@ class Warmer
 
     public function dispatchExternalWarmRequests($urls)
     {
-        $time_pre = microtime(true);
+        $startTime = microtime(true);
 
         $responses = Promise::inspectAll(
             $urls->map(function ($url) {
@@ -113,9 +113,11 @@ class Warmer
             }),
         );
 
-        $exec_time = microtime(true) - $time_pre;
+        $executionTime = microtime(true) - $startTime;
 
-        dd('time', $exec_time);
+        Helpers::debug(
+            "WARMER ELAPSED TIME: {$executionTime}s - URLS: {$urls->count()}",
+        );
 
         collect($responses)->each(function ($response) {
             if ($response['state'] === 'rejected') {
