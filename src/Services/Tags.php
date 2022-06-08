@@ -147,6 +147,10 @@ class Tags
         array $tags,
         string $url
     ): void {
+        if (!EdgeFlush::enabled() || !$this->domainAllowed($url)) {
+            return;
+        }
+
         Helpers::debug([
             'model' => $models,
             'tags' => $tags,
@@ -363,5 +367,18 @@ class Tags
         Url::whereNotNull('id')->update([
             'was_purged_at' => now(),
         ]);
+    }
+
+    public function domainAllowed($url): bool
+    {
+        $allowed = collect(config('edge-flush.domains.allowed'))->filter();
+
+        if ($allowed->isEmpty()) {
+            return true;
+        }
+
+        $domain = Helpers::parseUrl($url)['host'];
+
+        return $allowed->contains($domain);
     }
 }

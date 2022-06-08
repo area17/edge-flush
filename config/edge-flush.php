@@ -2,14 +2,25 @@
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Response;
-use A17\EdgeFlush\Support\Constants;
 use Illuminate\Http\JsonResponse;
+use A17\EdgeFlush\Support\Helpers;
+use A17\EdgeFlush\Support\Constants;
 
 return [
     /**
      * Enable/disable the package
      */
     'enabled' => env('EDGE_FLUSH_ENABLED', false),
+
+    /**
+     * Only allowed domains will have tags stored.
+     * An empty array will allow all domains.
+     */
+    'domains' => [
+        'allowed' => [
+            Helpers::parseUrl(env('APP_URL'))['host']
+        ]
+    ],
 
     /**
      * Enable/disable the pacakge
@@ -341,7 +352,7 @@ return [
 
         'max_time' => Constants::MILLISECOND * 750,
 
-        'connection_timeout' => Constants::MILLISECOND * 15,
+        'connection_timeout' => Constants::MILLISECOND * 100,
 
         'concurrent_requests' => 50,
 
@@ -359,7 +370,7 @@ return [
             'PHP_AUTH_PW' => $password,
         ],
 
-        'check_ssl_certificate' => true,
+        'check_ssl_certificate' => false, // It's too slow to check SSL certificates
 
         'extra_options' => [],
     ],
