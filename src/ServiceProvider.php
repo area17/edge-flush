@@ -74,7 +74,10 @@ class ServiceProvider extends IlluminateServiceProvider
 
     function instantiateResponseCache(): BaseService|null
     {
-        if (blank($class = config('edge-flush.classes.response-cache')) || !class_exists($class)) {
+        if (
+            blank($class = config('edge-flush.classes.response-cache')) ||
+            !class_exists($class)
+        ) {
             return null;
         }
 

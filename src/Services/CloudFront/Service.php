@@ -156,7 +156,7 @@ class Service extends BaseService implements CDNService
     public function mustInvalidateAll(Collection $tags): bool
     {
         return $this->getInvalidationPathsForTags($tags)->count() >
-            config('edge-flush.services.cloud_front.max_urls');
+            $this->maxUrls();
     }
 
     public function invalidatePaths(Collection $tags): bool
@@ -166,5 +166,10 @@ class Service extends BaseService implements CDNService
                 ->keys()
                 ->toArray(),
         );
+    }
+
+    public function maxUrls(): int
+    {
+        return config('edge-flush.services.cloud_front.max_urls');
     }
 }

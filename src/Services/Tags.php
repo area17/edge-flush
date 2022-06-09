@@ -238,8 +238,8 @@ class Tags
     protected function invalidateObsoleteTags(): void
     {
         /**
-         * Filter obsolete tags and related urls
-         * Making sure we invalidate the most busy pages first
+         * Filter obsolete tags and related urls.
+         * Making sure we invalidate the most busy pages first.
          */
         $query = Tag::select(
             'edge_flush_tags.tag',
@@ -263,8 +263,8 @@ class Tags
             ->orderBy('edge_flush_urls.hits', 'desc');
 
         /**
-         * Let's first calculate the number of URLs we are invalidating
-         * If it's above max, just flush the whole website
+         * Let's first calculate the number of URLs we are invalidating.
+         * If it's above max, just flush the whole website.
          */
         $limitToFlushRoot = config(
             'edge-flush.invalidations.batch.flush_roots_if_exceeds',
@@ -277,14 +277,23 @@ class Tags
         }
 
         /**
-         * Get the actual list of paths that will be invalidated
+         * Get the actual list of paths that will be invalidated.
+         * Never exceed the CDN max tags or urls that can be invalidated
+         * at once.
          */
         $paths = EdgeFlush::cdn()->getInvalidationPathsForTags(
-            $query->take(config('edge-flush.invalidations.batch.size'))->get(),
+            $query
+                ->take(
+                    min(
+                        EdgeFlush::cdn()->maxUrls(),
+                        config('edge-flush.invalidations.batch.size'),
+                    ),
+                )
+                ->get(),
         );
 
         /**
-         * Let's dispatch invalidations only for what's configured
+         * Let's dispatch invalidations only for what's configured.
          */
         $this->dispatchInvalidations($paths);
     }

@@ -60,4 +60,9 @@ class Service extends BaseService implements CDNService
     {
         $this->cache->has($hash) && $this->cache->forget($hash);
     }
+
+    public function maxUrls(): int
+    {
+        return PHP_INT_MAX;
+    }
 }

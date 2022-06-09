@@ -290,6 +290,7 @@ return [
             'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN'),
             'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET'),
             'invalidate_all_paths' => ['*'],
+            'max_urls' => 500, // Akamai is limited to 500 cache tags per minute
         ],
 
         'cloud_front' => [

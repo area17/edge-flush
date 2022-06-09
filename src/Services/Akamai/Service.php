@@ -98,4 +98,9 @@ class Service extends BaseService implements CDNService
 
         return $auth->createAuthHeader();
     }
+
+    public function maxUrls(): int
+    {
+        return config('edge-flush.services.akamai.max_urls');
+    }
 }
