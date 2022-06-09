@@ -123,8 +123,12 @@ class Warmer
             if ($response['state'] === 'rejected') {
                 $context = $response['reason']->getHandlerContext();
 
+                $error = $context['error'] ?? 'missing error';
+
+                $url = $context['url'] ?? 'missing url';
+
                 Helpers::debug(
-                    "WARMER REJECTED: {$context['error']} - {$context['url']}",
+                    "WARMER REJECTED: $error - $url",
                 );
             }
         });

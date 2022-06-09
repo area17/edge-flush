@@ -85,7 +85,7 @@ class Tags
                 [
                     'cdn' => $tag,
 
-                    'response_cache' => EdgeFlush::responseCache()->makeResponseCacheTag(
+                    'response_cache' => EdgeFlush::responseCache()?->makeResponseCacheTag(
                         EdgeFlush::getRequest(),
                     ),
                 ],
