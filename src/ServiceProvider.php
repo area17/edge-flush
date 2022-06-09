@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush;
 
 use A17\EdgeFlush\Services\EdgeFlush;
+use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Services\CacheControl;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushxception;
@@ -62,12 +63,21 @@ class ServiceProvider extends IlluminateServiceProvider
                 $app->make(config('edge-flush.classes.cache-control')),
                 $app->make(config('edge-flush.classes.tags')),
                 $app->make(config('edge-flush.classes.warmer')),
-                $app->make(config('edge-flush.classes.response-cache')),
+                $this->instantiateResponseCache(),
             );
         });
 
         $this->app->singleton('a17.edge-flush.cache-control', function () {
             return EdgeFlushFacade::cacheControl();
         });
+    }
+
+    function instantiateResponseCache(): BaseService|null
+    {
+        if (blank($class = config('edge-flush.classes.response-cache')) || !class_exists($class)) {
+            return null;
+        }
+
+        return $this->app->make($class);
     }
 }

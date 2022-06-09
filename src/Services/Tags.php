@@ -300,7 +300,7 @@ class Tags
             return;
         }
 
-        EdgeFlush::responseCache()->invalidate($paths);
+        EdgeFlush::responseCache()?->invalidate($paths);
 
         if (EdgeFlush::cdn()->invalidate($paths)) {
             // TODO: what happens here on Akamai?

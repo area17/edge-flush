@@ -60,7 +60,7 @@ return [
 
         'warmer' => A17\EdgeFlush\Services\Warmer::class,
 
-        'response-cache' => A17\EdgeFlush\Services\ResponseCache\Service::class,
+        //'response-cache' => A17\EdgeFlush\Services\ResponseCache\Service::class,
     ],
 
     /**
@@ -353,7 +353,7 @@ return [
         'max_time' => Constants::MILLISECOND * 1000,
 
         'connection_timeout' => Constants::MILLISECOND * 500,
-        
+
         'concurrent_requests' => 50,
 
         'warm_all_on_purge' => true,
