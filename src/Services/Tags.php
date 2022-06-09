@@ -299,6 +299,8 @@ class Tags
 
     protected function invalidateEntireCache()
     {
+        Helpers::debug('Invalidating entire cache...');
+
         EdgeFlush::cdn()->invalidate(
             collect(config('edge-flush.invalidations.batch.roots')),
         );
