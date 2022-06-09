@@ -237,45 +237,56 @@ class Tags
 
     protected function invalidateObsoleteTags(): void
     {
-        $max = config('edge-flush.invalidations.batch.flush_roots_if_exceeds');
-
         /**
-         * Try to limit a bit the number of records we are reaching
-         * Invalidate the most accessed pages first
+         * Filter obsolete tags and related urls
+         * Making sure we invalidate the most busy pages first
          */
-        $tags = Tag::select('edge_flush_tags.*')
-            ->where('edge_flush_tags.obsolete', true)
+        $query = Tag::select(
+            'edge_flush_tags.tag',
+            'edge_flush_urls.url as url_url',
+            'edge_flush_urls.hits as url_hits',
+            'edge_flush_urls.id as url_id',
+        )
+            ->whereRaw('edge_flush_tags.obsolete =  true')
             ->join(
                 'edge_flush_urls',
                 'edge_flush_tags.url_id',
                 '=',
                 'edge_flush_urls.id',
             )
-            ->orderBy('edge_flush_urls.hits', 'desc')
-            ->take($max * 2)
-            ->get();
+            ->groupBy(
+                'edge_flush_tags.tag',
+                'edge_flush_urls.id',
+                'edge_flush_urls.url',
+                'edge_flush_urls.hits',
+            )
+            ->orderBy('edge_flush_urls.hits', 'desc');
 
         /**
-         * Get the actual list of paths that will be invalidated
+         * Let's first calculate the number of URLs we are invalidating
+         * If it's above max, just flush the whole website
          */
-        $paths = EdgeFlush::cdn()->getInvalidationPathsForTags($tags);
+        $limitToFlushRoot = config(
+            'edge-flush.invalidations.batch.flush_roots_if_exceeds',
+        );
 
-        /**
-         * If it's above max, flush the whole website
-         */
-        if ($paths->count() > $max) {
+        if ($this->getTotal($query) > $limitToFlushRoot) {
             $this->invalidateEntireCache();
 
             return;
         }
 
         /**
-         * Let's dispatch invalidations only for what's configured
-         *
+         * Get the actual list of paths that will be invalidated
          */
-        $this->dispatchInvalidations(
-            $tags->take(config('edge-flush.invalidations.batch.size')),
+        $paths = EdgeFlush::cdn()->getInvalidationPathsForTags(
+            $query->take(config('edge-flush.invalidations.batch.size'))->get(),
         );
+
+        /**
+         * Let's dispatch invalidations only for what's configured
+         */
+        $this->dispatchInvalidations($paths);
     }
 
     protected function markTagsAsObsolete(Collection $tags): void
@@ -283,17 +294,17 @@ class Tags
         Tag::whereIn('tag', $tags->toArray())->update(['obsolete' => true]);
     }
 
-    protected function dispatchInvalidations(Collection $tags): void
+    protected function dispatchInvalidations(Collection $paths): void
     {
-        if ($tags->isEmpty()) {
+        if ($paths->isEmpty()) {
             return;
         }
 
-        EdgeFlush::responseCache()->invalidate($tags);
+        EdgeFlush::responseCache()->invalidate($paths);
 
-        if (EdgeFlush::cdn()->invalidate($tags)) {
+        if (EdgeFlush::cdn()->invalidate($paths)) {
             // TODO: what happens here on Akamai?
-            $this->deleteTags($tags);
+            $this->deleteTags($paths);
         }
     }
 
@@ -382,5 +393,12 @@ class Tags
         $domain = Helpers::parseUrl($url)['host'];
 
         return $allowed->contains($domain);
+    }
+
+    private function getTotal($query): int
+    {
+        return DB::select(
+            DB::raw("select count(*) from ({$query->toSql()}) count"),
+        )[0]->count ?? 0;
     }
 }

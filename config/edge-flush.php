@@ -272,7 +272,7 @@ return [
         'type' => 'batch', // single, batch
 
         'batch' => [
-            'size' => 2999, /// CloudFront limit is 3000
+            'size' => 2999, /// urls
 
             'flush_roots_if_exceeds' => 15000,
 
