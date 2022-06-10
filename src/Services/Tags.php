@@ -408,6 +408,7 @@ class Tags
     {
         return DB::select(
             DB::raw("select count(*) from ({$query->toSql()}) count"),
+            [true], // edge_flush_tags.obsolete = true
         )[0]->count ?? 0;
     }
 }
