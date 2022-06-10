@@ -105,7 +105,7 @@ class Warmer
 
         $responses = Promise::inspectAll(
             $urls->map(function ($url) {
-                Helpers::debug("Warming $url->url...");
+                Helpers::debug("WARMING $url->url...");
 
                 return $this->getGuzzle()->getAsync($url->url, [
                     'headers' => $this->getHeaders($url->url),
@@ -128,7 +128,13 @@ class Warmer
                 $url = $context['url'] ?? 'missing url';
 
                 Helpers::debug(
-                    "WARMER REJECTED: $error - $url",
+                    "WARMER REJECTED: $error - $url - " .
+                        $response['reason']->getResponse()->getBody(),
+                );
+            } else {
+                Helpers::debug(
+                    "WARMER SUCCESS : {$response['value']->getStatusCode()} - " .
+                        json_encode($response['value']->getHeaders()),
                 );
             }
         });

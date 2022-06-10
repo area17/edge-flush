@@ -247,7 +247,7 @@ class Tags
             'edge_flush_urls.hits as url_hits',
             'edge_flush_urls.id as url_id',
         )
-            ->whereRaw('edge_flush_tags.obsolete =  true')
+            ->where('edge_flush_tags.obsolete', true)
             ->join(
                 'edge_flush_urls',
                 'edge_flush_tags.url_id',
