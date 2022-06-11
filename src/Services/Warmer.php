@@ -105,7 +105,7 @@ class Warmer
 
         $responses = Promise::inspectAll(
             $urls->map(function ($url) {
-                Helpers::debug("WARMING $url->url...");
+                Helpers::debug("WARMING: $url->url");
 
                 return $this->getGuzzle()->getAsync($url->url, [
                     'headers' => $this->getHeaders($url->url),
@@ -116,7 +116,7 @@ class Warmer
         $executionTime = microtime(true) - $startTime;
 
         Helpers::debug(
-            "WARMER ELAPSED TIME: {$executionTime}s - URLS: {$urls->count()}",
+            "WARMER-ELAPSED-TIME: {$executionTime}s - URLS: {$urls->count()}",
         );
 
         collect($responses)->each(function ($response) {
@@ -128,12 +128,12 @@ class Warmer
                 $url = $context['url'] ?? 'missing url';
 
                 Helpers::debug(
-                    "WARMER REJECTED: $error - $url - " .
+                    "WARMER-REJECTED: $error - $url - " .
                         $response['reason']->getResponse()->getBody(),
                 );
             } else {
                 Helpers::debug(
-                    "WARMER SUCCESS : {$response['value']->getStatusCode()} - " .
+                    "WARMER-SUCCESS : {$response['value']->getStatusCode()} - " .
                         json_encode($response['value']->getHeaders()),
                 );
             }

@@ -97,9 +97,7 @@ class CacheControl extends BaseService implements ServiceContract
 
         if ($this->containsValidForm($response)) {
             return $this->buildStrategy(
-                config(
-                    'edge-flush.default-strategies.pages-with-valid-forms',
-                ),
+                config('edge-flush.default-strategies.pages-with-valid-forms'),
             );
         }
 

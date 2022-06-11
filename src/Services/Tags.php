@@ -151,11 +151,14 @@ class Tags
             return;
         }
 
-        Helpers::debug([
-            'model' => $models,
-            'tags' => $tags,
-            'url' => $url,
-        ]);
+        Helpers::debug(
+            'STORE-TAGS' .
+                json_encode([
+                    'models' => $models,
+                    'tags' => $tags,
+                    'url' => $url,
+                ]),
+        );
 
         DB::transaction(
             fn() => collect($models)->each(function (string $model) use (
@@ -204,14 +207,14 @@ class Tags
         }
 
         Helpers::debug(
-            'CDN: invalidating tag for ' .
+            'INVALIDATING: CDN tags for model ' .
                 $this->makeTag($model) .
                 '. Found: ' .
                 count($tags ?? []) .
                 ' tags',
         );
 
-        Helpers::debug($tags);
+        Helpers::debug('TAGS: ' . json_encode($tags->values()->toArray()));
 
         $this->invalidateTags($tags);
     }
@@ -319,7 +322,7 @@ class Tags
 
     protected function invalidateEntireCache()
     {
-        Helpers::debug('Invalidating entire cache...');
+        Helpers::debug('INVALIDATING: entire cache...');
 
         EdgeFlush::cdn()->invalidate(
             collect(config('edge-flush.invalidations.batch.roots')),

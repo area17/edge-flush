@@ -183,7 +183,7 @@ class Helpers
             $data = $data === false ? '' : $data;
         }
 
-        Log::debug($data);
+        Log::debug('[EDGE-FLUSH] ' . $data);
 
         return $debugIsOn;
     }
