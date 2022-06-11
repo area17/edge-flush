@@ -33,7 +33,7 @@ class Tags
         }
     }
 
-    protected function deleteTags($tags): void
+    protected function deleteTags($tags, Invalidation $invalidation): void
     {
         $tags = is_string($tags)
             ? [$tags]
@@ -55,6 +55,7 @@ class Tags
             ->whereIn('edge_flush_tags.tag', $tags)
             ->update([
                 'was_purged_at' => now(),
+                'invalidation_id' => $invalidation->id(),
             ]);
     }
 
@@ -314,9 +315,11 @@ class Tags
 
         EdgeFlush::responseCache()?->invalidate($paths);
 
-        if (EdgeFlush::cdn()->invalidate($paths)) {
+        $invalidation = EdgeFlush::cdn()->invalidate($paths);
+
+        if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
-            $this->deleteTags($paths);
+            $this->deleteTags($paths, $invalidation);
         }
     }
 

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
+use A17\EdgeFlush\Services\Invalidation;
 use Symfony\Component\HttpFoundation\Response;
 
 class Service extends BaseService implements CDNService
@@ -27,10 +28,10 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    public function invalidate(Collection $tags): bool
+    public function invalidate(Collection $tags): Invalidation
     {
         if (!$this->enabled()) {
-            return false;
+            return new Invalidation();
         }
 
         return $this->mustInvalidateAll($tags)
@@ -38,7 +39,7 @@ class Service extends BaseService implements CDNService
             : $this->invalidatePaths($tags);
     }
 
-    public function invalidateAll(): bool
+    public function invalidateAll(): Invalidation
     {
         if (!$this->enabled()) {
             return false;
@@ -104,16 +105,18 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    protected function createInvalidationRequest(array $paths): bool
+    public function createInvalidationRequest(array $paths): Invalidation
     {
+        $invalidation = new Invalidation();
+
         $paths = array_filter($paths);
 
         if (count($paths) === 0) {
-            return false;
+            return $invalidation;
         }
 
         try {
-            $result = $this->client->createInvalidation([
+            $response = $this->client?->createInvalidation([
                 'DistributionId' => $this->getDistributionId(),
                 'InvalidationBatch' => [
                     'Paths' => [
@@ -131,10 +134,10 @@ class Service extends BaseService implements CDNService
                     json_encode($paths),
             );
 
-            return false;
+            return $invalidation;
         }
 
-        return filled($result);
+        return $invalidation->absorbCloudFrontInvalidation($response);
     }
 
     protected function instantiate(): void
@@ -174,7 +177,7 @@ class Service extends BaseService implements CDNService
             $this->maxUrls();
     }
 
-    public function invalidatePaths(Collection $tags): bool
+    public function invalidatePaths(Collection $tags): Invalidation
     {
         return $this->createInvalidationRequest(
             $this->getInvalidationPathsForTags($tags)
@@ -191,5 +194,24 @@ class Service extends BaseService implements CDNService
     public function enabled()
     {
         return parent::enabled() && filled($this->getClient());
+    }
+
+    public function invalidationHasFinished($invalidationId): bool
+    {
+        $response = $this->getInvalidation($invalidationId);
+
+        if (blank($response)) {
+            return false;
+        }
+
+        return $response['Invalidation']['Status'] === 'Completed';
+    }
+
+    public function getInvalidation($invalidationId)
+    {
+        return $this->client?->getInvalidation([
+            'DistributionId' => $this->getDistributionId(),
+            'Id' => $invalidationId,
+        ]);
     }
 }

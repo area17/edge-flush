@@ -362,9 +362,11 @@ return [
      *
      * warm_all_on_purge: if the whole CDN cache is purged, do you wish to warm back all pages?
      *
-     * wait_before_warming: invalidating tags can take time, maybe it's good to wait a couple
-     *                      of minutes before warming purged urls.
+     * basic_authentication: to be used by Guzzle to authenticate
      *
+     * headers: as the headers are not built by a webserver, we need to pass the actual
+     * expected headers after webserver or PHP processed them. It's the case for the
+     * Authorization, which, after unpacking, is translated to PHP_AUTH_USER and PHP_AUTH_PW
      */
     'warmer' => [
         'enabled' => env('EDGE_FLUSH_WARMER_ENABLED', false),
@@ -380,8 +382,6 @@ return [
         'concurrent_requests' => 50,
 
         'warm_all_on_purge' => true,
-
-        'wait_before_warming' => Constants::MS_MINUTE * 2,
 
         'basic_authentication' => [
             'username' => ($username = env('HTTP_AUTH_USER')),

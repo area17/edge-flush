@@ -39,7 +39,9 @@ abstract class BaseService implements ServiceContract
 
         Helpers::debug(
             'CACHABLE-MATRIX: ' .
-                json_encode(EdgeFlush::cacheControl()->getCachableMatrix($response)),
+                json_encode(
+                    EdgeFlush::cacheControl()->getCachableMatrix($response),
+                ),
         );
 
         return $this->addHeadersToResponse(

@@ -3,13 +3,14 @@
 namespace A17\EdgeFlush\Contracts;
 
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Services\Invalidation;
 use Symfony\Component\HttpFoundation\Response;
 
 interface CDNService extends Service
 {
-    public function invalidate(Collection $items): bool;
+    public function invalidate(Collection $items): Invalidation;
 
-    public function invalidateAll(): bool;
+    public function invalidateAll(): Invalidation;
 
     public function getInvalidationPathsForTags(Collection $tags): Collection;
 

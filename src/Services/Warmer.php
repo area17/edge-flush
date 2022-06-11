@@ -49,16 +49,16 @@ class Warmer
     public function getColdUrls()
     {
         return Url::whereNotNull('was_purged_at')
-            ->where(
-                'was_purged_at',
-                '<',
-                now()->subMillis(
-                    config('edge-flush.warmer.wait_before_warming'),
-                ),
-            )
             ->take(config('edge-flush.warmer.max_urls'))
             ->orderBy('hits', 'desc')
-            ->get();
+            ->get()
+            ->groupBy('invalidation_id')
+            ->filter(
+                fn($group, $invalidationId) => $this->invalidationHasFinished(
+                    $invalidationId,
+                ),
+            )
+            ->flatten();
     }
 
     protected function dispatchWarmRequests($urls)
@@ -202,5 +202,10 @@ class Warmer
         }
 
         return filled($request->header('X-Edge-Flush-Warming-Url', null));
+    }
+
+    public function invalidationHasFinished($invalidationId)
+    {
+        return EdgeFlush::cdn()->invalidationHasFinished($invalidationId);
     }
 }
