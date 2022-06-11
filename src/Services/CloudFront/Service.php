@@ -56,7 +56,22 @@ class Service extends BaseService implements CDNService
 
     public function getClient(): CloudFrontClient|null
     {
-        if (!config('edge-flush.enabled')) {
+        if (!parent::enabled()) {
+            return null;
+        }
+
+        $config = [
+            'region' => config('edge-flush.services.cloud_front.region'),
+
+            'version' => config('edge-flush.services.cloud_front.sdk_version'),
+
+            'credentials' => [
+                'key' => config('edge-flush.services.cloud_front.key'),
+                'secret' => config('edge-flush.services.cloud_front.secret'),
+            ],
+        ];
+
+        if (blank(array_filter($config['credentials']))) {
             return null;
         }
 
@@ -171,5 +186,10 @@ class Service extends BaseService implements CDNService
     public function maxUrls(): int
     {
         return config('edge-flush.services.cloud_front.max_urls');
+    }
+
+    public function enabled()
+    {
+        return parent::enabled() && filled($this->getClient());
     }
 }
