@@ -77,7 +77,6 @@ class CacheControl extends BaseService implements ServiceContract
             'urlIsCachable' => $this->urlIsCachable(),
             'responseIsCachable' => $this->responseIsCachable($response),
             'statusCodeIsCachable' => $this->statusCodeIsCachable($response),
-            'isNotWarmingRequest' => !EdgeFlush::warmer()->isWarming(),
         ]);
     }
 
