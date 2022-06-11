@@ -54,7 +54,7 @@ class Warmer
             ->get()
             ->groupBy('invalidation_id')
             ->filter(
-                fn($group, $invalidationId) => $this->invalidationHasFinished(
+                fn($group, $invalidationId) => $this->invalidationIsCompleted(
                     $invalidationId,
                 ),
             )
@@ -204,8 +204,8 @@ class Warmer
         return filled($request->header('X-Edge-Flush-Warming-Url', null));
     }
 
-    public function invalidationHasFinished($invalidationId)
+    public function invalidationIsCompleted($invalidationId)
     {
-        return EdgeFlush::cdn()->invalidationHasFinished($invalidationId);
+        return EdgeFlush::cdn()->invalidationIsCompleted($invalidationId);
     }
 }

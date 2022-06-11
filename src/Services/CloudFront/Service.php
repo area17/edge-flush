@@ -196,7 +196,7 @@ class Service extends BaseService implements CDNService
         return parent::enabled() && filled($this->getClient());
     }
 
-    public function invalidationHasFinished($invalidationId): bool
+    public function invalidationIsCompleted($invalidationId): bool
     {
         $response = $this->getInvalidation($invalidationId);
 
