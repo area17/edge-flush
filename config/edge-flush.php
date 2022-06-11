@@ -28,11 +28,22 @@ return [
     'debug' => env('EDGE_FLUSH_DEBUG', false),
 
     /**
+     * Set here the default strategy used when a strategy was not set
+     * dynamically at runtime.
+     */
+    'default-strategies' => [
+        'cachable-requests' => 'dynamic-cache',
+        'non-cachable-requests' => 'micro-cache',
+        'non-cachable-http-methods' => 'zero-cache',
+        'pages-with-valid-forms' => 'zero-cache',
+    ],
+
+    /**
      * Configure here the default strategies used internally.
      * You can still manually set the current strategy at run-time.
      */
     'built-in-strategies' => [
-        'cache' => 'dynamic',
+        'dynamic-cache' => 'dynamic',
 
         'zero-cache' => 'zero',
 
@@ -52,7 +63,7 @@ return [
      *
      */
     'classes' => [
-        'cdn' => A17\EdgeFlush\Services\Akamai\Service::class,
+        'cdn' => A17\EdgeFlush\Services\CloudFront\Service::class,
 
         'cache-control' => A17\EdgeFlush\Services\CacheControl::class,
 
@@ -60,7 +71,7 @@ return [
 
         'warmer' => A17\EdgeFlush\Services\Warmer::class,
 
-        //'response-cache' => A17\EdgeFlush\Services\ResponseCache\Service::class,
+        // 'response-cache' => A17\EdgeFlush\Services\ResponseCache\Service::class,
     ],
 
     /**
@@ -71,7 +82,11 @@ return [
      * The default "micro-cache" strategy takes in consideration that a 5 seconds cache
      * is better than NO-CACHE, and if your application gets hit by a DDoS attack
      * only 1 request every 5 seconds (per page) will hit your servers.
-
+     *
+     * The "dynamic" strategy will compute the max-age for objects according to the
+     * calls to CacheControl::maxAge() and CacheControl::sMaxAge(). The max-age value will
+     * depend on the max-age strategy, the last one set for "last" or the minimum one for "min".
+     *
      * These are the supported directives:
      *
      *   public
@@ -96,15 +111,20 @@ return [
 
         'zero' => ['s-maxage=0', 'max-age=0', 'no-store'], // built-in
 
-        'micro' => ['s-maxage='. 5 * Constants::SECOND, 'max-age=0', 'public'], // built-in // default is at least to cache a page for 5 seconds
+        'micro' => ['s-maxage=' . 6 * Constants::SECOND, 'max-age=0', 'public'], // built-in // default is at least to cache a page for 5 seconds
 
-        'short' => ['s-maxage='. 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
+        'short' => ['s-maxage=' . 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
 
-        'long' => ['s-maxage='. 7 * Constants::DAY, 'max-age=0', 'public'], // built-in
+        'long' => ['s-maxage=' . 7 * Constants::DAY, 'max-age=0', 'public'], // built-in
 
         'max' => ['s-maxage=' . 12 * Constants::MONTH, 'max-age=0', 'public'], // built-in
 
-        'api' => ['s-maxage='. 20 * Constants::SECOND, 'max-age=0', 'public', 'no-store'], // custom
+        'api' => [
+            's-maxage=' . 20 * Constants::SECOND,
+            'max-age=0',
+            'public',
+            'no-store',
+        ], // custom
     ],
 
     /**

@@ -88,16 +88,28 @@ class CacheControl extends BaseService implements ServiceContract
         }
 
         if (!$this->methodIsCachable()) {
-            return $this->buildStrategy('zero-cache');
+            return $this->buildStrategy(
+                config(
+                    'edge-flush.default-strategies.non-cachable-http-methods',
+                ),
+            );
         }
 
         if ($this->containsValidForm($response)) {
-            return $this->buildStrategy('zero-cache');
+            return $this->buildStrategy(
+                config(
+                    'edge-flush.default-strategies.pages-with-valid-forms',
+                ),
+            );
         }
 
         return $this->isCachable($response)
-            ? $this->buildStrategy('cache')
-            : $this->buildStrategy('micro-cache');
+            ? $this->buildStrategy(
+                config('edge-flush.default-strategies.cachable-requests'),
+            )
+            : $this->buildStrategy(
+                config('edge-flush.default-strategies.non-cachable-requests'),
+            );
     }
 
     protected function getContent(Response $response): string

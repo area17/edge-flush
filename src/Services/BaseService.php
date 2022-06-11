@@ -4,6 +4,7 @@ namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Support\Helpers;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
@@ -35,6 +36,8 @@ abstract class BaseService implements ServiceContract
         if (!$this->enabled()) {
             return $response;
         }
+
+        Helpers::debug('CACHE-CONTROL-MATRIX: '. json_encode(EdgeFlush::cacheControl()->getCachableMatrix()));
 
         return $this->addHeadersToResponse(
             $response,
