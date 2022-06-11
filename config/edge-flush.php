@@ -19,7 +19,9 @@ return [
     'domains' => [
         'allowed' => [
             Helpers::parseUrl(env('APP_URL'))['host']
-        ]
+        ],
+
+        'blocked' => []
     ],
 
     /**
@@ -111,7 +113,7 @@ return [
 
         'zero' => ['s-maxage=0', 'max-age=0', 'no-store'], // built-in
 
-        'micro' => ['s-maxage=' . 6 * Constants::SECOND, 'max-age=0', 'public'], // built-in // default is at least to cache a page for 5 seconds
+        'micro' => ['s-maxage=' . 5 * Constants::SECOND, 'max-age=0', 'public'], // built-in // default is at least to cache a page for 5 seconds
 
         'short' => ['s-maxage=' . 2 * Constants::MINUTE, 'max-age=0', 'public'], // built-in
 

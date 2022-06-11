@@ -395,13 +395,15 @@ class Tags
     {
         $allowed = collect(config('edge-flush.domains.allowed'))->filter();
 
-        if ($allowed->isEmpty()) {
+        $blocked = collect(config('edge-flush.domains.blocked'))->filter();
+
+        if ($allowed->isEmpty() && $blocked->isEmpty()) {
             return true;
         }
 
         $domain = Helpers::parseUrl($url)['host'];
 
-        return $allowed->contains($domain);
+        return $allowed->contains($domain) && !$blocked->contains($domain);
     }
 
     private function getTotal($query): int
