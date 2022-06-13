@@ -400,6 +400,8 @@ return [
 
             'get_body' => true, // get the page data? Use HEAD instead of GET
 
+            'compress' => true, // force cURL requests to behave like browser ones by accepting compressed content
+
             'extra_options' => [] // cURL extra options
         ],
 

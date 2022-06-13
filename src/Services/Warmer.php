@@ -207,6 +207,11 @@ class Warmer
                         'edge-flush.warmer.curl.get_body',
                         true,
                     ),
+
+                    CURLOPT_ACCEPT_ENCODING => !config(
+                        'edge-flush.warmer.curl.compress',
+                        true,
+                    ),
                 ] + (array) config('edge-flush.warmer.curl.extra_options', []),
         ] + (array) config('edge-flush.warmer.extra_options');
     }
