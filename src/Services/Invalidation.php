@@ -3,6 +3,8 @@
 namespace A17\EdgeFlush\Services;
 
 use Carbon\Carbon;
+use Aws\Result as AwsResult;
+use A17\EdgeFlush\Support\Helpers;
 
 class Invalidation
 {
@@ -62,9 +64,8 @@ class Invalidation
         return $this->status;
     }
 
-    public function absorbCloudFrontInvalidation(
-        \Aws\Result $invalidation
-    ): self {
+    public function absorbCloudFront(AwsResult $invalidation): self
+    {
         $this->success = filled($invalidation);
 
         if (!$this->success()) {
@@ -80,5 +81,49 @@ class Invalidation
         );
 
         return $this;
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'Completed';
+    }
+
+    public function absorb(AwsResult $object): self
+    {
+        if ($object instanceof AwsResult) {
+            $this->absorbCloudFront($object);
+        }
+
+        return $this;
+    }
+
+    public static function factory(AwsResult $object): self
+    {
+        $self = new self();
+
+        if (blank($object)) {
+            return $self;
+        }
+
+        $self->absorb($object);
+
+        Helpers::debug('INVALIDATION: ' . $self->toJson());
+
+        return $self;
+    }
+
+    public function toJson(): string|false
+    {
+        return json_encode($this->toArray());
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'status' => $this->status,
+            'success' => $this->success,
+            'created_at' => (string) $this->createdAt,
+        ];
     }
 }

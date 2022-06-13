@@ -4,6 +4,7 @@ namespace A17\EdgeFlush\Services;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Env;
+use Faker\Extension\Helper;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Models\Tag;
@@ -54,7 +55,7 @@ class Warmer
             ->get()
             ->groupBy('invalidation_id')
             ->filter(
-                fn($group, $invalidationId) => $this->invalidationHasFinished(
+                fn($group, $invalidationId) => $this->invalidationIsCompleted(
                     $invalidationId,
                 ),
             )
@@ -146,37 +147,9 @@ class Warmer
             return $this->guzzle;
         }
 
-        return $this->guzzle = new Guzzle(
-            [
-                'timeout' =>
-                    config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+        Helpers::debug('WARMER-GUZZLE-CONFIG: '.json_encode($this->getGuzzleConfiguration()));
 
-                'connect_timeout' => config(
-                    'edge-flush.warmer.connection_timeout',
-                ),
-
-                'verify' => config('edge-flush.warmer.check_ssl_certificate'),
-
-                'auth' => [
-                    config('edge-flush.warmer.basic_authentication.username'),
-                    config('edge-flush.warmer.basic_authentication.password'),
-                ],
-
-                'curl' =>
-                    [
-                        CURLOPT_CONNECT_ONLY => config(
-                            'edge-flush.warmer.curl.connect_only',
-                            false,
-                        ),
-
-                        CURLOPT_NOBODY => !config(
-                            'edge-flush.warmer.curl.get_body',
-                            false,
-                        ),
-                    ] +
-                    (array) config('edge-flush.warmer.curl.extra_options', []),
-            ] + (array) config('edge-flush.warmer.extra_options'),
-        );
+        return $this->guzzle = new Guzzle($this->getGuzzleConfiguration());
     }
 
     public function addHeaders($request, $headers)
@@ -204,8 +177,37 @@ class Warmer
         return filled($request->header('X-Edge-Flush-Warming-Url', null));
     }
 
-    public function invalidationHasFinished($invalidationId)
+    public function invalidationIsCompleted($invalidationId)
     {
-        return EdgeFlush::cdn()->invalidationHasFinished($invalidationId);
+        return EdgeFlush::cdn()->invalidationIsCompleted($invalidationId);
+    }
+
+    public function getGuzzleConfiguration()
+    {
+        return [
+            'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+
+            'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
+
+            'verify' => config('edge-flush.warmer.check_ssl_certificate'),
+
+            'auth' => [
+                config('edge-flush.warmer.basic_authentication.username'),
+                config('edge-flush.warmer.basic_authentication.password'),
+            ],
+
+            'curl' =>
+                [
+                    CURLOPT_CONNECT_ONLY => config(
+                        'edge-flush.warmer.curl.connect_only',
+                        false,
+                    ),
+
+                    CURLOPT_NOBODY => !config(
+                        'edge-flush.warmer.curl.get_body',
+                        true,
+                    ),
+                ] + (array) config('edge-flush.warmer.curl.extra_options', []),
+        ] + (array) config('edge-flush.warmer.extra_options');
     }
 }

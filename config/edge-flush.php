@@ -398,7 +398,7 @@ return [
         'curl' => [
             'connect_only' => false, // only connect to the server?
 
-            'get_body' => false, // get the page data?
+            'get_body' => true, // get the page data? Use HEAD instead of GET
 
             'extra_options' => [] // cURL extra options
         ],

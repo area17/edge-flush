@@ -137,7 +137,7 @@ class Service extends BaseService implements CDNService
             return $invalidation;
         }
 
-        return $invalidation->absorbCloudFrontInvalidation($response);
+        return $invalidation->absorb($response);
     }
 
     protected function instantiate(): void
@@ -196,7 +196,7 @@ class Service extends BaseService implements CDNService
         return parent::enabled() && filled($this->getClient());
     }
 
-    public function invalidationHasFinished($invalidationId): bool
+    public function invalidationIsCompleted($invalidationId): bool
     {
         $response = $this->getInvalidation($invalidationId);
 
@@ -204,7 +204,7 @@ class Service extends BaseService implements CDNService
             return false;
         }
 
-        return $response['Invalidation']['Status'] === 'Completed';
+        return Invalidation::factory($response)->isCompleted();
     }
 
     public function getInvalidation($invalidationId)
