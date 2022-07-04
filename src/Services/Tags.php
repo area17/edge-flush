@@ -374,7 +374,7 @@ class Tags
             return false;
         }
 
-        EdgeFlush::responseCache()->invalidateAll();
+        EdgeFlush::responseCache()?->invalidateAll();
 
         $this->deleteAllTags();
 
