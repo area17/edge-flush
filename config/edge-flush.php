@@ -173,9 +173,20 @@ return [
      * List of cache control headers to add to responses
      */
     'headers' => [
-        'cache-control' => ['Cache-Control', 'X-Cache-Control'],
+        'cache-control' => [
+            'Cache-Control',
+            'X-Edge-Flush-Cache-Control'
+        ],
 
-        'tags' => ['Edge-Cache-Tag', 'X-Cache-Tag'],
+        'tags' => [
+            'Edge-Cache-Tag',
+            'X-Edge-Flush-Cache-Tag'
+        ],
+
+        'from-request' => [
+            'X-Edge-Flush-Warming-Url',
+            'X-Edge-Flush-Warmed-At',
+        ],
     ],
 
     /**

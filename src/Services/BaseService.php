@@ -15,18 +15,15 @@ abstract class BaseService implements ServiceContract
     public function addHeadersToResponse(
         Response $response,
         string $service,
-        string $value
+        string $tag
     ): Response {
         if (!$this->enabled()) {
             return $response;
         }
 
-        collect(config("edge-flush.headers.$service"))->map(
-            fn(string $header) => $response->headers->set(
-                $header,
-                collect($value)->join(', '),
-            ),
-        );
+        $this->addTagToHeaders($service, $response, $tag);
+
+        $this->addHeadersFromRequest($response);
 
         return $response;
     }
@@ -87,5 +84,29 @@ abstract class BaseService implements ServiceContract
     public function getInvalidationPathsForTags(Collection $tags): Collection
     {
         return $tags;
+    }
+
+    public function addHeadersFromRequest($response)
+    {
+        collect(config('edge-flush.headers.from-request'))->each(function (
+            string $header
+        ) {
+            if (filled($value = request()->header($header))) {
+                $response->headers->set($header, $value);
+            }
+        });
+    }
+
+    private function addTagToHeaders(
+        string $service,
+        Response $response,
+        string $value
+    ): void {
+        collect(config("edge-flush.headers.$service"))->each(
+            fn(string $header) => $response->headers->set(
+                $header,
+                collect($value)->join(', '),
+            ),
+        );
     }
 }

@@ -147,7 +147,10 @@ class Warmer
             return $this->guzzle;
         }
 
-        Helpers::debug('WARMER-GUZZLE-CONFIG: '.json_encode($this->getGuzzleConfiguration()));
+        Helpers::debug(
+            'WARMER-GUZZLE-CONFIG: ' .
+                json_encode($this->getGuzzleConfiguration()),
+        );
 
         return $this->guzzle = new Guzzle($this->getGuzzleConfiguration());
     }
@@ -164,7 +167,7 @@ class Warmer
         return [
             'X-Edge-Flush-Warming-Url' => $url,
 
-            'X-Edge-Flush-Warming-Time' => (string) now(),
+            'X-Edge-Flush-Warmed-At' => (string) now(),
         ] + config('edge-flush.warmer.headers', []);
     }
 
