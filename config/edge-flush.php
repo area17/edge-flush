@@ -184,7 +184,7 @@ return [
         ],
 
         'from-request' => [
-            'X-Edge-Flush-Warming-Url',
+            'X-Edge-Flush-Warmed-Url',
             'X-Edge-Flush-Warmed-At',
         ],
     ],

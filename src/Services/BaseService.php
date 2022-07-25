@@ -90,7 +90,7 @@ abstract class BaseService implements ServiceContract
     {
         collect(config('edge-flush.headers.from-request'))->each(function (
             string $header
-        ) {
+        ) use ($response) {
             if (filled($value = request()->header($header))) {
                 $response->headers->set($header, $value);
             }

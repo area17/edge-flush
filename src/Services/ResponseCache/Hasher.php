@@ -25,7 +25,7 @@ class Hasher extends SpatieHasher implements RequestHasher
 
     public function getHost(Request $request): string
     {
-        $url = $request->header('X-EDGE-FLUSH-WARMING-URL');
+        $url = $request->header('X-Edge-Flush-Warmed-Url');
 
         if (blank($url)) {
             return $request->getHost();

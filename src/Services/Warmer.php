@@ -165,7 +165,7 @@ class Warmer
     public function getHeaders($url): array
     {
         return [
-            'X-Edge-Flush-Warming-Url' => $url,
+            'X-Edge-Flush-Warmed-Url' => $url,
 
             'X-Edge-Flush-Warmed-At' => (string) now(),
         ] + config('edge-flush.warmer.headers', []);
@@ -177,7 +177,7 @@ class Warmer
             $request = EdgeFlush::getRequest();
         }
 
-        return filled($request->header('X-Edge-Flush-Warming-Url', null));
+        return filled($request->header('X-Edge-Flush-Warmed-Url', null));
     }
 
     public function invalidationIsCompleted($invalidationId)

@@ -383,7 +383,7 @@ class Tags
 
     public function getCurrentUrl($request)
     {
-        return $request->header('X-EDGE-FLUSH-WARMING-URL') ?? url()->full();
+        return $request->header('X-Edge-Flush-Warmed-Url') ?? url()->full();
     }
 
     protected function deleteAllTags(): void
