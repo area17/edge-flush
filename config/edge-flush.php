@@ -13,6 +13,15 @@ return [
     'enabled' => env('EDGE_FLUSH_ENABLED', false),
 
     /**
+     * Enabled/disabled services
+     */
+    'enabled-services' => [
+        'invalidation' => env('EDGE_FLUSH_INVALIDATION_SERVICE_ENABLED', false),
+
+        'store-tags' => env('EDGE_FLUSH_STORE_TAGS_SERVICE_ENABLED', false),
+    ],
+
+    /**
      * Only allowed domains will have tags stored.
      * An empty array will allow all domains.
      */

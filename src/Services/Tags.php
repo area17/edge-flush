@@ -80,7 +80,7 @@ class Tags
     {
         $tag = $this->makeEdgeTag($models = $this->getTags());
 
-        if (EdgeFlush::cacheControl()->isCachable($response)) {
+        if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
             StoreTags::dispatch(
                 $models,
                 [
@@ -148,7 +148,7 @@ class Tags
         array $tags,
         string $url
     ): void {
-        if (!EdgeFlush::enabled() || !$this->domainAllowed($url)) {
+        if (!EdgeFlush::enabled() || !$this->domainAllowed($url) || !EdgeFlush::storeTagsServiceIsEnabled()) {
             return;
         }
 

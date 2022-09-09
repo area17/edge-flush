@@ -94,4 +94,14 @@ class EdgeFlush extends BaseService
     {
         return $this->request;
     }
+
+    public function storeTagsServiceIsEnabled()
+    {
+        return config('edge-flush.enabled-services.store-tags', false);
+    }
+
+    public function invalidationServiceIsEnabled()
+    {
+        return config('edge-flush.enabled-services.invalidation', false);
+    }
 }
