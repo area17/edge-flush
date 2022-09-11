@@ -33,4 +33,12 @@ class Constants
     const MONTH = self::DAY * 30;
 
     const YEAR = self::MONTH * 12;
+
+    // -------- invalidation types
+
+    const INVALIDATION_TYPE_MODEL = 'model';
+
+    const INVALIDATION_TYPE_TAG = 'tag';
+
+    const INVALIDATION_TYPE_PATH = 'path';
 }

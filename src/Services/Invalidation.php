@@ -8,13 +8,13 @@ use A17\EdgeFlush\Support\Helpers;
 
 class Invalidation
 {
-    protected string|null $id;
+    protected string|null $id = null;
 
-    protected string|null $status;
+    protected string|null $status = null;
 
     protected bool $success = false;
 
-    protected Carbon|null $createdAt;
+    protected Carbon|null $createdAt = null;
 
     public function setId(string $id): self
     {
@@ -49,7 +49,7 @@ class Invalidation
         return $this->success;
     }
 
-    public function id(): string
+    public function id(): string|null
     {
         return $this->id;
     }

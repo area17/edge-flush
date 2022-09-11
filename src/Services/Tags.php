@@ -9,11 +9,14 @@ use A17\EdgeFlush\Jobs\StoreTags;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Support\Helpers;
+use SebastianBergmann\Timer\Timer;
+use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ResponseCache\ResponseCache;
+use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
 
 class Tags
@@ -37,33 +40,54 @@ class Tags
     {
         $tags = is_string($tags)
             ? [$tags]
-            : ($tags = $tags
-                ->pluck('tag')
+            : ($tags = collect($tags)
+                ->map(function ($tag) {
+                    if (is_string($tag)) {
+                        return $tag;
+                    }
+
+                    return $tag->tag;
+                })
                 ->unique()
                 ->toArray());
 
-        Tag::whereIn('tag', $tags)->update([
-            'obsolete' => false,
-        ]);
+        if (blank($tags)) {
+            return;
+        }
 
-        Url::join(
-            'edge_flush_tags',
-            'edge_flush_tags.url_id',
-            '=',
-            'edge_flush_urls.id',
-        )
-            ->whereIn('edge_flush_tags.tag', $tags)
-            ->update([
-                'was_purged_at' => now(),
-                'invalidation_id' => $invalidation->id(),
-            ]);
+        $tagList = $this->makeQueryItemsList($tags);
+
+        $time = (string) now();
+
+        $invalidationId = $invalidation->id();
+
+        $this->markTagsAsObsolete(['type' => 'tag', 'items' => $tags]);
+
+        $this->dbStatement("
+            update edge_flush_urls efu
+            set was_purged_at = '{$time}',
+                invalidation_id = '{$invalidationId}'
+            from (
+                    select id
+                    from edge_flush_urls efu
+                    join edge_flush_tags eft on eft.url_id = efu.id
+                    where efu.is_valid = true
+                      and eft.tag in ({$tagList})
+                    order by efu.id
+                    for update
+                ) urls
+            where efu.id = urls.id
+        ");
     }
 
-    protected function getAllTagsForModel(?string $modelString)
-    {
+    protected function getAllTagsForModel(
+        string|null $modelString
+    ): Collection|null {
         if (filled($modelString)) {
             return Tag::where('model', $modelString)->get();
         }
+
+        return null;
     }
 
     public function getTags(): array
@@ -80,7 +104,10 @@ class Tags
     {
         $tag = $this->makeEdgeTag($models = $this->getTags());
 
-        if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
+        if (
+            EdgeFlush::cacheControl()->isCachable($response) &&
+            EdgeFlush::storeTagsServiceIsEnabled()
+        ) {
             StoreTags::dispatch(
                 $models,
                 [
@@ -148,7 +175,11 @@ class Tags
         array $tags,
         string $url
     ): void {
-        if (!EdgeFlush::enabled() || !$this->domainAllowed($url) || !EdgeFlush::storeTagsServiceIsEnabled()) {
+        if (
+            !EdgeFlush::enabled() ||
+            !EdgeFlush::storeTagsServiceIsEnabled() ||
+            !$this->domainAllowed($url)
+        ) {
             return;
         }
 
@@ -161,82 +192,68 @@ class Tags
                 ]),
         );
 
-        DB::transaction(
-            fn() => collect($models)->each(function (string $model) use (
+        DB::transaction(function () use ($models, $tags, $url) {
+            $url = $this->createUrl($url);
+            $now = (string) now();
+
+            collect($models)->each(function (string $model) use (
                 $tags,
-                $url
+                $url,
+                $now
             ) {
-                $url = Helpers::sanitizeUrl($url);
+                $index = $this->makeTagIndex($url, $tags, $model);
 
-                $url = Url::firstOrCreate(
-                    ['url_hash' => sha1($url)],
-                    [
-                        'url' => Str::limit($url, 255),
-                        'hits' => 1,
-                    ],
-                );
-
-                if (!$url->wasRecentlyCreated) {
-                    $url->incrementHits();
-                }
-
-                Tag::firstOrCreate([
-                    'model' => $model,
-                    'tag' => $tags['cdn'],
-                    'response_cache_hash' => $tags['response_cache'],
-                    'url_id' => $url->id,
-                ]);
-            }),
-            5,
-        );
+                $this->dbStatement("
+                        insert into edge_flush_tags (index, url_id, tag, model, response_cache_hash, created_at, updated_at)
+                        select '{$index}', {$url->id}, '{$tags['cdn']}', '{$model}', '{$tags['response_cache']}', '{$now}', '{$now}'
+                        where not exists (
+                            select 1
+                            from edge_flush_tags
+                            where index = '{$index}'
+                        )
+                        ");
+            });
+        }, 5);
     }
 
-    public function dispatchInvalidationsForModel(Model $model): void
-    {
-        InvalidateTags::dispatch($model);
-    }
-
-    public function invalidateTagsForModel($model): void
-    {
-        $tags = $this->getAllTagsForModel($this->makeTag($model))
-            ->pluck('tag')
-            ->unique()
-            ->filter();
-
-        if ($tags->isEmpty()) {
+    public function dispatchInvalidationsForModel(
+        array|string|Model $models
+    ): void {
+        if (blank($models)) {
             return;
         }
 
-        Helpers::debug(
-            'INVALIDATING: CDN tags for model ' .
-                $this->makeTag($model) .
-                '. Found: ' .
-                count($tags ?? []) .
-                ' tags',
-        );
+        $models = is_array($models) ? $models : [$models];
 
-        Helpers::debug('TAGS: ' . json_encode($tags->values()->toArray()));
+        Helpers::debug('INVALIDATING: CDN tags for models');
 
-        $this->invalidateTags($tags);
+        InvalidateTags::dispatch([
+            'type' => Constants::INVALIDATION_TYPE_MODEL,
+            'items' => collect($models)
+                ->map(
+                    fn($model) => is_string($model)
+                        ? $model
+                        : $this->makeTag($model),
+                )
+                ->toArray(),
+        ]);
     }
 
-    public function invalidateTags(mixed $tags = null): void
+    public function invalidateTags(array|null $subject = null): void
     {
-        if (is_null($tags)) {
+        if (!EdgeFlush::invalidationServiceIsEnabled()) {
+            return;
+        }
+
+        if ($subject === null) {
             $this->invalidateObsoleteTags();
 
             return;
         }
 
-        if (config('edge-flush.invalidations.type') === 'batch') {
-            $this->markTagsAsObsolete($tags);
-
-            return;
-        }
-
-        $this->dispatchInvalidations(
-            Tag::whereIn('tag', $tags->toArray())->get(),
-        );
+        config('edge-flush.invalidations.type') === 'batch'
+            ? $this->markTagsAsObsolete($subject)
+            : $this->dispatchInvalidations($subject);
     }
 
     protected function invalidateObsoleteTags(): void
@@ -251,7 +268,6 @@ class Tags
             'edge_flush_urls.hits as url_hits',
             'edge_flush_urls.id as url_id',
         )
-            ->where('edge_flush_tags.obsolete', true)
             ->join(
                 'edge_flush_urls',
                 'edge_flush_tags.url_id',
@@ -264,6 +280,8 @@ class Tags
                 'edge_flush_urls.url',
                 'edge_flush_urls.hits',
             )
+            ->whereRaw('edge_flush_tags.obsolete = true')
+            ->whereRaw('edge_flush_urls.is_valid = true')
             ->orderBy('edge_flush_urls.hits', 'desc');
 
         /**
@@ -286,36 +304,52 @@ class Tags
          * at once.
          */
         $paths = EdgeFlush::cdn()->getInvalidationPathsForTags(
-            $query
-                ->take(
-                    min(
-                        EdgeFlush::cdn()->maxUrls(),
-                        config('edge-flush.invalidations.batch.size'),
-                    ),
-                )
-                ->get(),
+            $query->take($this->getMaxInvalidations())->get(),
         );
 
         /**
          * Let's dispatch invalidations only for what's configured.
          */
-        $this->dispatchInvalidations($paths);
+        $this->dispatchInvalidations([
+            'type' => Constants::INVALIDATION_TYPE_PATH,
+            'items' => $paths->toArray(),
+        ]);
     }
 
-    protected function markTagsAsObsolete(Collection $tags): void
+    protected function markTagsAsObsolete(array $subject)
     {
-        Tag::whereIn('tag', $tags->toArray())->update(['obsolete' => true]);
+        $items = $this->makeQueryItemsList($subject['items']);
+
+        $this->dbStatement("
+            update edge_flush_tags eft
+            set obsolete = true
+            from (
+                    select id
+                    from edge_flush_tags
+                    where obsolete = false
+                      and {$subject['type']} in ({$items})
+                    order by id
+                    for update
+                ) tags
+            where eft.id = tags.id
+        ");
     }
 
-    protected function dispatchInvalidations(Collection $paths): void
+    protected function dispatchInvalidations(array $subject): void
     {
-        if ($paths->isEmpty()) {
+        if (blank($subject)) {
             return;
         }
 
-        EdgeFlush::responseCache()?->invalidate($paths);
+        $paths = $this->getInvalidationPaths($subject);
 
-        $invalidation = EdgeFlush::cdn()->invalidate($paths);
+        if (blank($paths)) {
+            return;
+        }
+
+        EdgeFlush::responseCache()?->invalidate($subject);
+
+        $invalidation = EdgeFlush::cdn()->invalidate(collect($paths));
 
         if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
@@ -356,7 +390,7 @@ class Tags
 
     public function invalidateAll(): bool
     {
-        if (!EdgeFlush::enabled()) {
+        if (!$this->enabled()) {
             return false;
         }
 
@@ -388,13 +422,35 @@ class Tags
 
     protected function deleteAllTags(): void
     {
-        Tag::whereNotNull('id')->update([
-            'obsolete' => true,
-        ]);
+        // Purge all tags
+        $this->dbStatement("
+            update edge_flush_tags eft
+            set obsolete = true
+            from (
+                    select id
+                    from edge_flush_tags
+                    where obsolete = false
+                    order by id
+                    for update
+                ) tags
+            where eft.id = tags.id
+        ");
 
-        Url::whereNotNull('id')->update([
-            'was_purged_at' => now(),
-        ]);
+        // Purge all urls
+        $now = (string) now();
+
+        $this->dbStatement("
+            update edge_flush_urls efu
+            set was_purged_at = $now
+            from (
+                    select id
+                    from edge_flush_urls
+                    where is_valid = true
+                    order by id
+                    for update
+                ) urls
+            where efu.id = urls.id
+        ");
     }
 
     public function domainAllowed($url): bool
@@ -416,7 +472,99 @@ class Tags
     {
         return DB::select(
             DB::raw("select count(*) from ({$query->toSql()}) count"),
-            [true], // edge_flush_tags.obsolete = true
         )[0]->count ?? 0;
+    }
+
+    public function getInvalidationPaths(array $subject): array|null
+    {
+        if ($subject['type'] === Constants::INVALIDATION_TYPE_TAG) {
+            return $this->getPathsForTags($subject['items']);
+        } elseif ($subject['type'] === Constants::INVALIDATION_TYPE_MODEL) {
+            return $this->getPathsForModels($subject['items']);
+        } elseif ($subject['type'] === Constants::INVALIDATION_TYPE_PATH) {
+            return $subject['items'];
+        }
+
+        return null;
+    }
+
+    public function getPathsFor(array $items, string $type)
+    {
+        return EdgeFlush::cdn()
+            ->getInvalidationPathsForTags(
+                Tag::whereIn($type, $items)
+                    ->take($this->getMaxInvalidations())
+                    ->get(),
+            )
+            ->toArray();
+    }
+
+    public function getPathsForTags(array $tags): array
+    {
+        return $this->getPathsFor($tags, 'tag');
+    }
+
+    public function getPathsForModels(array $models): array
+    {
+        return $this->getPathsFor($models, 'model');
+    }
+
+    public function getMaxInvalidations(): int
+    {
+        return min(
+            EdgeFlush::cdn()->maxUrls(),
+            config('edge-flush.invalidations.batch.size'),
+        );
+    }
+
+    public function dbStatement($query)
+    {
+        DB::statement(DB::raw($query));
+    }
+
+    /**
+     * @param $items1
+     * @return string
+     */
+    public function makeQueryItemsList($items1): string
+    {
+        return collect((array) $items1)
+            ->map(fn($model) => "'$model'")
+            ->join(',');
+    }
+
+    public function enabled(): bool
+    {
+        return EdgeFlush::invalidationServiceIsEnabled();
+    }
+
+    /**
+     * @param string $url
+     * @return mixed
+     */
+    function createUrl(string $url)
+    {
+        $url = Helpers::sanitizeUrl($url);
+
+        $url = Url::firstOrCreate(
+            ['url_hash' => sha1($url)],
+            [
+                'url' => Str::limit($url, 255),
+                'hits' => 1,
+            ],
+        );
+
+        if (!$url->wasRecentlyCreated) {
+            $url->incrementHits();
+        }
+
+        return $url;
+    }
+
+    public function makeTagIndex($url, $tags, $model)
+    {
+        $index = "{$url->id}-{$tags['cdn']}-{$model}-{$tags['response_cache']}";
+
+        return sha1($index);
     }
 }

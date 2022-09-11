@@ -57,10 +57,6 @@ class Service extends BaseService implements CDNService
 
     public function getClient(): CloudFrontClient|null
     {
-        if (!parent::enabled()) {
-            return null;
-        }
-
         $config = [
             'region' => config('edge-flush.services.cloud_front.region'),
 
@@ -166,9 +162,13 @@ class Service extends BaseService implements CDNService
 
     public function getInvalidationPathsForTags(Collection $tags): Collection
     {
-        return collect($tags)->mapWithKeys(
-            fn($tag) => [$this->getInvalidationPath($tag) => $tag],
-        );
+        return collect($tags)
+            ->mapWithKeys(
+                fn($tag) => [$this->getInvalidationPath($tag) => $tag],
+            )
+            ->keys()
+            ->unique()
+            ->take($this->maxUrls());
     }
 
     public function mustInvalidateAll(Collection $tags): bool
@@ -191,9 +191,11 @@ class Service extends BaseService implements CDNService
         return config('edge-flush.services.cloud_front.max_urls');
     }
 
-    public function enabled()
+    public function enabled(): bool
     {
-        return parent::enabled() && filled($this->getClient());
+        return parent::enabled() &&
+            config('edge-flush.services.cloud_front.enabled', true) &&
+            filled($this->getClient());
     }
 
     public function invalidationIsCompleted($invalidationId): bool

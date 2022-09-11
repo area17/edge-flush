@@ -21,6 +21,7 @@ class Url extends Model
         'hits',
         'was_purged_at',
         'invalidation_id',
+        'is_valid',
     ];
 
     public function incrementHits(): void
@@ -28,5 +29,10 @@ class Url extends Model
         $this->hits++;
 
         $this->save();
+    }
+
+    public function tags()
+    {
+        return $this->hasMany(Tag::class);
     }
 }

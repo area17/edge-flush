@@ -51,7 +51,7 @@ class Service extends BaseService implements CDNService
             : null;
     }
 
-    public function enabled()
+    public function enabled(): bool
     {
         return EdgeFlush::enabled() && class_exists(ResponseCache::class);
     }

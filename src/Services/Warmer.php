@@ -42,9 +42,9 @@ class Warmer
         }
     }
 
-    public function enabled()
+    public function enabled(): bool
     {
-        return EdgeFlush::enabled() && config('edge-flush.warmer.enabled');
+        return EdgeFlush::warmerServiceIsEnabled();
     }
 
     public function getColdUrls()

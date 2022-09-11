@@ -30,7 +30,7 @@ abstract class BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
-        if (!$this->enabled()) {
+        if (!$this->enabled('test')) {
             return $response;
         }
 
@@ -66,17 +66,17 @@ abstract class BaseService implements ServiceContract
         return fnmatch($patten, $string);
     }
 
-    public function enabled()
+    public function enabled(): bool
     {
         return $this->enabled ??= config('edge-flush.enabled');
     }
 
-    public function enable()
+    public function enable(): void
     {
         $this->enabled = true;
     }
 
-    public function disable()
+    public function disable(): void
     {
         $this->enabled = false;
     }
@@ -86,7 +86,7 @@ abstract class BaseService implements ServiceContract
         return $tags;
     }
 
-    public function addHeadersFromRequest($response)
+    public function addHeadersFromRequest($response): void
     {
         collect(config('edge-flush.headers.from-request'))->each(function (
             string $header

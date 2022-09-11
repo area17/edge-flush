@@ -39,12 +39,10 @@ class StoreTags implements ShouldQueue
      */
     public function handle()
     {
-        if (EdgeFlush::storeTagsServiceIsEnabled()) {
-            EdgeFlush::tags()->storeCacheTags(
-                $this->models,
-                $this->tags,
-                $this->url,
-            );
-        }
+        EdgeFlush::tags()->storeCacheTags(
+            $this->models,
+            $this->tags,
+            $this->url,
+        );
     }
 }

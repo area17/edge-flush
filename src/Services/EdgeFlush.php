@@ -97,11 +97,18 @@ class EdgeFlush extends BaseService
 
     public function storeTagsServiceIsEnabled()
     {
-        return config('edge-flush.enabled-services.store-tags', false);
+        return $this->enabled() &&
+            config('edge-flush.enabled-services.store-tags', false);
     }
 
     public function invalidationServiceIsEnabled()
     {
-        return config('edge-flush.enabled-services.invalidation', false);
+        return $this->enabled() &&
+            config('edge-flush.enabled-services.invalidation', false);
+    }
+
+    public function warmerServiceIsEnabled()
+    {
+        return $this->enabled() && config('edge-flush.warmer.enabled', false);
     }
 }
