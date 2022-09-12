@@ -17,7 +17,7 @@ use A17\EdgeFlush\Exceptions\FrontendChecker as FrontendCheckerException;
 
 class CacheControl extends BaseService implements ServiceContract
 {
-    protected bool $_isCachable = false;
+    protected bool|null $_isCachable = null;
 
     protected string|null|false $_content = null;
 
@@ -25,7 +25,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     protected int|null $sMaxAge = null;
 
-    protected string $strategy;
+    protected string|null $strategy = null;
 
     public function makeResponse(Response $response): Response
     {
