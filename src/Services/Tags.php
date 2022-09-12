@@ -15,7 +15,6 @@ use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\ResponseCache\ResponseCache;
 use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -112,10 +111,6 @@ class Tags
                 $models,
                 [
                     'cdn' => $tag,
-
-                    'response_cache' => EdgeFlush::responseCache()?->makeResponseCacheTag(
-                        EdgeFlush::getRequest(),
-                    ),
                 ],
                 $this->getCurrentUrl($request),
             );
@@ -204,8 +199,8 @@ class Tags
                 $index = $this->makeTagIndex($url, $tags, $model);
 
                 $this->dbStatement("
-                        insert into edge_flush_tags (index, url_id, tag, model, response_cache_hash, created_at, updated_at)
-                        select '{$index}', {$url->id}, '{$tags['cdn']}', '{$model}', '{$tags['response_cache']}', '{$now}', '{$now}'
+                        insert into edge_flush_tags (index, url_id, tag, model, created_at, updated_at)
+                        select '{$index}', {$url->id}, '{$tags['cdn']}', '{$model}', '{$now}', '{$now}'
                         where not exists (
                             select 1
                             from edge_flush_tags
@@ -347,8 +342,6 @@ class Tags
             return;
         }
 
-        EdgeFlush::responseCache()?->invalidate($subject);
-
         $invalidation = EdgeFlush::cdn()->invalidate(collect($paths));
 
         if ($invalidation->success()) {
@@ -407,8 +400,6 @@ class Tags
         if (!$success) {
             return false;
         }
-
-        EdgeFlush::responseCache()?->invalidateAll();
 
         $this->deleteAllTags();
 
@@ -563,7 +554,7 @@ class Tags
 
     public function makeTagIndex($url, $tags, $model)
     {
-        $index = "{$url->id}-{$tags['cdn']}-{$model}-{$tags['response_cache']}";
+        $index = "{$url->id}-{$tags['cdn']}-{$model}";
 
         return sha1($index);
     }

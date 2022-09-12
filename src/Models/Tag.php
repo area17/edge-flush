@@ -9,14 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $model
  * @property string $tag
  * @property int $url_id
- * @property string $response_cache_hash
  * @property Url $url
  */
 class Tag extends Model
 {
     protected $table = 'edge_flush_tags';
 
-    protected $fillable = ['index', 'model', 'tag', 'url_id', 'response_cache_hash'];
+    protected $fillable = ['index', 'model', 'tag', 'url_id'];
 
     protected $with = ['url'];
 

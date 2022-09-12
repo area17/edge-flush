@@ -6,7 +6,6 @@ use Faker\Provider\Base;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Contracts\CDNService;
 use Symfony\Component\HttpFoundation\Response;
-use A17\EdgeFlush\Services\ResponseCache\Service as ResponseCache;
 
 class EdgeFlush extends BaseService
 {
@@ -18,16 +17,13 @@ class EdgeFlush extends BaseService
 
     public Warmer $warmer;
 
-    public ResponseCache|null $responseCache;
-
     public Request $request;
 
     public function __construct(
         CDNService $cdn,
         CacheControl $cacheControl,
         Tags $tags,
-        Warmer $warmer,
-        BaseService|ResponseCache|null $responseCache = null
+        Warmer $warmer
     ) {
         $this->cdn = $cdn;
 
@@ -36,8 +32,6 @@ class EdgeFlush extends BaseService
         $this->tags = $tags;
 
         $this->warmer = $warmer;
-
-        $this->responseCache = $responseCache;
 
         $this->enabled = config('edge-flush.enabled', false);
     }
@@ -76,11 +70,6 @@ class EdgeFlush extends BaseService
     public function warmer(): Warmer
     {
         return $this->warmer;
-    }
-
-    public function responseCache(): ResponseCache|null
-    {
-        return $this->responseCache;
     }
 
     public function setRequest(Request $request): self

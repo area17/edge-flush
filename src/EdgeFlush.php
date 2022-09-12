@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Facade;
  * @method static \A17\EdgeFlush\Services\CacheControl cacheControl()
  * @method static \A17\EdgeFlush\Services\Tags tags()
  * @method static \A17\EdgeFlush\Services\Warmer warmer()
- * @method static \A17\EdgeFlush\Services\ResponseCache\Service responseCache()
  * @method static \Illuminate\Http\Request\Request getRequest()
  * @method static bool enabled()
  * @method static self instance()

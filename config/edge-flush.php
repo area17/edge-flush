@@ -81,8 +81,6 @@ return [
         'tags' => A17\EdgeFlush\Services\Tags::class,
 
         'warmer' => A17\EdgeFlush\Services\Warmer::class,
-
-        // 'response-cache' => A17\EdgeFlush\Services\ResponseCache\Service::class,
     ],
 
     /**
@@ -337,7 +335,7 @@ return [
 
         'cloud_front' => [
             'enabled' => env('EDGE_FLUSH_CLOUD_FRONT_ENABLED', true),
-            
+
             'sdk_version' => env(
                 'EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION',
                 '2016-01-13',

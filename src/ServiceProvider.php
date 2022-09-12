@@ -62,25 +62,12 @@ class ServiceProvider extends IlluminateServiceProvider
                 app($service),
                 $app->make(config('edge-flush.classes.cache-control')),
                 $app->make(config('edge-flush.classes.tags')),
-                $app->make(config('edge-flush.classes.warmer')),
-                $this->instantiateResponseCache(),
+                $app->make(config('edge-flush.classes.warmer'))
             );
         });
 
         $this->app->singleton('a17.edge-flush.cache-control', function () {
             return EdgeFlushFacade::cacheControl();
         });
-    }
-
-    function instantiateResponseCache(): BaseService|null
-    {
-        if (
-            blank($class = config('edge-flush.classes.response-cache')) ||
-            !class_exists($class)
-        ) {
-            return null;
-        }
-
-        return $this->app->make($class);
     }
 }

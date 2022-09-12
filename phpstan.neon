@@ -13,9 +13,6 @@ parameters:
 
   reportUnmatchedIgnoredErrors: false
 
-  stubFiles:
-    - stubs/phpstan/larastan-facades.php
-
   ignoreErrors:
       - '#Internal.*#'
       - '#Cannot access offset .* on array\{scheme.*#'

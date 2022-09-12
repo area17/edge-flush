@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\Response;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
-use A17\EdgeFlush\Services\ResponseCache\Service as ResponseCache;
 
 class Service extends BaseService implements CDNService
 {

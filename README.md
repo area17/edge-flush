@@ -61,10 +61,6 @@ The supported CDN services have these package dependencies that you need to choo
 Akamai: [akamai-open/edgegrid-auth](https://github.com/akamai/AkamaiOPEN-edgegrid-php)
 CloudFront: [aws/aws-sdk-php](https://github.com/aws/aws-sdk-php)
 
-If you want to add another caching layer on your origin, you can also install this one:
-
-[Response Cache](#laravel-response-cache-integration): [spatie/laravel-responsecache](https://github.com/spatie/laravel-responsecache)
-
 ## Usage
 
 Do a full read on the `config/edge-flush.php` there's a lot of configuration items and we tried to document them all.
@@ -164,38 +160,6 @@ Akamai has a 128 bytes limit for the tag list, so if one page is impacted by lot
 
 ```
 edge-cache-tag: app-production-7e0ae085d699003a64e5fa7b75daae3d78ace842
-```
-
-## Laravel Response Cache integration
-
-If you have Response Cache installed, this package will automatically store its tags per page and when a model is changed it will not only purge the CDN pages related to this page but also bust the Response Cache internal cache. After, when the warmer passes back to warm those pages, Response Cache should also cache those pages again. This ensures that even if CDN hits your origin from a different not-yet-cached-region, responses will be still be blazing fast.
-
-To allow EdgeFlush to warm pages on Jobs, as ResponseCache only allows cached pages to be warmed if they are requested by a browser, you need to use EdgeCache Profile and Hasher on `config/responsecache.php`:
-
-``` php
-return [
-    ... 
-    
-    /*
-     *  The given class will determinate if a request should be cached. The
-     *  default class will cache all successful GET-requests.
-     *
-     *  You can provide your own class given that it implements the
-     *  CacheProfile interface.
-     */
-
-    'cache_profile' =>
-        A17\EdgeFlush\Services\ResponseCache\CacheAllSuccessfulGetRequests::class,
-
-    /*
-     * This class is responsible for generating a hash for a request. This hash
-     * is used to look up an cached response.
-     */
-    
-    'hasher' => \A17\EdgeFlush\Services\ResponseCache\Hasher::class,
-        
-    ...
-];    
 ```
 
 ## Changelog

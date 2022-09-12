@@ -4,7 +4,6 @@ namespace A17\EdgeFlush\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Spatie\ResponseCache\ResponseCacheServiceProvider;
 use A17\EdgeFlush\ServiceProvider as EdgeFlushServiceProvider;
 
 class TestCase extends Orchestra
@@ -23,8 +22,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
-            EdgeFlushServiceProvider::class,
-            ResponseCacheServiceProvider::class,
+            EdgeFlushServiceProvider::class
         ];
     }
 
