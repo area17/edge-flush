@@ -14,7 +14,7 @@ class StoreTags implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public array $models;
+    public Collection $models;
 
     public array $tags;
 
@@ -23,7 +23,7 @@ class StoreTags implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(array $models, array $tags, string $url)
+    public function __construct(Collection $models, array $tags, string $url)
     {
         $this->models = $models;
 

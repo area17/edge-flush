@@ -16,5 +16,5 @@ interface CDNService extends Service
 
     public function maxUrls(): int;
 
-    public function invalidationIsCompleted($invalidationId): bool;
+    public function invalidationIsCompleted(string $invalidationId): bool;
 }

@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services\CloudFront;
 
 use Aws\AwsClient;
+use Aws\Result as AwsResult;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
@@ -42,7 +43,7 @@ class Service extends BaseService implements CDNService
     public function invalidateAll(): Invalidation
     {
         if (!$this->enabled()) {
-            return false;
+            return $this->unsuccessfulInvalidation();
         }
 
         return $this->createInvalidationRequest(
@@ -112,7 +113,7 @@ class Service extends BaseService implements CDNService
         }
 
         try {
-            $response = $this->client?->createInvalidation([
+            $response = $this->client->createInvalidation([
                 'DistributionId' => $this->getDistributionId(),
                 'InvalidationBatch' => [
                     'Paths' => [
@@ -198,7 +199,7 @@ class Service extends BaseService implements CDNService
             filled($this->getClient());
     }
 
-    public function invalidationIsCompleted($invalidationId): bool
+    public function invalidationIsCompleted(string $invalidationId): bool
     {
         $response = $this->getInvalidation($invalidationId);
 
@@ -209,9 +210,9 @@ class Service extends BaseService implements CDNService
         return Invalidation::factory($response)->isCompleted();
     }
 
-    public function getInvalidation($invalidationId)
+    public function getInvalidation(string $invalidationId): AwsResult
     {
-        return $this->client?->getInvalidation([
+        return $this->client->getInvalidation([
             'DistributionId' => $this->getDistributionId(),
             'Id' => $invalidationId,
         ]);

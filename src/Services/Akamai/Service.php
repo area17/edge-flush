@@ -103,8 +103,8 @@ class Service extends BaseService implements CDNService
     {
         return config('edge-flush.services.akamai.max_urls');
     }
-    
-    public function invalidationIsCompleted($invalidationId): bool
+
+    public function invalidationIsCompleted(string $invalidationId): bool
     {
         return false;
     }

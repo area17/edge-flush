@@ -14,7 +14,7 @@ class Invalidation
 
     protected bool $success = false;
 
-    protected Carbon|null $createdAt = null;
+    protected Carbon|string|null $createdAt = null;
 
     public function setId(string $id): self
     {
@@ -30,14 +30,14 @@ class Invalidation
         return $this;
     }
 
-    public function setStatus(bool $status): self
+    public function setStatus(string|null $status): self
     {
         $this->status = $status;
 
         return $this;
     }
 
-    public function setCreatedAt(Carbon|string $createdAt): self
+    public function setCreatedAt(Carbon|string|null $createdAt): self
     {
         $this->createdAt = $createdAt;
 
@@ -54,12 +54,12 @@ class Invalidation
         return $this->id;
     }
 
-    public function status(): string
+    public function status(): string|null
     {
         return $this->status;
     }
 
-    public function createdAt(): Carbon|null
+    public function createdAt(): string|null
     {
         return $this->status;
     }

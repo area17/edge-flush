@@ -5,12 +5,14 @@ namespace A17\EdgeFlush\Services;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
-use A17\EdgeFlush\Services\Invalidation;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
+use A17\EdgeFlush\Services\Behaviours\ControlsInvalidations;
 
 abstract class BaseService implements ServiceContract
 {
+    use ControlsInvalidations;
+
     protected bool $enabled = false;
 
     public function addHeadersToResponse(
@@ -109,15 +111,5 @@ abstract class BaseService implements ServiceContract
                 collect($value)->join(', '),
             ),
         );
-    }
-
-    public function successfulInvalidation(): Invalidation
-    {
-        return (new Invalidation())->setSuccess(true);
-    }
-
-    public function unsuccessfulInvalidation(): Invalidation
-    {
-        return (new Invalidation())->setSuccess(false);
     }
 }

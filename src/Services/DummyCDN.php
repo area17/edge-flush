@@ -24,7 +24,7 @@ class DummyCDN extends BaseService implements CDNService
         return 0;
     }
 
-    public function invalidationIsCompleted($invalidationId): bool
+    public function invalidationIsCompleted(string $invalidationId): bool
     {
         return false;
     }

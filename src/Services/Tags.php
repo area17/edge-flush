@@ -14,15 +14,28 @@ use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use A17\EdgeFlush\Services\Behaviours\ControlsInvalidations;
 
 class Tags
 {
-    protected array $tags = [];
+    use ControlsInvalidations;
 
-    public array $processedTags = [];
+    protected Collection $tags;
+
+    public Collection $processedTags;
+
+    public function __construct()
+    {
+        $this->tags = collect();
+
+        $this->processedTags = collect();
+    }
 
     public function addTag(Model $model): void
     {
@@ -35,20 +48,17 @@ class Tags
         }
     }
 
-    protected function deleteTags(array $tags, Invalidation $invalidation): void
+    protected function deleteTags(Collection $tags, Invalidation $invalidation): void
     {
-        $tags = is_string($tags)
-            ? [$tags]
-            : ($tags = collect($tags)
-                ->map(function ($tag) {
-                    if (is_string($tag)) {
-                        return $tag;
-                    }
+        $tags = collect($tags)
+            ->map(function ($tag) {
+                if (is_string($tag)) {
+                    return $tag;
+                }
 
-                    return $tag->tag;
-                })
-                ->unique()
-                ->toArray());
+                return $tag->tag;
+            })
+            ->unique();
 
         if (blank($tags)) {
             return;
@@ -89,14 +99,13 @@ class Tags
         return null;
     }
 
-    public function getTags(): array
+    public function getTags(): Collection
     {
         return collect($this->tags)
             ->reject(function (string $tag) {
                 return $this->tagIsExcluded($tag);
             })
-            ->values()
-            ->toArray();
+            ->values();
     }
 
     public function getTagsHash(Response $response, Request $request): string
@@ -119,7 +128,7 @@ class Tags
         return $tag;
     }
 
-    public function makeEdgeTag(array $models = null): string
+    public function makeEdgeTag(Collection|null $models = null): string
     {
         $models ??= $this->getTags();
 
@@ -166,7 +175,7 @@ class Tags
     }
 
     public function storeCacheTags(
-        array $models,
+        Collection $models,
         array $tags,
         string $url
     ): void {
@@ -212,13 +221,13 @@ class Tags
     }
 
     public function dispatchInvalidationsForModel(
-        array|string|Model $models
+        Collection|string|Model $models
     ): void {
         if (blank($models)) {
             return;
         }
 
-        $models = is_array($models) ? $models : [$models];
+        $models = $models instanceof Collection ? $models : [$models];
 
         Helpers::debug('INVALIDATING: CDN tags for models');
 
@@ -226,11 +235,14 @@ class Tags
             'type' => Constants::INVALIDATION_TYPE_MODEL,
             'items' => collect($models)
                 ->map(
-                    fn($model) => is_string($model)
-                        ? $model
-                        : $this->makeTag($model),
-                )
-                ->toArray(),
+                    function ($model) {
+                        if ($model instanceof Model) {
+                            return $this->makeTag($model);
+                        }
+
+                        return $model;
+                    }
+                ),
         ]);
     }
 
@@ -307,7 +319,7 @@ class Tags
          */
         $this->dispatchInvalidations([
             'type' => Constants::INVALIDATION_TYPE_PATH,
-            'items' => $paths->toArray(),
+            'items' => $paths,
         ]);
     }
 
@@ -338,11 +350,11 @@ class Tags
 
         $paths = $this->getInvalidationPaths($subject);
 
-        if (blank($paths)) {
+        if (empty($paths)) {
             return;
         }
 
-        $invalidation = EdgeFlush::cdn()->invalidate(collect($paths));
+        $invalidation = EdgeFlush::cdn()->invalidate($paths);
 
         if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
@@ -350,7 +362,7 @@ class Tags
         }
     }
 
-    protected function invalidateEntireCache()
+    protected function invalidateEntireCache(): void
     {
         Helpers::debug('INVALIDATING: entire cache...');
 
@@ -384,7 +396,7 @@ class Tags
     public function invalidateAll(): Invalidation
     {
         if (!$this->enabled()) {
-            return false;
+            return $this->unsuccessfulInvalidation();
         }
 
         $count = 0;
@@ -394,21 +406,27 @@ class Tags
                 sleep(2);
             }
 
-            $success = EdgeFlush::cdn()->invalidateAll();
+            $success = EdgeFlush::cdn()->invalidateAll()->success();
         } while ($count < 3 && !$success);
 
         if (!$success) {
-            return false;
+            return $this->unsuccessfulInvalidation();
         }
 
         $this->deleteAllTags();
 
-        return $this->successfullInvalidation();
+        return $this->successfulInvalidation();
     }
 
-    public function getCurrentUrl($request)
+    public function getCurrentUrl(Request $request): string
     {
-        return $request->header('X-Edge-Flush-Warmed-Url') ?? url()->full();
+        $result = $request->header('X-Edge-Flush-Warmed-Url') ?? url()->full();
+
+        if (is_array($result)) {
+            $result = $result[0] ?? '';
+        }
+
+        return $result;
     }
 
     protected function deleteAllTags(): void
@@ -444,8 +462,12 @@ class Tags
         ");
     }
 
-    public function domainAllowed($url): bool
+    public function domainAllowed(string|null $url): bool
     {
+        if (blank($url)) {
+            return false;
+        }
+
         $allowed = collect(config('edge-flush.domains.allowed'))->filter();
 
         $blocked = collect(config('edge-flush.domains.blocked'))->filter();
@@ -459,14 +481,14 @@ class Tags
         return $allowed->contains($domain) && !$blocked->contains($domain);
     }
 
-    private function getTotal($query): int
+    private function getTotal(QueryBuilder|EloquentBuilder $query): int
     {
         return DB::select(
             DB::raw("select count(*) from ({$query->toSql()}) count"),
         )[0]->count ?? 0;
     }
 
-    public function getInvalidationPaths(array $subject): array|null
+    public function getInvalidationPaths(array $subject): Collection|null
     {
         if ($subject['type'] === Constants::INVALIDATION_TYPE_TAG) {
             return $this->getPathsForTags($subject['items']);
@@ -479,23 +501,22 @@ class Tags
         return null;
     }
 
-    public function getPathsFor(array $items, string $type)
+    public function getPathsFor(Collection $items, string $type): Collection
     {
         return EdgeFlush::cdn()
             ->getInvalidationPathsForTags(
                 Tag::whereIn($type, $items)
                     ->take($this->getMaxInvalidations())
                     ->get(),
-            )
-            ->toArray();
+            );
     }
 
-    public function getPathsForTags(array $tags): array
+    public function getPathsForTags(Collection $tags): Collection
     {
         return $this->getPathsFor($tags, 'tag');
     }
 
-    public function getPathsForModels(array $models): array
+    public function getPathsForModels(Collection $models): Collection
     {
         return $this->getPathsFor($models, 'model');
     }
@@ -508,18 +529,18 @@ class Tags
         );
     }
 
-    public function dbStatement($query)
+    public function dbStatement(string $sql): bool
     {
-        DB::statement(DB::raw($query));
+        return DB::statement(DB::raw($sql));
     }
 
     /**
      * @param $items1
      * @return string
      */
-    public function makeQueryItemsList($items1): string
+    public function makeQueryItemsList(Collection $items): string
     {
-        return collect((array) $items1)
+        return $items
             ->map(fn($model) => "'$model'")
             ->join(',');
     }
@@ -552,7 +573,7 @@ class Tags
         return $url;
     }
 
-    public function makeTagIndex($url, $tags, $model)
+    public function makeTagIndex(Url $url, array $tags, string $model): string
     {
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
 
