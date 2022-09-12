@@ -2,6 +2,12 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.0 - 2022-09-12 -- UNRELEASED
+### Fixed
+- Refactored some parts of the code
+- Queries and updates optimization
+- Fix all PHPStan level 8 errors
+
 ## 1.0.2 - 2021-11-10
 ### Fixed
 - Disabled state generating recursion
