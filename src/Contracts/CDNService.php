@@ -15,4 +15,6 @@ interface CDNService extends Service
     public function getInvalidationPathsForTags(Collection $tags): Collection;
 
     public function maxUrls(): int;
+
+    public function invalidationIsCompleted($invalidationId): bool;
 }

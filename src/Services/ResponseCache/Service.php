@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
+use A17\EdgeFlush\Services\Invalidation;
 use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\Facades\ResponseCache;
 use Spatie\ResponseCache\ResponseCacheRepository;
@@ -20,16 +21,16 @@ class Service extends BaseService implements CDNService
         $this->cache = app(ResponseCacheRepository::class);
     }
 
-    public function invalidate(Collection $tags): bool
+    public function invalidate(Collection $tags): Invalidation
     {
         if ($this->enabled()) {
             $tags->each(fn($tag) => $this->forget($tag->response_cache_hash));
         }
 
-        return true;
+        return $this->successfulInvalidation();
     }
 
-    public function invalidateAll(): bool
+    public function invalidateAll(): Invalidation
     {
         if (!$this->enabled()) {
             return false;
@@ -41,7 +42,7 @@ class Service extends BaseService implements CDNService
          */
         ResponseCache::clear();
 
-        return true;
+        return $this->successfulInvalidation();
     }
 
     public function makeResponseCacheTag($request): string|null
@@ -64,5 +65,10 @@ class Service extends BaseService implements CDNService
     public function maxUrls(): int
     {
         return PHP_INT_MAX;
+    }
+
+    public function invalidationIsCompleted($invalidationId): bool
+    {
+        return true;
     }
 }

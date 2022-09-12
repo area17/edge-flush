@@ -27,7 +27,7 @@ class EdgeFlush extends BaseService
         CacheControl $cacheControl,
         Tags $tags,
         Warmer $warmer,
-        ResponseCache|null $responseCache = null
+        BaseService|ResponseCache|null $responseCache = null
     ) {
         $this->cdn = $cdn;
 

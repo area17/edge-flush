@@ -12,14 +12,15 @@ use A17\EdgeFlush\Models\Url;
 use GuzzleHttp\Client as Guzzle;
 use SebastianBergmann\Timer\Timer;
 use A17\EdgeFlush\Support\Helpers;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use GuzzleHttp\Promise\Utils as Promise;
 
 class Warmer
 {
-    protected $guzzle;
+    protected Guzzle|null $guzzle;
 
-    public function execute()
+    public function execute(): void
     {
         if (!$this->enabled()) {
             return;
@@ -28,7 +29,7 @@ class Warmer
         $this->warm($this->getColdUrls());
     }
 
-    public function warm($urls)
+    public function warm(Collection $urls): void
     {
         while ($urls->count() > 0) {
             $chunk = $urls->splice(
@@ -47,7 +48,7 @@ class Warmer
         return EdgeFlush::warmerServiceIsEnabled();
     }
 
-    public function getColdUrls()
+    public function getColdUrls(): Collection
     {
         return Url::whereNotNull('was_purged_at')
             ->take(config('edge-flush.warmer.max_urls'))
@@ -62,7 +63,7 @@ class Warmer
             ->flatten();
     }
 
-    protected function dispatchWarmRequests($urls)
+    protected function dispatchWarmRequests(Collection $urls): void
     {
         foreach (config('edge-flush.warmer.types', []) as $type) {
             if ($type === 'internal') {
@@ -75,19 +76,19 @@ class Warmer
         }
     }
 
-    protected function resetWarmStatus($urls)
+    protected function resetWarmStatus(Collection $urls): void
     {
         Url::whereIn('id', $urls->pluck('id')->toArray())->update([
             'was_purged_at' => null,
         ]);
     }
 
-    public function dispatchInternalWarmRequests($urls)
+    public function dispatchInternalWarmRequests(Collection $urls): void
     {
         $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url->url));
     }
 
-    public function dispatchInternalWarmRequest($url)
+    public function dispatchInternalWarmRequest(string $url): void
     {
         $parsed = Helpers::parseUrl($url);
 
@@ -100,18 +101,18 @@ class Warmer
         app()->handle($request);
     }
 
-    public function dispatchExternalWarmRequests($urls)
+    public function dispatchExternalWarmRequests(Collection $urls): void
     {
         $startTime = microtime(true);
 
         $responses = Promise::inspectAll(
-            $urls->map(function ($url) {
+            $urls->map(function (Url $url) {
                 Helpers::debug("WARMING: $url->url");
 
                 return $this->getGuzzle()->getAsync($url->url, [
                     'headers' => $this->getHeaders($url->url),
                 ]);
-            }),
+            })->toArray(),
         );
 
         $executionTime = microtime(true) - $startTime;
@@ -141,9 +142,9 @@ class Warmer
         });
     }
 
-    public function getGuzzle()
+    public function getGuzzle(): Guzzle
     {
-        if (filled($this->guzzle)) {
+        if (!empty($this->guzzle)) {
             return $this->guzzle;
         }
 
@@ -155,14 +156,14 @@ class Warmer
         return $this->guzzle = new Guzzle($this->getGuzzleConfiguration());
     }
 
-    public function addHeaders($request, $headers)
+    public function addHeaders(Request $request, array $headers): void
     {
         collect($headers)->each(
             fn($value, $key) => $request->headers->set($key, $value),
         );
     }
 
-    public function getHeaders($url): array
+    public function getHeaders(string $url): array
     {
         return [
             'X-Edge-Flush-Warmed-Url' => $url,
@@ -171,21 +172,21 @@ class Warmer
         ] + config('edge-flush.warmer.headers', []);
     }
 
-    public function isWarming(Request|null $request = null)
+    public function isWarming(Request|null $request = null): bool
     {
-        if (blank($request)) {
+        if (empty($request)) {
             $request = EdgeFlush::getRequest();
         }
 
         return filled($request->header('X-Edge-Flush-Warmed-Url', null));
     }
 
-    public function invalidationIsCompleted($invalidationId)
+    public function invalidationIsCompleted(string $invalidationId): bool
     {
-        return EdgeFlush::cdn()->invalidationIsCompleted($invalidationId);
+        return EdgeFlush::warmer()->invalidationIsCompleted($invalidationId);
     }
 
-    public function getGuzzleConfiguration()
+    public function getGuzzleConfiguration(): array
     {
         return [
             'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds

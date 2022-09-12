@@ -51,7 +51,7 @@ class ServiceProvider extends IlluminateServiceProvider
             $service = config('edge-flush.classes.cdn');
 
             if (blank($service)) {
-                EdgeFlushxception::missingService($service);
+                EdgeFlushxception::missingService();
             }
 
             if (!class_exists($service)) {

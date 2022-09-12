@@ -5,12 +5,13 @@ namespace A17\EdgeFlush\Services;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
+use A17\EdgeFlush\Services\Invalidation;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
 {
-    protected $enabled;
+    protected bool $enabled = false;
 
     public function addHeadersToResponse(
         Response $response,
@@ -30,7 +31,7 @@ abstract class BaseService implements ServiceContract
 
     public function makeResponse(Response $response): Response
     {
-        if (!$this->enabled('test')) {
+        if (!$this->enabled()) {
             return $response;
         }
 
@@ -86,7 +87,7 @@ abstract class BaseService implements ServiceContract
         return $tags;
     }
 
-    public function addHeadersFromRequest($response): void
+    public function addHeadersFromRequest(Response $response): void
     {
         collect(config('edge-flush.headers.from-request'))->each(function (
             string $header
@@ -108,5 +109,15 @@ abstract class BaseService implements ServiceContract
                 collect($value)->join(', '),
             ),
         );
+    }
+
+    public function successfulInvalidation(): Invalidation
+    {
+        return (new Invalidation())->setSuccess(true);
+    }
+
+    public function unsuccessfulInvalidation(): Invalidation
+    {
+        return (new Invalidation())->setSuccess(false);
     }
 }

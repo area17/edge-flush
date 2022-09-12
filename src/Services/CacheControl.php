@@ -16,17 +16,15 @@ use A17\EdgeFlush\Exceptions\FrontendChecker as FrontendCheckerException;
 
 class CacheControl extends BaseService implements ServiceContract
 {
-    protected $_isCachable;
+    protected bool $_isCachable = false;
 
-    protected $_content;
+    protected string|null $_content = null;
 
-    protected $public;
+    protected int|null $maxAge = null;
 
-    protected $maxAge;
+    protected int|null $sMaxAge = null;
 
-    protected $sMaxAge;
-
-    protected $strategy;
+    protected string $strategy;
 
     public function makeResponse(Response $response): Response
     {
@@ -50,7 +48,7 @@ class CacheControl extends BaseService implements ServiceContract
         );
     }
 
-    public function isCachable(Response $response = null): bool
+    public function isCachable(Response|null $response = null): bool
     {
         if (!$this->enabled()) {
             return false;
@@ -65,7 +63,7 @@ class CacheControl extends BaseService implements ServiceContract
         )->contains(false);
     }
 
-    public function getCachableMatrix(Response $response): Collection
+    public function getCachableMatrix(Response|null $response): Collection
     {
         return collect([
             'enabled' => $this->enabled(),
@@ -278,7 +276,7 @@ class CacheControl extends BaseService implements ServiceContract
         return (int) config('edge-flush.max-age.default', 0);
     }
 
-    public function buildStrategy(string $strategy): string
+    public function buildStrategy(string|null $strategy): string
     {
         return collect($this->getStrategyArray($strategy))
             ->map(

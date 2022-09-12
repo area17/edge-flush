@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $url
@@ -31,7 +32,7 @@ class Url extends Model
         $this->save();
     }
 
-    public function tags()
+    public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
     }

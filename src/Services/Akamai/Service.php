@@ -10,6 +10,7 @@ use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Services\CacheControl;
+use A17\EdgeFlush\Services\Invalidation;
 use A17\EdgeFlush\Services\TagsContainer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
@@ -39,10 +40,10 @@ class Service extends BaseService implements CDNService
         return 'https://' . $this->getHost() . $this->getApiPath();
     }
 
-    public function invalidate(Collection $items): bool
+    public function invalidate(Collection $items): Invalidation
     {
         if (!$this->enabled()) {
-            return false;
+            return $this->unsuccessfulInvalidation();
         }
 
         $body = [
@@ -58,13 +59,13 @@ class Service extends BaseService implements CDNService
             'Authorization' => $this->getAuthHeaders($body),
         ])->post($this->getInvalidationURL(), $body);
 
-        return true;
+        return $this->successfulInvalidation();
     }
 
-    public function invalidateAll(): bool
+    public function invalidateAll(): Invalidation
     {
         if (!$this->enabled()) {
-            return false;
+            return $this->unsuccessfulInvalidation();
         }
 
         return $this->invalidate(
@@ -102,5 +103,10 @@ class Service extends BaseService implements CDNService
     public function maxUrls(): int
     {
         return config('edge-flush.services.akamai.max_urls');
+    }
+    
+    public function invalidationIsCompleted($invalidationId): bool
+    {
+        return false;
     }
 }

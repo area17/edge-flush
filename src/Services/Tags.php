@@ -23,7 +23,7 @@ class Tags
 {
     protected array $tags = [];
 
-    public $processedTags = [];
+    public array $processedTags = [];
 
     public function addTag(Model $model): void
     {
@@ -36,7 +36,7 @@ class Tags
         }
     }
 
-    protected function deleteTags($tags, Invalidation $invalidation): void
+    protected function deleteTags(array $tags, Invalidation $invalidation): void
     {
         $tags = is_string($tags)
             ? [$tags]
@@ -100,7 +100,7 @@ class Tags
             ->toArray();
     }
 
-    public function getTagsHash(Response $response, Request $request)
+    public function getTagsHash(Response $response, Request $request): string
     {
         $tag = $this->makeEdgeTag($models = $this->getTags());
 
@@ -124,7 +124,7 @@ class Tags
         return $tag;
     }
 
-    public function makeEdgeTag($models = null)
+    public function makeEdgeTag(array $models = null): string
     {
         $models ??= $this->getTags();
 
@@ -316,7 +316,7 @@ class Tags
         ]);
     }
 
-    protected function markTagsAsObsolete(array $subject)
+    protected function markTagsAsObsolete(array $subject): void
     {
         $items = $this->makeQueryItemsList($subject['items']);
 
@@ -388,7 +388,7 @@ class Tags
         return true;
     }
 
-    public function invalidateAll(): bool
+    public function invalidateAll(): Invalidation
     {
         if (!$this->enabled()) {
             return false;
@@ -412,7 +412,7 @@ class Tags
 
         $this->deleteAllTags();
 
-        return true;
+        return $this->successfullInvalidation();
     }
 
     public function getCurrentUrl($request)
