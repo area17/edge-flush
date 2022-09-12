@@ -77,7 +77,7 @@ class Tags
             set was_purged_at = '{$time}',
                 invalidation_id = '{$invalidationId}'
             from (
-                    select id
+                    select efu.id
                     from edge_flush_urls efu
                     join edge_flush_tags eft on eft.url_id = efu.id
                     where efu.is_valid = true

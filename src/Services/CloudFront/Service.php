@@ -182,7 +182,6 @@ class Service extends BaseService implements CDNService
     {
         return $this->createInvalidationRequest(
             $this->getInvalidationPathsForTags($tags)
-                ->keys()
                 ->toArray(),
         );
     }

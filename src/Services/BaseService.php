@@ -13,7 +13,7 @@ abstract class BaseService implements ServiceContract
 {
     use ControlsInvalidations;
 
-    protected bool $enabled = false;
+    protected bool|null $enabled = null;
 
     public function addHeadersToResponse(
         Response $response,
