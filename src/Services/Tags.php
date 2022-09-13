@@ -147,6 +147,7 @@ class Tags
 
         DB::transaction(function () use ($models, $tags, $url) {
             $url = $this->createUrl($url);
+
             $now = (string) now();
 
             collect($models)->each(function (string $model) use (
@@ -442,6 +443,8 @@ class Tags
         );
 
         if (!$url->wasRecentlyCreated) {
+            $url->was_purged_at = null;
+
             $url->incrementHits();
         }
 
