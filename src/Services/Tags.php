@@ -49,35 +49,15 @@ class Tags
         }
     }
 
-    protected function deleteTags(Invalidation $invalidation): void
+    protected function deleteTagsAndUrls(Invalidation $invalidation): void
     {
         if ($invalidation->isEmpty()) {
             return;
         }
 
-        $tagList = $invalidation->queryItemsList();
-
-        $time = (string) now();
-
-        $invalidationId = $invalidation->id();
-
         $this->markTagsAsObsolete($invalidation);
 
-        $this->dbStatement("
-            update edge_flush_urls efu
-            set was_purged_at = '{$time}',
-                invalidation_id = '{$invalidationId}'
-            from (
-                    select efu.id
-                    from edge_flush_urls efu
-                    join edge_flush_tags eft on eft.url_id = efu.id
-                    where efu.is_valid = true
-                      and eft.tag in ({$tagList})
-                    order by efu.id
-                    for update
-                ) urls
-            where efu.id = urls.id
-        ");
+        $this->markUrlsAsPurged($invalidation);
     }
 
     protected function getAllTagsForModel(
@@ -286,6 +266,11 @@ class Tags
 
     protected function markTagsAsObsolete(Invalidation $invalidation): void
     {
+        if ($invalidation->type() !== 'tag')
+        {
+            return;
+        }
+
         $type = $invalidation->type();
 
         $items = $invalidation->queryItemsList();
@@ -315,7 +300,7 @@ class Tags
 
         if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
-            $this->deleteTags($invalidation);
+            $this->deleteTagsAndUrls($invalidation);
         }
     }
 
@@ -493,5 +478,30 @@ class Tags
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
 
         return sha1($index);
+    }
+
+    public function markUrlsAsPurged(Invalidation $invalidation): void
+    {
+        $tagList = $invalidation->queryItemsList();
+
+        $time = (string)now();
+
+        $invalidationId = $invalidation->id();
+
+        $this->dbStatement("
+            update edge_flush_urls efu
+            set was_purged_at = '{$time}',
+                invalidation_id = '{$invalidationId}'
+            from (
+                    select efu.id
+                    from edge_flush_urls efu
+                    join edge_flush_tags eft on eft.url_id = efu.id
+                    where efu.is_valid = true
+                      and eft.tag in ({$tagList})
+                    order by efu.id
+                    for update
+                ) urls
+            where efu.id = urls.id
+        ");
     }
 }

@@ -102,11 +102,9 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    public function createInvalidationRequest(array $paths): Invalidation
+    public function createInvalidationRequest(Invalidation $invalidation): Invalidation
     {
-        $invalidation = new Invalidation();
-
-        $paths = array_filter($paths);
+        $paths = $invalidation->paths()->filter()->unique()->toArray();
 
         if (count($paths) === 0) {
             return $invalidation;
@@ -192,7 +190,7 @@ class Service extends BaseService implements CDNService
         );
 
         return $this->createInvalidationRequest(
-            $invalidation->paths()->toArray(),
+            $invalidation
         );
     }
 
