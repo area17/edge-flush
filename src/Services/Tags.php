@@ -489,8 +489,7 @@ class Tags
 
         $invalidationId = $invalidation->id();
 
-        $this->dbStatement(
-            dd("
+        $this->dbStatement("
             update edge_flush_urls efu
             set was_purged_at = '{$time}',
                 invalidation_id = '{$invalidationId}'
@@ -504,7 +503,6 @@ class Tags
                     for update
                 ) urls
             where efu.id = urls.id
-        "),
-        );
+        ");
     }
 }
