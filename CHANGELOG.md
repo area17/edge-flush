@@ -2,6 +2,10 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.5 - 2022-09-14
+### Changed
+- Force invalidate all to clear all tags and urls
+
 ## 1.3.4 - 2022-09-13
 ### Changed
 - Remove purged status from URLs that were hit
