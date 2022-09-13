@@ -208,37 +208,31 @@ class Tags
          * Filter purged urls from obsolete tags.
          * Making sure we invalidate the most busy pages first.
          */
-        $query = Url::selectRaw(
-            'distinct edge_flush_urls.id, "edge_flush_urls"."hits", "edge_flush_urls"."url"',
-        )
-            ->join(
-                'edge_flush_tags',
-                'edge_flush_tags.url_id',
-                '=',
-                'edge_flush_urls.id',
-            )
-            ->whereRaw('edge_flush_urls.was_purged_at is null')
-            ->whereRaw('edge_flush_tags.obsolete = true')
-            ->whereRaw('edge_flush_urls.is_valid = true')
-            ->orderBy('edge_flush_urls.hits', 'desc');
+        $rows = collect(
+            DB::select(
+                "
+            select distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url
+            from edge_flush_urls
+                     inner join edge_flush_tags on edge_flush_tags.url_id = edge_flush_urls.id
+            where edge_flush_urls.was_purged_at is null
+              and edge_flush_tags.obsolete = true
+              and edge_flush_urls.is_valid = true
+            order by edge_flush_urls.hits desc
+            ",
+            ),
+        )->map(fn($row) => new Url((array) $row));
+
+        $invalidation = (new Invalidation())->setUrls($rows);
 
         /**
          * Let's first calculate the number of URLs we are invalidating.
          * If it's above max, just flush the whole website.
          */
-        $limitToFlushRoot = config(
-            'edge-flush.invalidations.batch.flush_roots_if_exceeds',
-        );
-
-        if ($query->count() > $limitToFlushRoot) {
-            $this->invalidateEntireCache();
+        if (true || $rows->count() >= EdgeFlush::cdn()->maxUrls()) {
+            $this->invalidateEntireCache($invalidation);
 
             return;
         }
-
-        $invalidation = (new Invalidation())->setUrls(
-            $query->take($this->getMaxInvalidations())->get(),
-        );
 
         /**
          * Let's dispatch invalidations only for what's configured.
@@ -277,7 +271,7 @@ class Tags
             return;
         }
 
-         $invalidation = EdgeFlush::cdn()->invalidate($invalidation);
+        $invalidation = EdgeFlush::cdn()->invalidate($invalidation);
 
         if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
@@ -285,15 +279,19 @@ class Tags
         }
     }
 
-    protected function invalidateEntireCache(): void
+    protected function invalidateEntireCache(Invalidation $invalidation): void
     {
         Helpers::debug('INVALIDATING: entire cache...');
 
+        $invalidation->setInvalidateAll(true);
+
         EdgeFlush::cdn()->invalidate(
-            (new Invalidation())->setPaths(
+            $invalidation->setPaths(
                 collect(config('edge-flush.invalidations.batch.roots')),
             ),
         );
+
+        $this->markUrlsAsPurged($invalidation);
     }
 
     /*
@@ -466,7 +464,22 @@ class Tags
 
         $invalidationId = $invalidation->id();
 
-        if ($invalidation->type() === 'tag') {
+        if ($invalidation->invalidateAll()) {
+            $sql = "
+                update edge_flush_urls efu
+                set was_purged_at = '{$time}',
+                    invalidation_id = '{$invalidationId}'
+                from (
+                        select efu.id
+                        from edge_flush_urls efu
+                        where efu.is_valid = true
+                          and was_purged_at is not null
+                        order by efu.id
+                        for update
+                    ) urls
+                where efu.id = urls.id
+            ";
+        } elseif ($invalidation->type() === 'tag') {
             $sql = "
                 update edge_flush_urls efu
                 set was_purged_at = '{$time}',

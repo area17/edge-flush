@@ -24,6 +24,8 @@ class Invalidation
 
     protected string|null $type = null;
 
+    protected bool $invalidateAll = false;
+
     protected Carbon|string|null $createdAt = null;
 
     protected Collection $tags;
@@ -351,5 +353,17 @@ class Invalidation
         }
 
         return $this->urlNames = $this->urls()->map->url;
+    }
+
+    public function setInvalidateAll($value = true): self
+    {
+        $this->invalidateAll = $value;
+
+        return $this;
+    }
+
+    public function invalidateAll(): bool
+    {
+        return $this->invalidateAll;
     }
 }
