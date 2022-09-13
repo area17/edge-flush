@@ -2,6 +2,10 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.3 - 2022-09-13
+### Changed
+- Improved invalidation URLs query performance
+
 ## 1.3.2 - 2022-09-13
 ### Fixed
 - Fix warmer not dispatching requests
