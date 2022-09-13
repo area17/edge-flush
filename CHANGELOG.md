@@ -2,7 +2,7 @@
 
 All notable changes to `CDN` will be documented in this file.
 
-## 1.3.0 - 2022-09-12
+## 1.3.0 - 2022-09-13
 ### Fixed
 - Strong query and update optimization
 - Fix all PHPStan level 8 errors
