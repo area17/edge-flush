@@ -62,7 +62,7 @@ class ServiceProvider extends IlluminateServiceProvider
                 app($service),
                 $app->make(config('edge-flush.classes.cache-control')),
                 $app->make(config('edge-flush.classes.tags')),
-                $app->make(config('edge-flush.classes.warmer'))
+                $app->make(config('edge-flush.classes.warmer')),
             );
         });
 

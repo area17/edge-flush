@@ -4,17 +4,53 @@ namespace A17\EdgeFlush\Services;
 
 use Carbon\Carbon;
 use Aws\Result as AwsResult;
+use A17\EdgeFlush\EdgeFlush;
+use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
+use A17\EdgeFlush\Support\Constants;
+use A17\EdgeFlush\Behaviours\MakeTag;
+use Illuminate\Database\Eloquent\Model;
 
 class Invalidation
 {
+    use MakeTag;
+
     protected string|null $id = null;
 
     protected string|null $status = null;
 
     protected bool $success = false;
 
+    protected string|null $type = null;
+
     protected Carbon|string|null $createdAt = null;
+
+    protected Collection $tags;
+
+    protected Collection $urls;
+
+    protected Collection $paths;
+
+    protected Collection $tagNames;
+
+    protected Collection $models;
+
+    protected Collection $modelNames;
+
+    public function __construct()
+    {
+        $this->tags = collect();
+
+        $this->urls = collect();
+
+        $this->paths = collect();
+
+        $this->tagNames = collect();
+
+        $this->models = collect();
+
+        $this->modelNames = collect();
+    }
 
     public function setId(string $id): self
     {
@@ -72,13 +108,13 @@ class Invalidation
             return $this;
         }
 
-        $this->id = $invalidation['Invalidation']['Id'];
-
-        $this->status = $invalidation['Invalidation']['Status'];
-
-        $this->createdAt = Carbon::parse(
-            (string) $invalidation['Invalidation']['CreateTime'],
-        );
+        $this->setId($invalidation['Invalidation']['Id'])
+            ->setStatus($invalidation['Invalidation']['Status'])
+            ->setCreatedAt(
+                Carbon::parse(
+                    (string) $invalidation['Invalidation']['CreateTime'],
+                ),
+            );
 
         return $this;
     }
@@ -125,5 +161,131 @@ class Invalidation
             'success' => $this->success,
             'created_at' => (string) $this->createdAt,
         ];
+    }
+
+    public function setTags(Collection $tags): self
+    {
+        $this->type = 'tag';
+
+        $this->tags = $tags;
+
+        return $this;
+    }
+
+    public function isEmpty(): bool
+    {
+        return blank($this->type()) ||
+            ($this->tags()->isEmpty() && $this->models()->isEmpty());
+    }
+
+    public function setModels(Collection $models): self
+    {
+        $this->type = 'model';
+
+        $this->models = $models;
+
+        $this->modelNames = collect($models)->map(function (mixed $model) {
+            if ($model instanceof Model) {
+                return $this->makeModelName($model);
+            }
+
+            return $model;
+        });
+
+        return $this;
+    }
+
+    public function tags(): Collection
+    {
+        return $this->tags;
+    }
+
+    public function tagNames(): Collection
+    {
+        if ($this->isEmpty()) {
+            return collect();
+        }
+
+        if (!$this->tagNames->isEmpty()) {
+            return $this->tagNames;
+        }
+
+        return $this->tagNames = $this->tags()->map->tag;
+    }
+
+    public function modelNames(): Collection
+    {
+        if ($this->isEmpty()) {
+            return collect();
+        }
+
+        if (!$this->modelNames->isEmpty()) {
+            return $this->modelNames;
+        }
+
+        return $this->modelNames = $this->models()->map->model;
+    }
+
+    public function models(): Collection
+    {
+        return $this->models;
+    }
+
+    public function paths(): Collection
+    {
+        return $this->paths;
+    }
+
+    public function setPaths(Collection $paths): self
+    {
+        $this->type = 'path';
+
+        $this->paths = $paths;
+
+        return $this;
+    }
+
+    public function queryItemsList(): string
+    {
+        return $this->makeQueryItemsList($this->items());
+    }
+
+    public function makeQueryItemsList(Collection $items): string
+    {
+        return $this->items()
+            ->map(fn($item) => "'$item'")
+            ->join(',');
+    }
+
+    public function items(): Collection
+    {
+        if ($this->type === 'model') {
+            return $this->modelNames();
+        }
+
+        if ($this->type === 'tag') {
+            return $this->tagNames();
+        }
+
+        if ($this->type === 'path') {
+            return $this->paths();
+        }
+
+        return collect();
+    }
+
+    public function type(): string|null
+    {
+        return $this->type;
+    }
+
+    public function getInvalidationPaths(): Collection
+    {
+        /**
+         * Get the actual list of paths that will be invalidated.
+         * Never exceed the CDN max tags or urls that can be invalidated
+         * at once.
+         */
+        return EdgeFlush::cdn()->getInvalidationPathsForTags($this);
     }
 }

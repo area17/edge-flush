@@ -29,15 +29,15 @@ class Service extends BaseService implements CDNService
         }
     }
 
-    public function invalidate(Collection $tags): Invalidation
+    public function invalidate(Invalidation $invalidation): Invalidation
     {
         if (!$this->enabled()) {
-            return new Invalidation();
+            return $invalidation;
         }
 
-        return $this->mustInvalidateAll($tags)
+        return $this->mustInvalidateAll($invalidation)
             ? $this->invalidateAll()
-            : $this->invalidatePaths($tags);
+            : $this->invalidatePaths($invalidation);
     }
 
     public function invalidateAll(): Invalidation
@@ -161,28 +161,38 @@ class Service extends BaseService implements CDNService
         return Helpers::parseUrl($url)['path'] ?? '/*';
     }
 
-    public function getInvalidationPathsForTags(Collection $tags): Collection
-    {
-        return collect($tags)
-            ->mapWithKeys(
-                fn($tag) => [$this->getInvalidationPath($tag) => $tag],
-            )
-            ->keys()
-            ->unique()
-            ->take($this->maxUrls());
+    public function getInvalidationPathsForTags(
+        Invalidation $invalidation
+    ): Collection {
+        if ($invalidation->paths()->isEmpty()) {
+            $paths = collect($invalidation->tags())
+                ->mapWithKeys(
+                    fn($tag) => [$this->getInvalidationPath($tag) => $tag],
+                )
+                ->keys()
+                ->unique()
+                ->take($this->maxUrls());
+
+            $invalidation->setPaths($paths);
+        }
+
+        return $invalidation->paths();
     }
 
-    public function mustInvalidateAll(Collection $tags): bool
+    public function mustInvalidateAll(Invalidation $invalidation): bool
     {
-        return $this->getInvalidationPathsForTags($tags)->count() >
+        return $this->getInvalidationPathsForTags($invalidation)->count() >
             $this->maxUrls();
     }
 
-    public function invalidatePaths(Collection $tags): Invalidation
+    public function invalidatePaths(Invalidation $invalidation): Invalidation
     {
+        $invalidation->setPaths(
+            $this->getInvalidationPathsForTags($invalidation),
+        );
+
         return $this->createInvalidationRequest(
-            $this->getInvalidationPathsForTags($tags)
-                ->toArray(),
+            $invalidation->paths()->toArray(),
         );
     }
 

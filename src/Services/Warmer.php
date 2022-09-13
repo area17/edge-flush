@@ -106,13 +106,15 @@ class Warmer
         $startTime = microtime(true);
 
         $responses = Promise::inspectAll(
-            $urls->map(function (Url $url) {
-                Helpers::debug("WARMING: $url->url");
+            $urls
+                ->map(function (Url $url) {
+                    Helpers::debug("WARMING: $url->url");
 
-                return $this->getGuzzle()->getAsync($url->url, [
-                    'headers' => $this->getHeaders($url->url),
-                ]);
-            })->toArray(),
+                    return $this->getGuzzle()->getAsync($url->url, [
+                        'headers' => $this->getHeaders($url->url),
+                    ]);
+                })
+                ->toArray(),
         );
 
         $executionTime = microtime(true) - $startTime;

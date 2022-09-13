@@ -9,7 +9,7 @@ use A17\EdgeFlush\Services\Invalidation;
 
 class DummyCDN extends BaseService implements CDNService
 {
-    public function invalidate(Collection $items): Invalidation
+    public function invalidate(Invalidation $invalidation): Invalidation
     {
         return $this->successfulInvalidation();
     }

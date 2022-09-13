@@ -56,7 +56,7 @@ class CacheControl extends BaseService implements ServiceContract
         }
 
         if (filled($this->_isCachable)) {
-            return $this->_isCachable;
+            return (bool) $this->_isCachable;
         }
 
         return $this->_isCachable = !$this->getCachableMatrix(
@@ -125,8 +125,7 @@ class CacheControl extends BaseService implements ServiceContract
             $this->_content = $this->minifyContent((string) $this->_content);
         }
 
-        if ($this->_content === false)
-        {
+        if ($this->_content === false) {
             return '';
         }
 
@@ -465,16 +464,19 @@ class CacheControl extends BaseService implements ServiceContract
         return config("edge-flush.strategies.$strategy", []);
     }
 
-    public function willBeCached(Response $response, string|null $strategy = null): bool
-    {
+    public function willBeCached(
+        Response $response,
+        string|null $strategy = null
+    ): bool {
         $strategy ??= $this->getCacheStrategy($response);
 
         return $this->isCachable($response) &&
             $this->strategyDoesntContainsNoStoreDirectives($strategy);
     }
 
-    public function strategyDoesntContainsNoStoreDirectives(string $strategy): bool
-    {
+    public function strategyDoesntContainsNoStoreDirectives(
+        string $strategy
+    ): bool {
         return collect(explode(',', $strategy))->reduce(function (
             $willCache,
             $element

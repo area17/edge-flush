@@ -39,14 +39,14 @@ class Service extends BaseService implements CDNService
         return 'https://' . $this->getHost() . $this->getApiPath();
     }
 
-    public function invalidate(Collection $items): Invalidation
+    public function invalidate(Invalidation $invalidation): Invalidation
     {
         if (!$this->enabled()) {
             return $this->unsuccessfulInvalidation();
         }
 
         $body = [
-            'objects' => collect($items)
+            'objects' => collect($invalidation->tags())
                 ->map(function ($item) {
                     return $item instanceof Tag ? $item->tag : $item;
                 })

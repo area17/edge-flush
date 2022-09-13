@@ -1,6 +1,6 @@
 <?php
 
-namespace A17\EdgeFlush\Services\Behaviours;
+namespace A17\EdgeFlush\Behaviours;
 
 use A17\EdgeFlush\Services\Invalidation;
 

@@ -6,8 +6,8 @@ use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use Symfony\Component\HttpFoundation\Response;
+use A17\EdgeFlush\Behaviours\ControlsInvalidations;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
-use A17\EdgeFlush\Services\Behaviours\ControlsInvalidations;
 
 abstract class BaseService implements ServiceContract
 {
@@ -84,9 +84,10 @@ abstract class BaseService implements ServiceContract
         $this->enabled = false;
     }
 
-    public function getInvalidationPathsForTags(Collection $tags): Collection
-    {
-        return $tags;
+    public function getInvalidationPathsForTags(
+        Invalidation $invalidation
+    ): Collection {
+        return $invalidation->paths();
     }
 
     public function addHeadersFromRequest(Response $response): void

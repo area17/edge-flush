@@ -8,11 +8,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 interface CDNService extends Service
 {
-    public function invalidate(Collection $items): Invalidation;
+    public function invalidate(Invalidation $invalidation): Invalidation;
 
     public function invalidateAll(): Invalidation;
 
-    public function getInvalidationPathsForTags(Collection $tags): Collection;
+    public function getInvalidationPathsForTags(
+        Invalidation $invalidation
+    ): Collection;
 
     public function maxUrls(): int;
 

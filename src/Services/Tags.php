@@ -14,17 +14,18 @@ use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Behaviours\MakeTag;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use A17\EdgeFlush\Services\Behaviours\ControlsInvalidations;
+use A17\EdgeFlush\Behaviours\ControlsInvalidations;
 
 class Tags
 {
-    use ControlsInvalidations;
+    use ControlsInvalidations, MakeTag;
 
     protected Collection $tags;
 
@@ -42,35 +43,28 @@ class Tags
         if (
             $this->wasNotProcessed($model) &&
             EdgeFlush::enabled() &&
-            filled($tag = $this->makeTag($model))
+            filled($tag = $this->makeModelName($model))
         ) {
             $this->tags[$tag] = $tag;
         }
     }
 
-    protected function deleteTags(Collection $tags, Invalidation $invalidation): void
+    protected function deleteTags(Invalidation $invalidation): void
     {
-        $tags = collect($tags)
-            ->map(function ($tag) {
-                if (is_string($tag)) {
-                    return $tag;
-                }
-
-                return $tag->tag;
-            })
-            ->unique();
-
-        if (blank($tags)) {
+        if ($invalidation->isEmpty()) {
             return;
         }
 
-        $tagList = $this->makeQueryItemsList($tags);
+        $tagList = $invalidation->queryItemsList();
 
         $time = (string) now();
 
         $invalidationId = $invalidation->id();
 
-        $this->markTagsAsObsolete(['type' => 'tag', 'items' => $tags]);
+        $this->markTagsAsObsolete($invalidation);
+
+        // TODO: remove this
+        dump($invalidationId);
 
         $this->dbStatement("
             update edge_flush_urls efu
@@ -148,17 +142,6 @@ class Tags
         return $tag;
     }
 
-    public function makeTag(Model $model): string|null
-    {
-        try {
-            return method_exists($model, 'getCDNCacheTag')
-                ? $model->getCDNCacheTag()
-                : null;
-        } catch (\Exception $exception) {
-            return null;
-        }
-    }
-
     protected function tagIsExcluded(string $tag): bool
     {
         /**
@@ -227,40 +210,29 @@ class Tags
             return;
         }
 
-        $models = $models instanceof Collection ? $models : [$models];
-
         Helpers::debug('INVALIDATING: CDN tags for models');
 
-        InvalidateTags::dispatch([
-            'type' => Constants::INVALIDATION_TYPE_MODEL,
-            'items' => collect($models)
-                ->map(
-                    function ($model) {
-                        if ($model instanceof Model) {
-                            return $this->makeTag($model);
-                        }
+        $models =
+            $models instanceof Model ? collect([$models]) : collect($models);
 
-                        return $model;
-                    }
-                ),
-        ]);
+        InvalidateTags::dispatch((new Invalidation())->setModels($models));
     }
 
-    public function invalidateTags(array|null $subject = null): void
+    public function invalidateTags(Invalidation $invalidation): void
     {
         if (!EdgeFlush::invalidationServiceIsEnabled()) {
             return;
         }
 
-        if ($subject === null) {
+        if ($invalidation->isEmpty()) {
             $this->invalidateObsoleteTags();
 
             return;
         }
 
         config('edge-flush.invalidations.type') === 'batch'
-            ? $this->markTagsAsObsolete($subject)
-            : $this->dispatchInvalidations($subject);
+            ? $this->markTagsAsObsolete($invalidation)
+            : $this->dispatchInvalidations($invalidation);
     }
 
     protected function invalidateObsoleteTags(): void
@@ -305,27 +277,21 @@ class Tags
             return;
         }
 
-        /**
-         * Get the actual list of paths that will be invalidated.
-         * Never exceed the CDN max tags or urls that can be invalidated
-         * at once.
-         */
-        $paths = EdgeFlush::cdn()->getInvalidationPathsForTags(
+        $invalidation = (new Invalidation())->setTags(
             $query->take($this->getMaxInvalidations())->get(),
         );
 
         /**
          * Let's dispatch invalidations only for what's configured.
          */
-        $this->dispatchInvalidations([
-            'type' => Constants::INVALIDATION_TYPE_PATH,
-            'items' => $paths,
-        ]);
+        $this->dispatchInvalidations($invalidation);
     }
 
-    protected function markTagsAsObsolete(array $subject): void
+    protected function markTagsAsObsolete(Invalidation $invalidation): void
     {
-        $items = $this->makeQueryItemsList($subject['items']);
+        $type = $invalidation->type();
+
+        $items = $invalidation->queryItemsList();
 
         $this->dbStatement("
             update edge_flush_tags eft
@@ -334,7 +300,7 @@ class Tags
                     select id
                     from edge_flush_tags
                     where obsolete = false
-                      and {$subject['type']} in ({$items})
+                      and {$type} in ({$items})
                     order by id
                     for update
                 ) tags
@@ -342,23 +308,17 @@ class Tags
         ");
     }
 
-    protected function dispatchInvalidations(array $subject): void
+    protected function dispatchInvalidations(Invalidation $invalidation): void
     {
-        if (blank($subject)) {
+        if ($invalidation->isEmpty()) {
             return;
         }
 
-        $paths = $this->getInvalidationPaths($subject);
-
-        if (empty($paths)) {
-            return;
-        }
-
-        $invalidation = EdgeFlush::cdn()->invalidate($paths);
+        $invalidation = EdgeFlush::cdn()->invalidate($invalidation);
 
         if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
-            $this->deleteTags($paths, $invalidation);
+            $this->deleteTags($invalidation);
         }
     }
 
@@ -366,9 +326,9 @@ class Tags
     {
         Helpers::debug('INVALIDATING: entire cache...');
 
-        EdgeFlush::cdn()->invalidate(
+        EdgeFlush::cdn()->invalidate((new Invalidation())->setPaths(
             collect(config('edge-flush.invalidations.batch.roots')),
-        );
+        ));
     }
 
     /*
@@ -406,7 +366,9 @@ class Tags
                 sleep(2);
             }
 
-            $success = EdgeFlush::cdn()->invalidateAll()->success();
+            $success = EdgeFlush::cdn()
+                ->invalidateAll()
+                ->success();
         } while ($count < 3 && !$success);
 
         if (!$success) {
@@ -488,39 +450,6 @@ class Tags
         )[0]->count ?? 0;
     }
 
-    public function getInvalidationPaths(array $subject): Collection|null
-    {
-        if ($subject['type'] === Constants::INVALIDATION_TYPE_TAG) {
-            return $this->getPathsForTags($subject['items']);
-        } elseif ($subject['type'] === Constants::INVALIDATION_TYPE_MODEL) {
-            return $this->getPathsForModels($subject['items']);
-        } elseif ($subject['type'] === Constants::INVALIDATION_TYPE_PATH) {
-            return $subject['items'];
-        }
-
-        return null;
-    }
-
-    public function getPathsFor(Collection $items, string $type): Collection
-    {
-        return EdgeFlush::cdn()
-            ->getInvalidationPathsForTags(
-                Tag::whereIn($type, $items)
-                    ->take($this->getMaxInvalidations())
-                    ->get(),
-            );
-    }
-
-    public function getPathsForTags(Collection $tags): Collection
-    {
-        return $this->getPathsFor($tags, 'tag');
-    }
-
-    public function getPathsForModels(Collection $models): Collection
-    {
-        return $this->getPathsFor($models, 'model');
-    }
-
     public function getMaxInvalidations(): int
     {
         return min(
@@ -532,17 +461,6 @@ class Tags
     public function dbStatement(string $sql): bool
     {
         return DB::statement(DB::raw($sql));
-    }
-
-    /**
-     * @param $items1
-     * @return string
-     */
-    public function makeQueryItemsList(Collection $items): string
-    {
-        return $items
-            ->map(fn($model) => "'$model'")
-            ->join(',');
     }
 
     public function enabled(): bool

@@ -21,9 +21,7 @@ class TestCase extends Orchestra
 
     protected function getPackageProviders($app)
     {
-        return [
-            EdgeFlushServiceProvider::class
-        ];
+        return [EdgeFlushServiceProvider::class];
     }
 
     public function getEnvironmentSetUp($app)
