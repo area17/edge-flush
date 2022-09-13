@@ -245,29 +245,31 @@ class Invalidation
         return $this;
     }
 
-    public function queryItemsList(): string
+    public function queryItemsList(string|null $type = null): string
     {
-        return $this->makeQueryItemsList($this->items());
+        return $this->makeQueryItemsList($this->items(), $type);
     }
 
-    public function makeQueryItemsList(Collection $items): string
-    {
-        return $this->items()
+    public function makeQueryItemsList(
+        Collection $items,
+        string|null $type = null
+    ): string {
+        return $this->items($type)
             ->map(fn($item) => "'$item'")
             ->join(',');
     }
 
-    public function items(): Collection
+    public function items(string|null $type = null): Collection
     {
-        if ($this->type === 'model') {
+        if ((blank($type) && $this->type === 'model') || $type === 'model') {
             return $this->modelNames();
         }
 
-        if ($this->type === 'tag') {
+        if ((blank($type) && $this->type === 'tag') || $type === 'tag') {
             return $this->tagNames();
         }
 
-        if ($this->type === 'path') {
+        if ((blank($type) && $this->type === 'path') || $type === 'path') {
             return $this->paths();
         }
 

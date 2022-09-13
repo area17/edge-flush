@@ -102,9 +102,14 @@ class Service extends BaseService implements CDNService
         return false;
     }
 
-    public function createInvalidationRequest(Invalidation $invalidation): Invalidation
-    {
-        $paths = $invalidation->paths()->filter()->unique()->toArray();
+    public function createInvalidationRequest(
+        Invalidation $invalidation
+    ): Invalidation {
+        $paths = $invalidation
+            ->paths()
+            ->filter()
+            ->unique()
+            ->toArray();
 
         if (count($paths) === 0) {
             return $invalidation;
@@ -189,9 +194,7 @@ class Service extends BaseService implements CDNService
             $this->getInvalidationPathsForTags($invalidation),
         );
 
-        return $this->createInvalidationRequest(
-            $invalidation
-        );
+        return $this->createInvalidationRequest($invalidation);
     }
 
     public function maxUrls(): int

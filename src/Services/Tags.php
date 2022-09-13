@@ -266,8 +266,7 @@ class Tags
 
     protected function markTagsAsObsolete(Invalidation $invalidation): void
     {
-        if ($invalidation->type() !== 'tag')
-        {
+        if ($invalidation->type() !== 'tag') {
             return;
         }
 
@@ -308,9 +307,11 @@ class Tags
     {
         Helpers::debug('INVALIDATING: entire cache...');
 
-        EdgeFlush::cdn()->invalidate((new Invalidation())->setPaths(
-            collect(config('edge-flush.invalidations.batch.roots')),
-        ));
+        EdgeFlush::cdn()->invalidate(
+            (new Invalidation())->setPaths(
+                collect(config('edge-flush.invalidations.batch.roots')),
+            ),
+        );
     }
 
     /*
@@ -482,13 +483,14 @@ class Tags
 
     public function markUrlsAsPurged(Invalidation $invalidation): void
     {
-        $tagList = $invalidation->queryItemsList();
+        $tagList = $invalidation->queryItemsList('tag');
 
-        $time = (string)now();
+        $time = (string) now();
 
         $invalidationId = $invalidation->id();
 
-        $this->dbStatement("
+        $this->dbStatement(
+            dd("
             update edge_flush_urls efu
             set was_purged_at = '{$time}',
                 invalidation_id = '{$invalidationId}'
@@ -502,6 +504,7 @@ class Tags
                     for update
                 ) urls
             where efu.id = urls.id
-        ");
+        "),
+        );
     }
 }
