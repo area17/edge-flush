@@ -185,7 +185,7 @@ class Warmer
 
     public function invalidationIsCompleted(string $invalidationId): bool
     {
-        return EdgeFlush::warmer()->invalidationIsCompleted($invalidationId);
+        return EdgeFlush::cdn()->invalidationIsCompleted($invalidationId);
     }
 
     public function getGuzzleConfiguration(): array
