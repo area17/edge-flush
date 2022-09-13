@@ -2,6 +2,10 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.2 - 2022-09-13
+### Fixed
+- Fix warmer not dispatching requests
+
 ## 1.3.1 - 2022-09-13
 ### Fixed
 - Properly mark URLs as purged
