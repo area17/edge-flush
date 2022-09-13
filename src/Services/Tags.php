@@ -63,9 +63,6 @@ class Tags
 
         $this->markTagsAsObsolete($invalidation);
 
-        // TODO: remove this
-        dump($invalidationId);
-
         $this->dbStatement("
             update edge_flush_urls efu
             set was_purged_at = '{$time}',
