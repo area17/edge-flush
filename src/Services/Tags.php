@@ -49,17 +49,6 @@ class Tags
         }
     }
 
-    protected function deleteTagsAndUrls(Invalidation $invalidation): void
-    {
-        if ($invalidation->isEmpty()) {
-            return;
-        }
-
-        $this->markTagsAsObsolete($invalidation);
-
-        $this->markUrlsAsPurged($invalidation);
-    }
-
     protected function getAllTagsForModel(
         string|null $modelString
     ): Collection|null {
@@ -215,27 +204,19 @@ class Tags
     protected function invalidateObsoleteTags(): void
     {
         /**
-         * Filter obsolete tags and related urls.
+         * Filter purged urls from obsolete tags.
          * Making sure we invalidate the most busy pages first.
          */
-        $query = Tag::select(
-            'edge_flush_tags.tag',
-            'edge_flush_urls.url as url_url',
-            'edge_flush_urls.hits as url_hits',
-            'edge_flush_urls.id as url_id',
+        $query = Url::selectRaw(
+            'distinct edge_flush_urls.id, "edge_flush_urls"."hits", "edge_flush_urls"."url"',
         )
             ->join(
-                'edge_flush_urls',
+                'edge_flush_tags',
                 'edge_flush_tags.url_id',
                 '=',
                 'edge_flush_urls.id',
             )
-            ->groupBy(
-                'edge_flush_tags.tag',
-                'edge_flush_urls.id',
-                'edge_flush_urls.url',
-                'edge_flush_urls.hits',
-            )
+            ->whereRaw('edge_flush_urls.was_purged_at is null')
             ->whereRaw('edge_flush_tags.obsolete = true')
             ->whereRaw('edge_flush_urls.is_valid = true')
             ->orderBy('edge_flush_urls.hits', 'desc');
@@ -248,13 +229,13 @@ class Tags
             'edge-flush.invalidations.batch.flush_roots_if_exceeds',
         );
 
-        if ($this->getTotal($query) > $limitToFlushRoot) {
+        if ($query->count() > $limitToFlushRoot) {
             $this->invalidateEntireCache();
 
             return;
         }
 
-        $invalidation = (new Invalidation())->setTags(
+        $invalidation = (new Invalidation())->setUrls(
             $query->take($this->getMaxInvalidations())->get(),
         );
 
@@ -295,11 +276,11 @@ class Tags
             return;
         }
 
-        $invalidation = EdgeFlush::cdn()->invalidate($invalidation);
+         $invalidation = EdgeFlush::cdn()->invalidate($invalidation);
 
         if ($invalidation->success()) {
             // TODO: what happens here on Akamai?
-            $this->deleteTagsAndUrls($invalidation);
+            $this->markUrlsAsPurged($invalidation);
         }
     }
 
@@ -426,13 +407,6 @@ class Tags
         return $allowed->contains($domain) && !$blocked->contains($domain);
     }
 
-    private function getTotal(QueryBuilder|EloquentBuilder $query): int
-    {
-        return DB::select(
-            DB::raw("select count(*) from ({$query->toSql()}) count"),
-        )[0]->count ?? 0;
-    }
-
     public function getMaxInvalidations(): int
     {
         return min(
@@ -483,26 +457,45 @@ class Tags
 
     public function markUrlsAsPurged(Invalidation $invalidation): void
     {
-        $tagList = $invalidation->queryItemsList('tag');
+        $list = $invalidation->queryItemsList('url');
 
         $time = (string) now();
 
         $invalidationId = $invalidation->id();
 
-        $this->dbStatement("
-            update edge_flush_urls efu
-            set was_purged_at = '{$time}',
-                invalidation_id = '{$invalidationId}'
-            from (
-                    select efu.id
-                    from edge_flush_urls efu
-                    join edge_flush_tags eft on eft.url_id = efu.id
-                    where efu.is_valid = true
-                      and eft.tag in ({$tagList})
-                    order by efu.id
-                    for update
-                ) urls
-            where efu.id = urls.id
-        ");
+        if ($invalidation->type() === 'tag') {
+            $sql = "
+                update edge_flush_urls efu
+                set was_purged_at = '{$time}',
+                    invalidation_id = '{$invalidationId}'
+                from (
+                        select efu.id
+                        from edge_flush_urls efu
+                        join edge_flush_tags eft on eft.url_id = efu.id
+                        where efu.is_valid = true
+                          and eft.url in ({$list})
+                        order by efu.id
+                        for update
+                    ) urls
+                where efu.id = urls.id
+            ";
+        } else {
+            $sql = "
+                update edge_flush_urls efu
+                set was_purged_at = '{$time}',
+                    invalidation_id = '{$invalidationId}'
+                from (
+                        select efu.id
+                        from edge_flush_urls efu
+                        where efu.is_valid = true
+                          and efu.url in ({$list})
+                        order by efu.id
+                        for update
+                    ) urls
+                where efu.id = urls.id
+            ";
+        }
+
+        $this->dbStatement($sql);
     }
 }

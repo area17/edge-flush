@@ -103,13 +103,19 @@ class Service extends BaseService implements CDNService
     }
 
     public function createInvalidationRequest(
-        Invalidation $invalidation
+        Invalidation|array $invalidation = null
     ): Invalidation {
-        $paths = $invalidation
-            ->paths()
-            ->filter()
-            ->unique()
-            ->toArray();
+        $invalidation ??= new Invalidation();
+
+        if (is_array($invalidation)) {
+            $paths = $invalidation;
+
+            $invalidation = new Invalidation();
+
+            $invalidation->setPaths(collect($paths));
+        } else {
+            $paths = $invalidation->paths()->toArray();
+        }
 
         if (count($paths) === 0) {
             return $invalidation;
@@ -184,16 +190,12 @@ class Service extends BaseService implements CDNService
 
     public function mustInvalidateAll(Invalidation $invalidation): bool
     {
-        return $this->getInvalidationPathsForTags($invalidation)->count() >
+        return $this->getInvalidationPathsForTags($invalidation)->count() >=
             $this->maxUrls();
     }
 
     public function invalidatePaths(Invalidation $invalidation): Invalidation
     {
-        $invalidation->setPaths(
-            $this->getInvalidationPathsForTags($invalidation),
-        );
-
         return $this->createInvalidationRequest($invalidation);
     }
 

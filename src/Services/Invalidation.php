@@ -5,6 +5,7 @@ namespace A17\EdgeFlush\Services;
 use Carbon\Carbon;
 use Aws\Result as AwsResult;
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Url;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Support\Constants;
@@ -29,6 +30,8 @@ class Invalidation
 
     protected Collection $urls;
 
+    protected Collection $urlNames;
+
     protected Collection $paths;
 
     protected Collection $tagNames;
@@ -41,15 +44,17 @@ class Invalidation
     {
         $this->tags = collect();
 
+        $this->tagNames = collect();
+
         $this->urls = collect();
 
-        $this->paths = collect();
-
-        $this->tagNames = collect();
+        $this->urlNames = collect();
 
         $this->models = collect();
 
         $this->modelNames = collect();
+
+        $this->paths = collect();
     }
 
     public function setId(string $id): self
@@ -175,7 +180,9 @@ class Invalidation
     public function isEmpty(): bool
     {
         return blank($this->type()) ||
-            ($this->tags()->isEmpty() && $this->models()->isEmpty());
+            ($this->tags()->isEmpty() &&
+                $this->models()->isEmpty() &&
+                $this->urls()->isEmpty());
     }
 
     public function setModels(Collection $models): self
@@ -233,7 +240,16 @@ class Invalidation
 
     public function paths(): Collection
     {
-        return $this->paths;
+        if (filled($this->paths)) {
+            return $this->paths;
+        }
+
+        $items = $this->urls()->isNotEmpty() ? $this->urls() : $this->tags();
+
+        return $this->paths = $items
+            ->map(fn($item) => $this->getInvalidationPath($item))
+            ->filter()
+            ->unique();
     }
 
     public function setPaths(Collection $paths): self
@@ -247,7 +263,7 @@ class Invalidation
 
     public function queryItemsList(string|null $type = null): string
     {
-        return $this->makeQueryItemsList($this->items(), $type);
+        return $this->makeQueryItemsList($this->items($type), $type);
     }
 
     public function makeQueryItemsList(
@@ -273,6 +289,10 @@ class Invalidation
             return $this->paths();
         }
 
+        if ((blank($type) && $this->type === 'url') || $type === 'url') {
+            return $this->urlNames();
+        }
+
         return collect();
     }
 
@@ -289,5 +309,47 @@ class Invalidation
          * at once.
          */
         return EdgeFlush::cdn()->getInvalidationPathsForTags($this);
+    }
+
+    public function setUrls(Collection $urls): self
+    {
+        $this->type = 'url';
+
+        $this->urls = $urls;
+
+        return $this;
+    }
+
+    public function urls(): Collection
+    {
+        return $this->urls;
+    }
+
+    protected function getInvalidationPath(mixed $item): string|null
+    {
+        if (is_string($item)) {
+            return $item;
+        }
+
+        $url = $item instanceof Url ? $item->url : $item->url->url ?? $item;
+
+        if (!is_string($url)) {
+            return null;
+        }
+
+        return Helpers::parseUrl($url)['path'] ?? '/*';
+    }
+
+    public function urlNames(): Collection
+    {
+        if ($this->isEmpty()) {
+            return collect();
+        }
+
+        if (!$this->urlNames->isEmpty()) {
+            return $this->urlNames;
+        }
+
+        return $this->urlNames = $this->urls()->map->url;
     }
 }
