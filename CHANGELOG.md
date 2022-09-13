@@ -2,6 +2,10 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.4 - 2022-09-13
+### Changed
+- Remove purged status from URLs that were hit
+
 ## 1.3.3 - 2022-09-13
 ### Changed
 - Improved invalidation URLs query performance
