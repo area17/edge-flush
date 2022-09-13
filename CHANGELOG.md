@@ -2,11 +2,17 @@
 
 All notable changes to `CDN` will be documented in this file.
 
-## 1.3.0 - 2022-09-13
+## 1.3.1 - 2022-09-13
 ### Fixed
-- Strong query and update optimization
-- Fix all PHPStan level 8 errors
+- Properly mark URLs as purged
+
+## 1.3.0 - 2022-09-13
+### Added
 - Add a new Invalidation class to control invalidation items and the invalidation itself
+### Changed
+- Strong query and update optimization
+### Fixed
+- Fix all PHPStan level 8 errors
 
 ## 1.0.2 - 2021-11-10
 ### Fixed
