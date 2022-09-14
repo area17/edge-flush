@@ -228,7 +228,7 @@ class Tags
          * Let's first calculate the number of URLs we are invalidating.
          * If it's above max, just flush the whole website.
          */
-        if (true || $rows->count() >= EdgeFlush::cdn()->maxUrls()) {
+        if ($rows->count() >= EdgeFlush::cdn()->maxUrls()) {
             $this->invalidateEntireCache($invalidation);
 
             return;
@@ -473,7 +473,7 @@ class Tags
                         select efu.id
                         from edge_flush_urls efu
                         where efu.is_valid = true
-                          and was_purged_at is not null
+                          and was_purged_at is null
                         order by efu.id
                         for update
                     ) urls
