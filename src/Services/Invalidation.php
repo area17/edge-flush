@@ -150,7 +150,7 @@ class Invalidation
 
         $self->absorb($object);
 
-        Helpers::debug('INVALIDATION: ' . $self->toJson());
+        Helpers::debug('INVALIDATION (factory): ' . $self->toJson());
 
         return $self;
     }

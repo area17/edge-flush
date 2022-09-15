@@ -145,12 +145,14 @@ class Tags
                 ]),
         );
 
-        DB::transaction(function () use ($models, $tags, $url) {
+        $indexes = collect();
+
+        DB::transaction(function () use ($models, $tags, $url, &$indexes) {
             $url = $this->createUrl($url);
 
             $now = (string) now();
 
-            collect($models)->each(function (string $model) use (
+            $indexes = collect($models)->map(function (string $model) use (
                 $tags,
                 $url,
                 $now
@@ -166,8 +168,37 @@ class Tags
                             where index = '{$index}'
                         )
                         ");
+
+                return $index;
             });
         }, 5);
+
+        if ($indexes->isNotEmpty()) {
+            $indexes = $indexes->map(fn($item) => "'$item'")->join(',');
+
+            $this->dbStatement("
+                        update edge_flush_tags
+                        set obsolete = false
+                        where index in ({$indexes})
+                          and is_valid = true
+                          and obsolete = false
+                        ");
+
+            $this->dbStatement("
+                        update edge_flush_urls
+                        set was_purged_at = null,
+                            invalidation_id = null
+                        where is_valid = true
+                          and was_purged_at is not null
+                          and id in (
+                            select url_id
+                            from edge_flush_tags
+                            where index in ({$indexes})
+                              and is_valid = true
+                              and obsolete = false
+                          )
+                        ");
+        }
     }
 
     public function dispatchInvalidationsForModel(
@@ -256,7 +287,8 @@ class Tags
             from (
                     select id
                     from edge_flush_tags
-                    where obsolete = false
+                    where is_valid = true
+                      and obsolete = false
                       and {$type} in ({$items})
                     order by id
                     for update
@@ -440,12 +472,6 @@ class Tags
             ],
         );
 
-        if (!$url->wasRecentlyCreated) {
-            $url->was_purged_at = null;
-
-            $url->incrementHits();
-        }
-
         return $url;
     }
 
@@ -511,6 +537,48 @@ class Tags
                 where efu.id = urls.id
             ";
         }
+
+        $this->dbStatement($sql);
+    }
+
+    public function markUrlsAsWarmed(Collection $urls): void
+    {
+        $list = $urls
+            ->pluck('id')
+            ->map(fn($item) => "$item")
+            ->join(',');
+
+        $sql = "
+            update edge_flush_tags eft
+            set obsolete = false
+            from (
+                    select id
+                    from edge_flush_tags
+                    where is_valid = true
+                      and obsolete = true
+                      and url_id in ({$list})
+                    order by id
+                    for update
+                ) tags
+            where eft.id = tags.id
+            ";
+
+        $this->dbStatement($sql);
+
+        $sql = "
+                update edge_flush_urls efu
+                set was_purged_at = null,
+                    invalidation_id = null
+                from (
+                        select efu.id
+                        from edge_flush_urls efu
+                        where efu.is_valid = true
+                          and efu.id in ({$list})
+                        order by efu.id
+                        for update
+                    ) urls
+                where efu.id = urls.id
+            ";
 
         $this->dbStatement($sql);
     }

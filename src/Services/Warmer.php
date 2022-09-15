@@ -39,7 +39,7 @@ class Warmer
 
             $this->dispatchWarmRequests($chunk);
 
-            $this->resetWarmStatus($chunk);
+            EdgeFlush::tags()->markUrlsAsWarmed($chunk);
         }
     }
 
@@ -74,13 +74,6 @@ class Warmer
                 $this->dispatchExternalWarmRequests($urls);
             }
         }
-    }
-
-    protected function resetWarmStatus(Collection $urls): void
-    {
-        Url::whereIn('id', $urls->pluck('id')->toArray())->update([
-            'was_purged_at' => null,
-        ]);
     }
 
     public function dispatchInternalWarmRequests(Collection $urls): void
