@@ -255,6 +255,7 @@ class Tags
 
         $invalidation = (new Invalidation())->setUrls($rows);
 
+        dd($rows);
         /**
          * Let's first calculate the number of URLs we are invalidating.
          * If it's above max, just flush the whole website.
@@ -273,10 +274,6 @@ class Tags
 
     protected function markTagsAsObsolete(Invalidation $invalidation): void
     {
-        if ($invalidation->type() !== 'tag') {
-            return;
-        }
-
         $type = $invalidation->type();
 
         $items = $invalidation->queryItemsList();
