@@ -255,7 +255,6 @@ class Tags
 
         $invalidation = (new Invalidation())->setUrls($rows);
 
-        dd($rows);
         /**
          * Let's first calculate the number of URLs we are invalidating.
          * If it's above max, just flush the whole website.

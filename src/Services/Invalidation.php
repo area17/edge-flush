@@ -355,7 +355,7 @@ class Invalidation
         return $this->urlNames = $this->urls()->map->url;
     }
 
-    public function setInvalidateAll($value = true): self
+    public function setInvalidateAll(bool $value = true): self
     {
         $this->invalidateAll = $value;
 
