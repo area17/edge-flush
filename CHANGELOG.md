@@ -2,6 +2,11 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.8 - 2022-09-16
+### Changed
+- Fix model invalidations
+- Fix warmer not finding URLs to rewarm
+
 ## 1.3.5 - 2022-09-14
 ### Changed
 - Force invalidate all to clear all tags and urls
