@@ -2,10 +2,13 @@
 
 All notable changes to `CDN` will be documented in this file.
 
-## 1.3.8 - 2022-09-16
+## 1.3.10 - 2022-09-26
+### Fixed
+- Correctly setting was_purged_at update SQL
+
+## 1.3.9 - 2022-09-26
 ### Changed
-- Fix model invalidations
-- Fix warmer not finding URLs to rewarm
+- Improve performance by not instantiating the CDN service until it's really needed
 
 ## 1.3.5 - 2022-09-14
 ### Changed
