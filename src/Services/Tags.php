@@ -403,7 +403,7 @@ class Tags
 
         $this->dbStatement("
             update edge_flush_urls efu
-            set was_purged_at = $now
+            set was_purged_at = '$now'
             from (
                     select id
                     from edge_flush_urls
