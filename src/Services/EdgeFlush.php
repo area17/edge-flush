@@ -9,7 +9,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EdgeFlush extends BaseService
 {
-    public CDNService $cdn;
+    public string|null $cdnClass = null;
+
+    public CDNService|null $cdn = null;
 
     public CacheControl $cacheControl;
 
@@ -20,12 +22,12 @@ class EdgeFlush extends BaseService
     public Request $request;
 
     public function __construct(
-        CDNService $cdn,
+        string $cdnClass,
         CacheControl $cacheControl,
         Tags $tags,
         Warmer $warmer
     ) {
-        $this->cdn = $cdn;
+        $this->cdnClass = $cdnClass;
 
         $this->cacheControl = $cacheControl;
 
@@ -38,12 +40,12 @@ class EdgeFlush extends BaseService
 
     public function makeResponse(Response $response): Response
     {
-        if (!$this->enabled()) {
+        if (!$this->enabled() || $this->cdn() === null) {
             return $response;
         }
 
         return $this->cacheControl->makeResponse(
-            $this->cdn->makeResponse($response),
+            $this->cdn()->makeResponse($response),
         );
     }
 
@@ -52,8 +54,12 @@ class EdgeFlush extends BaseService
         return $this;
     }
 
-    public function cdn(): CDNService
+    public function cdn(): CDNService|null
     {
+        if ($this->cdn === null && $this->cdnClass !== null) {
+            $this->cdn = app($this->cdnClass);
+        }
+
         return $this->cdn;
     }
 

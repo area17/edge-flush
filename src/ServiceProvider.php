@@ -59,7 +59,7 @@ class ServiceProvider extends IlluminateServiceProvider
             }
 
             return new EdgeFlush(
-                app($service),
+                $service,
                 $app->make(config('edge-flush.classes.cache-control')),
                 $app->make(config('edge-flush.classes.tags')),
                 $app->make(config('edge-flush.classes.warmer')),
