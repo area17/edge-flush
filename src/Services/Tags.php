@@ -344,9 +344,9 @@ class Tags
         return true;
     }
 
-    public function invalidateAll(): Invalidation
+    public function invalidateAll(bool $force = false): Invalidation
     {
-        if (!$this->enabled()) {
+        if (!$this->enabled() && !$force) {
             return $this->unsuccessfulInvalidation();
         }
 
