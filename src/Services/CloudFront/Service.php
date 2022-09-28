@@ -121,7 +121,15 @@ class Service extends BaseService implements CDNService
             return $invalidation;
         }
 
-        Helpers::debug('[CLOUD FRONT]: Invalidating '.count($paths).' path(s): ('.collect($paths)->take(20)->implode(', ').')...');
+        Helpers::debug(
+            '[CLOUD FRONT]: Invalidating ' .
+                count($paths) .
+                ' path(s): (' .
+                collect($paths)
+                    ->take(20)
+                    ->implode(', ') .
+                ')...',
+        );
 
         try {
             $response = $this->client->createInvalidation([

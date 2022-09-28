@@ -130,7 +130,7 @@ class Warmer
                 } else {
                     Helpers::debug(
                         "WARMER-REJECTED: $error - $url - " .
-                        $response['reason']->getResponse()->getBody(),
+                            $response['reason']->getResponse()->getBody(),
                     );
                 }
             } else {
