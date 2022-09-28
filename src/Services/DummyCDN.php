@@ -2,10 +2,7 @@
 
 namespace A17\EdgeFlush\Services;
 
-use Illuminate\Support\Collection;
-use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
-use A17\EdgeFlush\Services\Invalidation;
 
 class DummyCDN extends BaseService implements CDNService
 {
