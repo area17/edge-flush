@@ -2,7 +2,6 @@
 
 namespace A17\EdgeFlush\Services;
 
-use Faker\Provider\Base;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Contracts\CDNService;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +39,7 @@ class EdgeFlush extends BaseService
 
     public function makeResponse(Response $response): Response
     {
-        if (!$this->enabled() || $this->cdn() === null) {
+        if (!$this->enabled()) {
             return $response;
         }
 
@@ -54,10 +53,14 @@ class EdgeFlush extends BaseService
         return $this;
     }
 
-    public function cdn(): CDNService|null
+    public function cdn(): CDNService
     {
-        if ($this->cdn === null && $this->cdnClass !== null) {
-            $this->cdn = app($this->cdnClass);
+        if ($this->cdn === null) {
+            if ($this->cdnClass !== null) {
+                $this->cdn = app($this->cdnClass);
+            } else {
+                $this->cdn = app(MissingCDN::class);
+            }
         }
 
         return $this->cdn;
