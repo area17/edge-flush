@@ -55,7 +55,7 @@ class EdgeFlush extends BaseService
 
     public function cdn(): CDNService
     {
-        if ($this->cdn === null) {
+        if ($this->cdn === null || $this->cdn instanceof MissingCDN) {
             if ($this->cdnClass !== null) {
                 $this->cdn = app($this->cdnClass);
             } else {
