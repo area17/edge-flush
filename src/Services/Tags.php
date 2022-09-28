@@ -479,11 +479,13 @@ class Tags
     }
 
     public function makeTagIndex(
-        string $url,
+        Url|string $url,
         array $tags,
         string $model
     ): string {
-        $url = $this->createUrl($url);
+        if (is_string($url)) {
+            $url = $this->createUrl($url);
+        }
 
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
 

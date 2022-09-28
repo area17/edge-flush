@@ -15,6 +15,7 @@ use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use GuzzleHttp\Promise\Utils as Promise;
+use GuzzleHttp\Exception\ConnectException as GuzzleConnectException;
 
 class Warmer
 {
@@ -124,10 +125,14 @@ class Warmer
 
                 $url = $context['url'] ?? 'missing url';
 
-                Helpers::debug(
-                    "WARMER-REJECTED: $error - $url - " .
+                if ($response['reason'] instanceof GuzzleConnectException) {
+                    Helpers::debug("WARMER-ERROR: $error - $url");
+                } else {
+                    Helpers::debug(
+                        "WARMER-REJECTED: $error - $url - " .
                         $response['reason']->getResponse()->getBody(),
-                );
+                    );
+                }
             } else {
                 Helpers::debug(
                     "WARMER-SUCCESS : {$response['value']->getStatusCode()} - " .
