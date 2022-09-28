@@ -59,7 +59,7 @@ class Invalidation
         $this->paths = collect();
     }
 
-    public function setId(string $id): self
+    public function setId(string|null $id): self
     {
         $this->id = $id;
 
@@ -109,19 +109,17 @@ class Invalidation
 
     public function absorbCloudFront(AwsResult $invalidation): self
     {
-        $this->success = filled($invalidation);
-
-        if (!$this->success()) {
+        if (!($this->success = filled($invalidation))) {
             return $this;
         }
 
-        $this->setId($invalidation['Invalidation']['Id'])
-            ->setStatus($invalidation['Invalidation']['Status'])
-            ->setCreatedAt(
-                Carbon::parse(
-                    (string) $invalidation['Invalidation']['CreateTime'],
-                ),
-            );
+        $time = $invalidation['Invalidation']['CreateTime'] ?? null;
+
+        $time = filled($time) ? Carbon::parse($time) : null;
+
+        $this->setId($invalidation['Invalidation']['Id'] ?? null)
+            ->setStatus($invalidation['Invalidation']['Status'] ?? null)
+            ->setCreatedAt($time);
 
         return $this;
     }
@@ -133,9 +131,7 @@ class Invalidation
 
     public function absorb(AwsResult $object): self
     {
-        if ($object instanceof AwsResult) {
-            $this->absorbCloudFront($object);
-        }
+        $this->absorbCloudFront($object);
 
         return $this;
     }

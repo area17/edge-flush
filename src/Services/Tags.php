@@ -235,6 +235,10 @@ class Tags
 
     protected function invalidateObsoleteTags(): void
     {
+        if (!$this->enabled()) {
+            return;
+        }
+
         /**
          * Filter purged urls from obsolete tags.
          * Making sure we invalidate the most busy pages first.
@@ -295,7 +299,7 @@ class Tags
 
     protected function dispatchInvalidations(Invalidation $invalidation): void
     {
-        if ($invalidation->isEmpty()) {
+        if ($invalidation->isEmpty() || !$this->enabled()) {
             return;
         }
 
@@ -309,6 +313,10 @@ class Tags
 
     protected function invalidateEntireCache(Invalidation $invalidation): void
     {
+        if (!$this->enabled()) {
+            return;
+        }
+
         Helpers::debug('INVALIDATING: entire cache...');
 
         $invalidation->setInvalidateAll(true);
@@ -449,30 +457,30 @@ class Tags
 
     public function enabled(): bool
     {
-        return EdgeFlush::invalidationServiceIsEnabled();
+        return EdgeFlush::invalidationServiceIsEnabled() && EdgeFlush::cdn() !== null;
     }
 
     /**
      * @param string $url
-     * @return mixed
+     * @return Url
      */
-    function createUrl(string $url)
+    function createUrl(string $url): Url
     {
         $url = Helpers::sanitizeUrl($url);
 
-        $url = Url::firstOrCreate(
+        return Url::firstOrCreate(
             ['url_hash' => sha1($url)],
             [
                 'url' => Str::limit($url, 255),
                 'hits' => 1,
             ],
         );
-
-        return $url;
     }
 
-    public function makeTagIndex(Url $url, array $tags, string $model): string
+    public function makeTagIndex(string $url, array $tags, string $model): string
     {
+        $url = $this->createUrl($url);
+
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
 
         return sha1($index);
