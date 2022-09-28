@@ -8,7 +8,6 @@ use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Url;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
-use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Behaviours\MakeTag;
 use Illuminate\Database\Eloquent\Model;
 
@@ -146,8 +145,6 @@ class Invalidation
 
         $self->absorb($object);
 
-        Helpers::debug('INVALIDATION (factory): ' . $self->toJson());
-
         return $self;
     }
 
@@ -261,13 +258,6 @@ class Invalidation
 
     public function queryItemsList(string|null $type = null): string
     {
-        return $this->makeQueryItemsList($this->items($type), $type);
-    }
-
-    public function makeQueryItemsList(
-        Collection $items,
-        string|null $type = null
-    ): string {
         return $this->items($type)
             ->map(fn($item) => "'$item'")
             ->join(',');
