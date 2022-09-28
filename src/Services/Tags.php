@@ -457,7 +457,8 @@ class Tags
 
     public function enabled(): bool
     {
-        return EdgeFlush::invalidationServiceIsEnabled() && EdgeFlush::cdn() !== null;
+        return EdgeFlush::invalidationServiceIsEnabled() &&
+            EdgeFlush::cdn() !== null;
     }
 
     /**
@@ -477,8 +478,11 @@ class Tags
         );
     }
 
-    public function makeTagIndex(string $url, array $tags, string $model): string
-    {
+    public function makeTagIndex(
+        string $url,
+        array $tags,
+        string $model
+    ): string {
         $url = $this->createUrl($url);
 
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
