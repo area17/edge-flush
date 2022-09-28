@@ -21,10 +21,11 @@ use Symfony\Component\HttpFoundation\Response;
  * @method static self instance()
  * @method static self setRequest(Request $request)
  * @method static bool invalidationServiceIsEnabled()
+ * @method static bool storeTagsServiceIsEnabled()
  **/
 class EdgeFlush extends Facade
 {
-    protected static function getFacadeAccessor()
+    protected static function getFacadeAccessor(): string
     {
         return 'a17.edge-flush.service';
     }

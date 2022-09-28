@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Str;
-use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Support\Constants;
 
