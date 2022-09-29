@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -460,7 +460,7 @@ class Tags
 
     public function dbStatement(string $sql): bool
     {
-        return DB::statement(DB::raw($sql));
+        return DB::statement((string) DB::raw($sql));
     }
 
     public function enabled(): bool

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Support;
 
@@ -278,7 +278,7 @@ class Helpers
         if ($item instanceof Url) {
             $url = $item->url;
         } elseif ($item instanceof Tag) {
-            $url = $item->url;
+            $url = $item->url->url;
         } else {
             $url = null;
         }

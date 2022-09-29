@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services\Akamai;
 
@@ -64,9 +64,11 @@ class Service extends BaseService implements CDNService
         }
 
         return $this->invalidate(
-            $this->createInvalidation(Helpers::configArray(
-                'edge-flush.services.akamai.invalidate_all_paths',
-            )),
+            $this->createInvalidation(
+                Helpers::configArray(
+                    'edge-flush.services.akamai.invalidate_all_paths',
+                ),
+            ),
         );
     }
 
@@ -87,9 +89,12 @@ class Service extends BaseService implements CDNService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            Helpers::configString('edge-flush.services.akamai.client_token') ?? '',
-            Helpers::configString('edge-flush.services.akamai.client_secret') ?? '',
-            Helpers::configString('edge-flush.services.akamai.access_token') ?? '',
+            Helpers::configString('edge-flush.services.akamai.client_token') ??
+                '',
+            Helpers::configString('edge-flush.services.akamai.client_secret') ??
+                '',
+            Helpers::configString('edge-flush.services.akamai.access_token') ??
+                '',
         );
 
         $auth->setPath($this->getApiPath());
