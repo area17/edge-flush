@@ -92,7 +92,9 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $format = Helpers::toString(config('edge-flush.tags.format', 'app-%environment%-%sha1%'));
+        $format = Helpers::toString(
+            config('edge-flush.tags.format', 'app-%environment%-%sha1%'),
+        );
 
         return str_replace(
             ['%environment%', '%sha1%'],
@@ -176,7 +178,9 @@ class Tags
         }, 5);
 
         if ($indexes->isNotEmpty()) {
-            $indexes = $indexes->map(fn(mixed $item) => "'".Helpers::toString($item)."'")->join(',');
+            $indexes = $indexes
+                ->map(fn(mixed $item) => "'" . Helpers::toString($item) . "'")
+                ->join(',');
 
             $this->dbStatement("
                         update edge_flush_tags
@@ -446,10 +450,12 @@ class Tags
 
     public function getMaxInvalidations(): int
     {
-        return Helpers::toInt(min(
-            EdgeFlush::cdn()->maxUrls(),
-            config('edge-flush.invalidations.batch.size'),
-        ));
+        return Helpers::toInt(
+            min(
+                EdgeFlush::cdn()->maxUrls(),
+                config('edge-flush.invalidations.batch.size'),
+            ),
+        );
     }
 
     public function dbStatement(string $sql): bool

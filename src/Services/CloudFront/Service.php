@@ -47,25 +47,37 @@ class Service extends BaseService implements CDNService
         }
 
         return $this->createInvalidationRequest(
-            config('edge-flush.services.cloud_front.invalidate_all_paths'),
+            Helpers::configArray(
+                'edge-flush.services.cloud_front.invalidate_all_paths',
+            ),
         );
     }
 
     protected function getDistributionId(): string|null
     {
-        return config('edge-flush.services.cloud_front.distribution_id');
+        return Helpers::configString(
+            'edge-flush.services.cloud_front.distribution_id',
+        );
     }
 
     public function getClient(): CloudFrontClient|null
     {
         $config = [
-            'region' => config('edge-flush.services.cloud_front.region'),
+            'region' => Helpers::configString(
+                'edge-flush.services.cloud_front.region',
+            ),
 
-            'version' => config('edge-flush.services.cloud_front.sdk_version'),
+            'version' => Helpers::configString(
+                'edge-flush.services.cloud_front.sdk_version',
+            ),
 
             'credentials' => [
-                'key' => config('edge-flush.services.cloud_front.key'),
-                'secret' => config('edge-flush.services.cloud_front.secret'),
+                'key' => Helpers::configString(
+                    'edge-flush.services.cloud_front.key',
+                ),
+                'secret' => Helpers::configString(
+                    'edge-flush.services.cloud_front.secret',
+                ),
             ],
         ];
 
@@ -74,13 +86,21 @@ class Service extends BaseService implements CDNService
         }
 
         return new CloudFrontClient([
-            'region' => config('edge-flush.services.cloud_front.region'),
+            'region' => Helpers::configString(
+                'edge-flush.services.cloud_front.region',
+            ),
 
-            'version' => config('edge-flush.services.cloud_front.sdk_version'),
+            'version' => Helpers::configString(
+                'edge-flush.services.cloud_front.sdk_version',
+            ),
 
             'credentials' => [
-                'key' => config('edge-flush.services.cloud_front.key'),
-                'secret' => config('edge-flush.services.cloud_front.secret'),
+                'key' => Helpers::configString(
+                    'edge-flush.services.cloud_front.key',
+                ),
+                'secret' => Helpers::configString(
+                    'edge-flush.services.cloud_front.secret',
+                ),
             ],
         ]);
     }
@@ -93,7 +113,11 @@ class Service extends BaseService implements CDNService
             ])
             ->get('InvalidationList');
 
-        if (isset($list['Items']) && !empty($list['Items'])) {
+        if (!is_array($list)) {
+            return false;
+        }
+
+        if (isset($list['Items']) && is_array($list['Items'])) {
             return collect($list['Items'])
                 ->where('Status', 'InProgress')
                 ->count() > 0;
@@ -105,21 +129,9 @@ class Service extends BaseService implements CDNService
     public function createInvalidationRequest(
         Invalidation|array $invalidation = null
     ): Invalidation {
-        $invalidation ??= new Invalidation();
+        $invalidation = $this->createInvalidation($invalidation);
 
-        if (is_array($invalidation)) {
-            $paths = $invalidation;
-
-            $invalidation = new Invalidation();
-
-            $invalidation->setPaths(collect($paths));
-        } else {
-            $paths = $invalidation->paths()->toArray();
-        }
-
-        if (count($paths) === 0) {
-            return $invalidation;
-        }
+        $paths = $invalidation->paths();
 
         Helpers::debug(
             '[CLOUD FRONT]: Invalidating ' .
@@ -171,9 +183,9 @@ class Service extends BaseService implements CDNService
             return $item;
         }
 
-        $url = $item instanceof Url ? $item->url : $item->url->url ?? $item;
+        $url = Helpers::getUrl($item);
 
-        if (!is_string($url)) {
+        if ($url === null) {
             return null;
         }
 
@@ -211,13 +223,17 @@ class Service extends BaseService implements CDNService
 
     public function maxUrls(): int
     {
-        return config('edge-flush.services.cloud_front.max_urls');
+        return Helpers::configInt('edge-flush.services.cloud_front.max_urls') ??
+            300;
     }
 
     public function enabled(): bool
     {
         return parent::enabled() &&
-            config('edge-flush.services.cloud_front.enabled', true) &&
+            Helpers::configBool(
+                'edge-flush.services.cloud_front.enabled',
+                true,
+            ) &&
             filled($this->getClient());
     }
 

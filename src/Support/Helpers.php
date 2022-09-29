@@ -3,6 +3,8 @@
 namespace A17\EdgeFlush\Support;
 
 use Throwable;
+use A17\EdgeFlush\Models\Url;
+use A17\EdgeFlush\Models\Tag;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -226,5 +228,61 @@ class Helpers
         }
 
         return [];
+    }
+
+    public static function toBool(mixed $value): bool
+    {
+        return !!$value;
+    }
+
+    public static function configBool(string $key, mixed $default = null): bool
+    {
+        return static::toBool(config($key, $default));
+    }
+
+    public static function configArray(
+        string $key,
+        mixed $default = null
+    ): array|null {
+        if (is_null($value = config($key, $default))) {
+            return null;
+        }
+
+        return static::toArray($value);
+    }
+
+    public static function configString(
+        string $key,
+        mixed $default = null
+    ): string|null {
+        if (is_null($value = config($key, $default))) {
+            return null;
+        }
+
+        return static::toString($value);
+    }
+
+    public static function configInt(
+        string $key,
+        mixed $default = null
+    ): int|null {
+        if (is_null($value = config($key, $default))) {
+            return null;
+        }
+
+        return static::toInt($value);
+    }
+
+    public static function getUrl(mixed $item): string|null
+    {
+        if ($item instanceof Url) {
+            $url = $item->url;
+        } elseif ($item instanceof Tag) {
+            $url = $item->url;
+        } else {
+            $url = null;
+        }
+
+        return $url;
     }
 }

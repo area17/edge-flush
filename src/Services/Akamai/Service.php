@@ -2,19 +2,12 @@
 
 namespace A17\EdgeFlush\Services\Akamai;
 
-use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
-use A17\EdgeFlush\Services\Tags;
-use A17\EdgeFlush\Services\Warmer;
+use A17\EdgeFlush\Support\Helpers;
+use Illuminate\Support\Facades\Http;
 use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
-use Illuminate\Support\Collection;
-use A17\EdgeFlush\Services\CacheControl;
 use A17\EdgeFlush\Services\Invalidation;
-use A17\EdgeFlush\Services\TagsContainer;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Database\Eloquent\Model;
-use Symfony\Component\HttpFoundation\Response;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
 class Service extends BaseService implements CDNService
@@ -31,7 +24,7 @@ class Service extends BaseService implements CDNService
      */
     protected function getHost(): string|null
     {
-        return config('edge-flush.services.akamai.host');
+        return Helpers::configString('edge-flush.services.akamai.host');
     }
 
     public function getInvalidationURL(): string
@@ -41,24 +34,27 @@ class Service extends BaseService implements CDNService
 
     public function invalidate(Invalidation $invalidation): Invalidation
     {
-        if (!$this->enabled()) {
-            return $this->unsuccessfulInvalidation();
-        }
+        // TODO: must be redone
+        //        if (!$this->enabled()) {
+        //            return $this->unsuccessfulInvalidation();
+        //        }
+        //
+        //        $body = [
+        //            'objects' => collect($invalidation->tags())
+        //                ->map(function ($item) {
+        //                    return $item instanceof Tag ? $item->tag : $item;
+        //                })
+        //                ->unique()
+        //                ->toArray(),
+        //        ];
+        //
+        //        Http::withHeaders([
+        //            'Authorization' => $this->getAuthHeaders($body),
+        //        ])->post($this->getInvalidationURL(), $body);
+        //
+        //        return $this->successfulInvalidation();
 
-        $body = [
-            'objects' => collect($invalidation->tags())
-                ->map(function ($item) {
-                    return $item instanceof Tag ? $item->tag : $item;
-                })
-                ->unique()
-                ->toArray(),
-        ];
-
-        Http::withHeaders([
-            'Authorization' => $this->getAuthHeaders($body),
-        ])->post($this->getInvalidationURL(), $body);
-
-        return $this->successfulInvalidation();
+        return $invalidation;
     }
 
     public function invalidateAll(): Invalidation
@@ -68,7 +64,9 @@ class Service extends BaseService implements CDNService
         }
 
         return $this->invalidate(
-            config('edge-flush.services.akamai.invalidate_all_paths'),
+            $this->createInvalidation(Helpers::configArray(
+                'edge-flush.services.akamai.invalidate_all_paths',
+            )),
         );
     }
 
@@ -89,9 +87,9 @@ class Service extends BaseService implements CDNService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            config('edge-flush.services.akamai.client_token'),
-            config('edge-flush.services.akamai.client_secret'),
-            config('edge-flush.services.akamai.access_token'),
+            Helpers::configString('edge-flush.services.akamai.client_token') ?? '',
+            Helpers::configString('edge-flush.services.akamai.client_secret') ?? '',
+            Helpers::configString('edge-flush.services.akamai.access_token') ?? '',
         );
 
         $auth->setPath($this->getApiPath());
@@ -101,7 +99,7 @@ class Service extends BaseService implements CDNService
 
     public function maxUrls(): int
     {
-        return config('edge-flush.services.akamai.max_urls');
+        return Helpers::configInt('edge-flush.services.akamai.max_urls') ?? 300;
     }
 
     public function invalidationIsCompleted(string $invalidationId): bool

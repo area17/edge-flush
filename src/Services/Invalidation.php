@@ -263,7 +263,7 @@ class Invalidation
     public function queryItemsList(string|null $type = null): string
     {
         return $this->items($type)
-            ->map(fn($item) => "'".Helpers::toString($item)."'")
+            ->map(fn($item) => "'" . Helpers::toString($item) . "'")
             ->join(',');
     }
 
@@ -323,13 +323,7 @@ class Invalidation
             return $item;
         }
 
-        if ($item instanceof Url) {
-            $url = $item->url;
-        } elseif ($item instanceof Tag) {
-            $url = $item->url;
-        } else {
-            $url = null;
-        }
+        $url = Helpers::getUrl($item);
 
         if (!is_string($url)) {
             return null;

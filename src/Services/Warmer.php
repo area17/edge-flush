@@ -37,10 +37,7 @@ class Warmer
         $count = !is_numeric($count) ? 10 : $count;
 
         while ($urls->count() > 0) {
-            $chunk = $urls->splice(
-                0,
-                (int) $count,
-            );
+            $chunk = $urls->splice(0, (int) $count);
 
             $this->dispatchWarmRequests($chunk);
 
@@ -87,7 +84,11 @@ class Warmer
 
     public function dispatchInternalWarmRequests(Collection $urls): void
     {
-        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url instanceof Url ? $url->url : $url));
+        $urls->map(
+            fn($url) => $this->dispatchInternalWarmRequest(
+                $url instanceof Url ? $url->url : $url,
+            ),
+        );
     }
 
     public function dispatchInternalWarmRequest(string $url): void

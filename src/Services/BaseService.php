@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Tag;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,7 +54,7 @@ abstract class BaseService implements ServiceContract
 
     public function matchAny(string $string, array $patterns): bool
     {
-        return collect($patterns)->reduce(
+        return !!collect($patterns)->reduce(
             fn($matched, $pattern) => $matched ||
                 $this->match($pattern, $string),
             false,
@@ -71,7 +72,7 @@ abstract class BaseService implements ServiceContract
 
     public function enabled(): bool
     {
-        return $this->enabled ??= config('edge-flush.enabled');
+        return $this->enabled ??= Helpers::configBool('edge-flush.enabled');
     }
 
     public function enable(): void
@@ -92,13 +93,13 @@ abstract class BaseService implements ServiceContract
 
     public function addHeadersFromRequest(Response $response): void
     {
-        collect(config('edge-flush.headers.from-request'))->each(function (
-            string $header
-        ) use ($response) {
-            if (filled($value = request()->header($header))) {
-                $response->headers->set($header, $value);
-            }
-        });
+        collect(Helpers::configArray('edge-flush.headers.from-request'))->each(
+            function (string $header) use ($response) {
+                if (filled($value = request()->header($header))) {
+                    $response->headers->set($header, $value);
+                }
+            },
+        );
     }
 
     private function addTagToHeaders(
@@ -106,11 +107,37 @@ abstract class BaseService implements ServiceContract
         Response $response,
         string $value
     ): void {
-        collect(config("edge-flush.headers.$service"))->each(
+        collect(Helpers::configArray("edge-flush.headers.$service"))->each(
             fn(string $header) => $response->headers->set(
                 $header,
                 collect($value)->join(', '),
             ),
         );
+    }
+
+    public function createInvalidation(
+        Invalidation|array $invalidation = null
+    ): Invalidation {
+        $invalidation ??= new Invalidation();
+
+        if (is_array($invalidation)) {
+            $paths = [];
+            $tags = [];
+
+            foreach ($invalidation as $value) {
+                if ($value instanceof Tag) {
+                    $tags[] = $value;
+                } else {
+                    $paths[] = $value;
+                }
+            }
+
+            $invalidation = new Invalidation();
+
+            $invalidation->setPaths(collect($paths));
+            $invalidation->setTags(collect($tags));
+        }
+
+        return $invalidation;
     }
 }
