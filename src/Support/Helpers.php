@@ -3,7 +3,6 @@
 namespace A17\EdgeFlush\Support;
 
 use Throwable;
-use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -20,13 +19,15 @@ class Helpers
 
         $parsed = static::parseUrl($url);
 
+        $query = [];
+
         parse_str($parsed['query'] ?? null, $query);
 
         if (blank($query)) {
             return $url;
         }
 
-        $routes = config('edge-flush.urls.query.allow_routes');
+        $routes = (array) config('edge-flush.urls.query.allow_routes');
 
         $list = $routes[$parsed['path']] ?? null;
 
@@ -56,19 +57,13 @@ class Helpers
      * Deconstruct and rebuild the URL dropping query parameters
      */
     public static function rewriteUrl(
-        mixed $parameters,
+        array $parameters,
         array|Collection $dropQueries = [],
         string|null $url = null
     ): string {
         $url = filled($url) ? $url : url()->full();
 
         $url = static::parseUrl($url);
-
-        if (is_string($parameters)) {
-            $parameters = explode('=', $parameters);
-
-            $parameters = [$parameters[0] => $parameters[1]];
-        }
 
         $query = [];
 
@@ -128,19 +123,17 @@ class Helpers
         return $url;
     }
 
-    public static function parseUrl(mixed $url): array
+    public static function parseUrl(object|array|string|null $url): array
     {
         if (is_array($url)) {
             $url = '';
         }
 
-        if (is_object($url)) {
-            try {
-                /** @throws Throwable */
-                $url = (string) $url;
-            } catch (Throwable) {
-                $url = '';
-            }
+        try {
+            /** @throws Throwable */
+            $url = (string) $url;
+        } catch (Throwable) {
+            $url = '';
         }
 
         /** Check if the string only a domain name **/
@@ -167,14 +160,14 @@ class Helpers
 
     public static function debug(string|array|null $data = null): bool
     {
-        $debugIsOn = config('edge-flush.debug');
+        $debugIsOn = (bool) config('edge-flush.debug', false);
 
         if (!$debugIsOn) {
             return false;
         }
 
         if (blank($data)) {
-            return $debugIsOn;
+            return true;
         }
 
         if (!is_string($data)) {
@@ -185,6 +178,53 @@ class Helpers
 
         Log::debug('[EDGE-FLUSH] ' . $data);
 
-        return $debugIsOn;
+        return true;
+    }
+
+    public static function toString(mixed $string): string
+    {
+        if (is_string($string) || is_numeric($string)) {
+            return (string) $string;
+        }
+
+        if (is_array($string)) {
+            return (string) json_encode($string);
+        }
+
+        if (is_object($string)) {
+            return (string) json_encode($string);
+        }
+
+        return '';
+    }
+
+    public static function toInt(mixed $string): int
+    {
+        if (is_string($string) || is_numeric($string)) {
+            return (int) $string;
+        }
+
+        return 0;
+    }
+
+    public static function toArray(mixed $array): array
+    {
+        if (is_array($array)) {
+            return $array;
+        }
+
+        if ($array instanceof Collection) {
+            return $array->toArray();
+        }
+
+        if (is_string($array) || is_numeric($array)) {
+            return (array) $array;
+        }
+
+        if (is_object($array)) {
+            return (array) $array;
+        }
+
+        return [];
     }
 }

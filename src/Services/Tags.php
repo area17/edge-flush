@@ -92,7 +92,9 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $tag = str_replace(
+        $format = Helpers::toString(config('edge-flush.tags.format', 'app-%environment%-%sha1%'));
+
+        return str_replace(
             ['%environment%', '%sha1%'],
             [
                 app()->environment(),
@@ -102,10 +104,8 @@ class Tags
                         ->join(', '),
                 ),
             ],
-            config('edge-flush.tags.format'),
+            $format,
         );
-
-        return $tag;
     }
 
     protected function tagIsExcluded(string $tag): bool
@@ -152,11 +152,13 @@ class Tags
 
             $now = (string) now();
 
-            $indexes = collect($models)->map(function (string $model) use (
+            $indexes = collect($models)->map(function (mixed $model) use (
                 $tags,
                 $url,
                 $now
             ) {
+                $model = Helpers::toString($model);
+
                 $index = $this->makeTagIndex($url, $tags, $model);
 
                 $this->dbStatement("
@@ -174,7 +176,7 @@ class Tags
         }, 5);
 
         if ($indexes->isNotEmpty()) {
-            $indexes = $indexes->map(fn($item) => "'$item'")->join(',');
+            $indexes = $indexes->map(fn(mixed $item) => "'".Helpers::toString($item)."'")->join(',');
 
             $this->dbStatement("
                         update edge_flush_tags
@@ -444,10 +446,10 @@ class Tags
 
     public function getMaxInvalidations(): int
     {
-        return min(
+        return Helpers::toInt(min(
             EdgeFlush::cdn()->maxUrls(),
             config('edge-flush.invalidations.batch.size'),
-        );
+        ));
     }
 
     public function dbStatement(string $sql): bool
@@ -555,7 +557,7 @@ class Tags
     {
         $list = $urls
             ->pluck('id')
-            ->map(fn($item) => "$item")
+            ->map(fn($item) => Helpers::toString($item))
             ->join(',');
 
         $sql = "

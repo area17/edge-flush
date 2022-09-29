@@ -32,10 +32,14 @@ class Warmer
 
     public function warm(Collection $urls): void
     {
+        $count = config('edge-flush.warmer.concurrent_requests', 10);
+
+        $count = !is_numeric($count) ? 10 : $count;
+
         while ($urls->count() > 0) {
             $chunk = $urls->splice(
                 0,
-                config('edge-flush.warmer.concurrent_requests'),
+                (int) $count,
             );
 
             $this->dispatchWarmRequests($chunk);
@@ -51,8 +55,12 @@ class Warmer
 
     public function getColdUrls(): Collection
     {
+        $max = config('edge-flush.warmer.max_urls', 100);
+
+        $max = !is_numeric($max) ? 100 : (int) $max;
+
         return Url::whereNotNull('was_purged_at')
-            ->take(config('edge-flush.warmer.max_urls'))
+            ->take($max)
             ->orderBy('hits', 'desc')
             ->get()
             ->groupBy('invalidation_id')
@@ -66,7 +74,7 @@ class Warmer
 
     protected function dispatchWarmRequests(Collection $urls): void
     {
-        foreach (config('edge-flush.warmer.types', []) as $type) {
+        foreach ((array) config('edge-flush.warmer.types', []) as $type) {
             if ($type === 'internal') {
                 $this->dispatchInternalWarmRequests($urls);
             }
@@ -79,7 +87,7 @@ class Warmer
 
     public function dispatchInternalWarmRequests(Collection $urls): void
     {
-        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url->url));
+        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url instanceof Url ? $url->url : $url));
     }
 
     public function dispatchInternalWarmRequest(string $url): void
@@ -99,17 +107,19 @@ class Warmer
     {
         $startTime = microtime(true);
 
-        $responses = Promise::inspectAll(
-            $urls
-                ->map(function (Url $url) {
-                    Helpers::debug("WARMING: $url->url");
+        /** @var \GuzzleHttp\Promise\PromiseInterface[] $promises */
+        $promises = [];
 
-                    return $this->getGuzzle()->getAsync($url->url, [
-                        'headers' => $this->getHeaders($url->url),
-                    ]);
-                })
-                ->toArray(),
-        );
+        /** @var Url $url */
+        foreach ($urls as $url) {
+            Helpers::debug("WARMING: $url->url");
+
+            $promises[] = $this->getGuzzle()->getAsync($url->url, [
+                'headers' => $this->getHeaders($url->url),
+            ]);
+        }
+
+        $responses = Promise::inspectAll($promises);
 
         $executionTime = microtime(true) - $startTime;
 
