@@ -2,6 +2,17 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.X - 2022-09-XX
+### Changed
+- Move up to PHPStan Level 9
+
+## 1.3.14 - 2022-09-28
+### Changed
+- Improve Guzzle connection errors handling
+- Allow invalidations when disabled
+- Prevent CDN service instantiation until it's really needed
+- Improve the way warmer reset tags and URLs
+
 ## 1.3.10 - 2022-09-26
 ### Fixed
 - Correctly setting was_purged_at update SQL
