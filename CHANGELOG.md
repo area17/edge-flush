@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `CDN` will be documented in this file.
+All notable changes to `EdgeFlush` will be documented in this file.
 
 ## 1.3.X - 2022-09-XX
 ### Changed
