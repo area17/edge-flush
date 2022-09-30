@@ -169,7 +169,7 @@ class CacheControl extends BaseService implements ServiceContract
 
         if (Helpers::configBool('edge-flush.valid_forms.enabled', false)) {
             $hasForm = collect(
-                Helpers::configBool('edge-flush.valid_forms.strings', false),
+                Helpers::configArray('edge-flush.valid_forms.strings'),
             )->reduce(function (bool $hasForm, string $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
