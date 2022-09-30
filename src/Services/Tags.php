@@ -349,7 +349,10 @@ class Tags
 
         $key = $model->getTable() . '-' . $id;
 
-        if (filled($this->processedTags[$key]) && (bool)$this->processedTags[$key]) {
+        if (
+            filled($this->processedTags[$key]) &&
+            (bool) $this->processedTags[$key]
+        ) {
             return false;
         }
 

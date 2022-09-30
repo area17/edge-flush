@@ -227,7 +227,11 @@ class Warmer
                         'edge-flush.warmer.curl.compress',
                         true,
                     ),
-                ] + (array) Helpers::configArray('edge-flush.warmer.curl.extra_options', []),
+                ] +
+                (array) Helpers::configArray(
+                    'edge-flush.warmer.curl.extra_options',
+                    [],
+                ),
         ] + (array) Helpers::configArray('edge-flush.warmer.extra_options');
     }
 }

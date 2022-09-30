@@ -11,7 +11,7 @@ class FrontendChecker
     {
         $route = request()->route();
 
-        if (!$route instanceof Route || blank(($name = $route->getName()))) {
+        if (!$route instanceof Route || blank($name = $route->getName())) {
             return false;
         }
 
