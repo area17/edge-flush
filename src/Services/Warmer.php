@@ -13,7 +13,7 @@ use GuzzleHttp\Exception\ConnectException as GuzzleConnectException;
 
 class Warmer
 {
-    protected Guzzle|null $guzzle;
+    protected Guzzle|null $guzzle = null;
 
     public function execute(): void
     {
