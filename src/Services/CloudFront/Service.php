@@ -131,7 +131,7 @@ class Service extends BaseService implements CDNService
     ): Invalidation {
         $invalidation = $this->createInvalidation($invalidation);
 
-        $paths = $invalidation->paths();
+        $paths = $invalidation->paths()->toArray();
 
         Helpers::debug(
             '[CLOUD FRONT]: Invalidating ' .
