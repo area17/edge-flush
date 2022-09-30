@@ -2,18 +2,12 @@
 
 namespace A17\EdgeFlush\Services;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Env;
-use Faker\Extension\Helper;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Http\Request;
-use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
 use GuzzleHttp\Client as Guzzle;
-use SebastianBergmann\Timer\Timer;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Route;
 use GuzzleHttp\Promise\Utils as Promise;
 use GuzzleHttp\Exception\ConnectException as GuzzleConnectException;
 
