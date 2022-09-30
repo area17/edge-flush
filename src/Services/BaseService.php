@@ -54,7 +54,7 @@ abstract class BaseService implements ServiceContract
 
     public function matchAny(string $string, array $patterns): bool
     {
-        return !!collect($patterns)->reduce(
+        return (bool) collect($patterns)->reduce(
             fn($matched, $pattern) => $matched ||
                 $this->match($pattern, $string),
             false,

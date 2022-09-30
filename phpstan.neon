@@ -1,5 +1,6 @@
 includes:
   - ./vendor/nunomaduro/larastan/extension.neon
+  - ./vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
 
@@ -16,3 +17,17 @@ parameters:
   ignoreErrors:
       - '#Internal.*#'
       - '#Cannot access offset .* on array\{scheme.*#'
+
+  strictRules:
+      disallowedLooseComparison: true
+      booleansInConditions: true
+      uselessCast: true
+      requireParentConstructorCall: true
+      disallowedConstructs: true
+      overwriteVariablesWithLoop: true
+      closureUsesThis: true
+      matchingInheritedMethodNames: true
+      numericOperandsInArithmeticOperators: true
+      strictCalls: false
+      switchConditionsMatchingType: true
+      noVariableVariables: false

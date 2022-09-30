@@ -15,7 +15,7 @@ class Helpers
      */
     public static function sanitizeUrl(string $url): string
     {
-        if (config('edge-flush.urls.query.fully_cachable')) {
+        if (Helpers::configBool('edge-flush.urls.query.fully_cachable')) {
             return $url;
         }
 
@@ -23,7 +23,7 @@ class Helpers
 
         $query = [];
 
-        parse_str($parsed['query'] ?? null, $query);
+        parse_str($parsed['query'] ?? '', $query);
 
         if (blank($query)) {
             return $url;
@@ -37,7 +37,7 @@ class Helpers
             try {
                 $routeName = app('router')
                     ->getRoutes()
-                    ->match(app('request')->create($url))
+                    ->match(request()->create($url))
                     ->getName();
             } catch (\Throwable) {
                 $routeName = '';
@@ -69,7 +69,7 @@ class Helpers
 
         $query = [];
 
-        parse_str($url['query'] ?? '', $query);
+        parse_str($url['query'] ?? null, $query);
 
         foreach ($parameters as $key => $parameter) {
             $query[$key] = $parameter;
@@ -92,8 +92,8 @@ class Helpers
         $url = $components['scheme'] . '://';
 
         if (
-            !empty($components['username']) &&
-            !empty($components['password'])
+            filled($components['username']) &&
+            filled($components['password'])
         ) {
             $url .=
                 $components['username'] . ':' . $components['password'] . '@';
@@ -102,7 +102,7 @@ class Helpers
         $url .= $components['host'];
 
         if (
-            !empty($components['port']) &&
+            filled($components['port']) &&
             (($components['scheme'] === 'http' && $components['port'] !== 80) ||
                 ($components['scheme'] === 'https' &&
                     $components['port'] !== 443))
@@ -110,15 +110,15 @@ class Helpers
             $url .= ':' . $components['port'];
         }
 
-        if (!empty($components['path'])) {
+        if (filled($components['path'])) {
             $url .= $components['path'];
         }
 
-        if (!empty($components['fragment'])) {
+        if (filled($components['fragment'])) {
             $url .= '#' . $components['fragment'];
         }
 
-        if (!empty($components['query'])) {
+        if (filled($components['query'])) {
             $url .= '?' . http_build_query($components['query']);
         }
 
@@ -232,7 +232,7 @@ class Helpers
 
     public static function toBool(mixed $value): bool
     {
-        return !!$value;
+        return (bool) $value;
     }
 
     public static function configBool(string $key, mixed $default = null): bool

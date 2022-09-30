@@ -155,7 +155,7 @@ class Warmer
 
     public function getGuzzle(): Guzzle
     {
-        if (!empty($this->guzzle)) {
+        if ($this->guzzle instanceof Guzzle) {
             return $this->guzzle;
         }
 
@@ -185,7 +185,7 @@ class Warmer
 
     public function isWarming(Request|null $request = null): bool
     {
-        if (empty($request)) {
+        if (!$request instanceof Request) {
             $request = EdgeFlush::getRequest();
         }
 
@@ -213,21 +213,21 @@ class Warmer
 
             'curl' =>
                 [
-                    CURLOPT_CONNECT_ONLY => config(
+                    CURLOPT_CONNECT_ONLY => Helpers::configBool(
                         'edge-flush.warmer.curl.connect_only',
                         false,
                     ),
 
-                    CURLOPT_NOBODY => !config(
+                    CURLOPT_NOBODY => !Helpers::configBool(
                         'edge-flush.warmer.curl.get_body',
                         true,
                     ),
 
-                    CURLOPT_ACCEPT_ENCODING => !config(
+                    CURLOPT_ACCEPT_ENCODING => !Helpers::configBool(
                         'edge-flush.warmer.curl.compress',
                         true,
                     ),
-                ] + (array) config('edge-flush.warmer.curl.extra_options', []),
-        ] + (array) config('edge-flush.warmer.extra_options');
+                ] + (array) Helpers::configArray('edge-flush.warmer.curl.extra_options', []),
+        ] + (array) Helpers::configArray('edge-flush.warmer.extra_options');
     }
 }

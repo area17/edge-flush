@@ -11,10 +11,10 @@ class FrontendChecker
     {
         $route = request()->route();
 
-        if (!$route instanceof Route || empty(($name = $route->getName()))) {
+        if (!$route instanceof Route || blank(($name = $route->getName()))) {
             return false;
         }
 
-        return Str::startsWith($name, ['front.', 'api.']);
+        return Str::startsWith((string) $name, ['front.', 'api.']);
     }
 }

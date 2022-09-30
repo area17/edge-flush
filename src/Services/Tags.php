@@ -349,7 +349,7 @@ class Tags
 
         $key = $model->getTable() . '-' . $id;
 
-        if ($this->processedTags[$key] ?? false) {
+        if (filled($this->processedTags[$key]) && (bool)$this->processedTags[$key]) {
             return false;
         }
 
@@ -466,7 +466,7 @@ class Tags
     public function enabled(): bool
     {
         return EdgeFlush::invalidationServiceIsEnabled() &&
-            EdgeFlush::cdn() !== null;
+            EdgeFlush::cdn()->enabled();
     }
 
     /**

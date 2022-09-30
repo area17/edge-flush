@@ -123,7 +123,7 @@ class CacheControl extends BaseService implements ServiceContract
         if ($getContentFromResponse) {
             if (method_exists($response, 'content')) {
                 $this->_content = $response->content();
-            } elseif (method_exists($response, 'getContent')) {
+            } else {
                 $this->_content = $response->getContent();
             }
 
@@ -167,9 +167,9 @@ class CacheControl extends BaseService implements ServiceContract
     {
         $hasForm = false;
 
-        if (config('edge-flush.valid_forms.enabled', false)) {
+        if (Helpers::configBool('edge-flush.valid_forms.enabled', false)) {
             $hasForm = collect(
-                config('edge-flush.valid_forms.strings', false),
+                Helpers::configBool('edge-flush.valid_forms.strings', false),
             )->reduce(function (bool $hasForm, string $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
@@ -177,7 +177,7 @@ class CacheControl extends BaseService implements ServiceContract
             }, true);
         }
 
-        return !!$hasForm;
+        return (bool) $hasForm;
     }
 
     protected function isFrontend(): bool
@@ -393,9 +393,9 @@ class CacheControl extends BaseService implements ServiceContract
 
         $route = EdgeFlush::getRequest()->route();
 
-        $route = $route instanceof Route ? $route->getName() : null;
+        $route = (string) ($route instanceof Route ? $route->getName() : null);
 
-        if (empty($route)) {
+        if (blank($route)) {
             return Helpers::configBool(
                 'edge-flush.routes.cache_nameless_routes',
                 false,
@@ -458,7 +458,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getStrategyArray(string|null $strategyName): array
     {
-        if (!$this->enabled() || empty($strategyName)) {
+        if (!$this->enabled() || $strategyName !== null) {
             return Helpers::configArray('edge-flush.strategies.zero') ?? [];
         }
 
@@ -467,7 +467,7 @@ class CacheControl extends BaseService implements ServiceContract
                 "edge-flush.built-in-strategies.$strategyName",
             ) ?? $strategyName;
 
-        if (empty($strategyName)) {
+        if ($strategyName !== null) {
             return [];
         }
 
@@ -488,7 +488,7 @@ class CacheControl extends BaseService implements ServiceContract
     public function strategyDoesntContainsNoStoreDirectives(
         string $strategy
     ): bool {
-        return !!collect(explode(',', $strategy))->reduce(function (
+        return (bool) collect(explode(',', $strategy))->reduce(function (
             $willCache,
             $element
         ) {
