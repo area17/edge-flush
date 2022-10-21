@@ -2,6 +2,11 @@
 
 All notable changes to `CDN` will be documented in this file.
 
+## 1.3.XX - 2022-10-XX
+### Added 
+- Full cache invalidation command: php artisan edge-flush:invalidate-all
+
+
 ## 1.3.10 - 2022-09-26
 ### Fixed
 - Correctly setting was_purged_at update SQL
