@@ -6,6 +6,7 @@ use A17\EdgeFlush\Services\EdgeFlush;
 use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Services\CacheControl;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
+use A17\EdgeFlush\Console\Commands\InvalidateAll;
 use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushxception;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
@@ -16,6 +17,8 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->publishConfig();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        $this->loadCommands();
     }
 
     public function register(): void
@@ -69,5 +72,10 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->app->singleton('a17.edge-flush.cache-control', function () {
             return EdgeFlushFacade::cacheControl();
         });
+    }
+
+    public function loadCommands(): void
+    {
+        $this->commands([InvalidateAll::class]);
     }
 }
