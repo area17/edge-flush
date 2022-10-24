@@ -38,12 +38,16 @@ class Tags
         $this->processedTags = collect();
     }
 
-    public function addTag(Model $model): void
+    public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
     {
+        if ($key === 'name') {
+            dump(['title', $model->name]);
+        }
+
         if (
-            $this->wasNotProcessed($model) &&
             EdgeFlush::enabled() &&
-            filled($tag = $this->makeModelName($model))
+            filled($tag = $this->makeModelName($model, $key, $allowedKeys)) &&
+            blank($this->tags[$tag] ?? null)
         ) {
             $this->tags[$tag] = $tag;
         }
@@ -320,28 +324,6 @@ class Tags
         );
 
         $this->markUrlsAsPurged($invalidation);
-    }
-
-    /*
-     * Optimized for speed, 2000 calls to EdgeFlush::tags()->addTag($model) are now only 8ms
-     */
-    protected function wasNotProcessed(Model $model): bool
-    {
-        $id = $model->getAttributes()[$model->getKeyName()] ?? null;
-
-        if ($id === null) {
-            return false; /// don't process models with no ID yet
-        }
-
-        $key = $model->getTable() . '-' . $id;
-
-        if ($this->processedTags[$key] ?? false) {
-            return false;
-        }
-
-        $this->processedTags[$key] = true;
-
-        return true;
     }
 
     public function invalidateAll(): Invalidation
