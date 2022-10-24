@@ -162,6 +162,14 @@ Akamai has a 128 bytes limit for the tag list, so if one page is impacted by lot
 edge-cache-tag: app-production-7e0ae085d699003a64e5fa7b75daae3d78ace842
 ```
 
+## Invalidating the full cache from the command line
+
+In case you need to invalidate the whole CDN cache locally or on a deployment routing, you can:
+
+```
+php artisan edge-flush:invalidate-all
+```
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.

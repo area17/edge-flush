@@ -188,6 +188,10 @@ class Warmer
 
     public function invalidationIsCompleted(string $invalidationId): bool
     {
+        if (blank($invalidationId)) {
+            return true;
+        }
+
         return EdgeFlush::cdn()->invalidationIsCompleted($invalidationId);
     }
 
