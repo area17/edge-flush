@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Aws\Result as AwsResult;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Url;
+use A17\EdgeFlush\Models\Tag;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Behaviours\MakeTag;
@@ -100,12 +101,14 @@ class Invalidation
             return $this;
         }
 
-        $time = $invalidation['Invalidation']['CreateTime'] ?? null;
+        $invalidation = Helpers::toArray($invalidation['Invalidation']);
+
+        $time = $invalidation['CreateTime'] ?? null;
 
         $time = filled($time) ? Carbon::parse($time) : null;
 
-        $this->setId($invalidation['Invalidation']['Id'] ?? null)
-            ->setStatus($invalidation['Invalidation']['Status'] ?? null)
+        $this->setId($invalidation['Id'] ?? null)
+            ->setStatus($invalidation['Status'] ?? null)
             ->setCreatedAt($time);
 
         return $this;
@@ -260,7 +263,7 @@ class Invalidation
     public function queryItemsList(string|null $type = null): string
     {
         return $this->items($type)
-            ->map(fn($item) => "'$item'")
+            ->map(fn($item) => "'" . Helpers::toString($item) . "'")
             ->join(',');
     }
 
@@ -320,7 +323,7 @@ class Invalidation
             return $item;
         }
 
-        $url = $item instanceof Url ? $item->url : $item->url->url ?? $item;
+        $url = Helpers::getUrl($item);
 
         if (!is_string($url)) {
             return null;

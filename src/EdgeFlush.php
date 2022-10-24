@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush;
 
@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @method static self setRequest(Request $request)
  * @method static bool invalidationServiceIsEnabled()
  * @method static bool storeTagsServiceIsEnabled()
+ * @method static bool warmerServiceIsEnabled()
  **/
 class EdgeFlush extends Facade
 {

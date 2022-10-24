@@ -1,13 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush;
 
+use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
-use A17\EdgeFlush\Services\BaseService;
-use A17\EdgeFlush\Services\CacheControl;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Console\Commands\InvalidateAll;
-use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushxception;
+use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushException;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
 class ServiceProvider extends IlluminateServiceProvider
@@ -51,14 +50,14 @@ class ServiceProvider extends IlluminateServiceProvider
     public function configureContainer(): void
     {
         $this->app->singleton('a17.edge-flush.service', function ($app) {
-            $service = config('edge-flush.classes.cdn');
+            $service = Helpers::configString('edge-flush.classes.cdn') ?? '';
 
             if (blank($service)) {
-                EdgeFlushxception::missingService();
+                EdgeFlushException::missingService();
             }
 
             if (!class_exists($service)) {
-                EdgeFlushxception::classNotFound($service);
+                EdgeFlushException::classNotFound($service);
             }
 
             return new EdgeFlush(
