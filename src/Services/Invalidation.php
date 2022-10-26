@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -6,9 +6,9 @@ use Carbon\Carbon;
 use Aws\Result as AwsResult;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Url;
+use A17\EdgeFlush\Models\Tag;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
-use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Behaviours\MakeTag;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,22 +44,10 @@ class Invalidation
 
     public function __construct()
     {
-        $this->tags = collect();
-
-        $this->tagNames = collect();
-
-        $this->urls = collect();
-
-        $this->urlNames = collect();
-
-        $this->models = collect();
-
-        $this->modelNames = collect();
-
-        $this->paths = collect();
+        $this->instantiate();
     }
 
-    public function setId(string $id): self
+    public function setId(string|null $id): self
     {
         $this->id = $id;
 
@@ -109,19 +97,19 @@ class Invalidation
 
     public function absorbCloudFront(AwsResult $invalidation): self
     {
-        $this->success = filled($invalidation);
-
-        if (!$this->success()) {
+        if (!($this->success = filled($invalidation))) {
             return $this;
         }
 
-        $this->setId($invalidation['Invalidation']['Id'])
-            ->setStatus($invalidation['Invalidation']['Status'])
-            ->setCreatedAt(
-                Carbon::parse(
-                    (string) $invalidation['Invalidation']['CreateTime'],
-                ),
-            );
+        $invalidation = Helpers::toArray($invalidation['Invalidation']);
+
+        $time = $invalidation['CreateTime'] ?? null;
+
+        $time = filled($time) ? Carbon::parse($time) : null;
+
+        $this->setId($invalidation['Id'] ?? null)
+            ->setStatus($invalidation['Status'] ?? null)
+            ->setCreatedAt($time);
 
         return $this;
     }
@@ -133,9 +121,7 @@ class Invalidation
 
     public function absorb(AwsResult $object): self
     {
-        if ($object instanceof AwsResult) {
-            $this->absorbCloudFront($object);
-        }
+        $this->absorbCloudFront($object);
 
         return $this;
     }
@@ -149,8 +135,6 @@ class Invalidation
         }
 
         $self->absorb($object);
-
-        Helpers::debug('INVALIDATION (factory): ' . $self->toJson());
 
         return $self;
     }
@@ -181,10 +165,31 @@ class Invalidation
 
     public function isEmpty(): bool
     {
+        //        dd(
+        //            [
+        //                'tags' => $this->tags()->isEmpty(),
+        //                'tagNames' => $this->tagNames()->isEmpty(),
+        //                'models' => $this->models()->isEmpty(),
+        //                'modelNames' => $this->modelNames()->isEmpty(),
+        //                'urls' => $this->urls()->isEmpty(),
+        //                'urlNames' => $this->urlNames()->isEmpty(),
+        //
+        //                'result' => $this->tags()->isEmpty() &&
+        //                    $this->tagNames()->isEmpty() &&
+        //                    $this->models()->isEmpty() &&
+        //                    $this->modelNames()->isEmpty() &&
+        //                    $this->urls()->isEmpty() &&
+        //                    $this->urlNames()->isEmpty()
+        //            ]
+        //        );
+
         return blank($this->type()) ||
             ($this->tags()->isEmpty() &&
+                $this->tagNames()->isEmpty() &&
                 $this->models()->isEmpty() &&
-                $this->urls()->isEmpty());
+                $this->modelNames()->isEmpty() &&
+                $this->urls()->isEmpty() &&
+                $this->urlNames()->isEmpty());
     }
 
     public function setModels(Collection $models): self
@@ -211,10 +216,6 @@ class Invalidation
 
     public function tagNames(): Collection
     {
-        if ($this->isEmpty()) {
-            return collect();
-        }
-
         if (!$this->tagNames->isEmpty()) {
             return $this->tagNames;
         }
@@ -224,10 +225,6 @@ class Invalidation
 
     public function modelNames(): Collection
     {
-        if ($this->isEmpty()) {
-            return collect();
-        }
-
         if (!$this->modelNames->isEmpty()) {
             return $this->modelNames;
         }
@@ -265,15 +262,8 @@ class Invalidation
 
     public function queryItemsList(string|null $type = null): string
     {
-        return $this->makeQueryItemsList($this->items($type), $type);
-    }
-
-    public function makeQueryItemsList(
-        Collection $items,
-        string|null $type = null
-    ): string {
         return $this->items($type)
-            ->map(fn($item) => "'$item'")
+            ->map(fn($item) => "'" . Helpers::toString($item) . "'")
             ->join(',');
     }
 
@@ -333,7 +323,7 @@ class Invalidation
             return $item;
         }
 
-        $url = $item instanceof Url ? $item->url : $item->url->url ?? $item;
+        $url = Helpers::getUrl($item);
 
         if (!is_string($url)) {
             return null;
@@ -344,10 +334,6 @@ class Invalidation
 
     public function urlNames(): Collection
     {
-        if ($this->isEmpty()) {
-            return collect();
-        }
-
         if (!$this->urlNames->isEmpty()) {
             return $this->urlNames;
         }
@@ -365,5 +351,41 @@ class Invalidation
     public function invalidateAll(): bool
     {
         return $this->invalidateAll;
+    }
+
+    public function __sleep(): array
+    {
+        return [
+            'id',
+            'status',
+            'success',
+            'type',
+            'invalidateAll',
+            'modelNames',
+            'tagNames',
+            'urlNames',
+        ];
+    }
+
+    public function __wakeup(): void
+    {
+        $this->instantiate();
+    }
+
+    private function instantiate(): void
+    {
+        $this->tags ??= collect();
+
+        $this->tagNames ??= collect();
+
+        $this->urls ??= collect();
+
+        $this->urlNames ??= collect();
+
+        $this->models ??= collect();
+
+        $this->modelNames ??= collect();
+
+        $this->paths ??= collect();
     }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -38,8 +38,11 @@ class Tags
         $this->processedTags = collect();
     }
 
-    public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
-    {
+    public function addTag(
+        Model $model,
+        string $key = null,
+        array $allowedKeys = []
+    ): void {
         if ($key === 'name') {
             dump(['title', $model->name]);
         }
@@ -96,7 +99,11 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $tag = str_replace(
+        $format = Helpers::toString(
+            config('edge-flush.tags.format', 'app-%environment%-%sha1%'),
+        );
+
+        return str_replace(
             ['%environment%', '%sha1%'],
             [
                 app()->environment(),
@@ -106,10 +113,8 @@ class Tags
                         ->join(', '),
                 ),
             ],
-            config('edge-flush.tags.format'),
+            $format,
         );
-
-        return $tag;
     }
 
     protected function tagIsExcluded(string $tag): bool
@@ -141,7 +146,7 @@ class Tags
         }
 
         Helpers::debug(
-            'STORE-TAGS' .
+            'STORE-TAGS: ' .
                 json_encode([
                     'models' => $models,
                     'tags' => $tags,
@@ -156,11 +161,13 @@ class Tags
 
             $now = (string) now();
 
-            $indexes = collect($models)->map(function (string $model) use (
+            $indexes = collect($models)->map(function (mixed $model) use (
                 $tags,
                 $url,
                 $now
             ) {
+                $model = Helpers::toString($model);
+
                 $index = $this->makeTagIndex($url, $tags, $model);
 
                 $this->dbStatement("
@@ -178,7 +185,9 @@ class Tags
         }, 5);
 
         if ($indexes->isNotEmpty()) {
-            $indexes = $indexes->map(fn($item) => "'$item'")->join(',');
+            $indexes = $indexes
+                ->map(fn(mixed $item) => "'" . Helpers::toString($item) . "'")
+                ->join(',');
 
             $this->dbStatement("
                         update edge_flush_tags
@@ -212,10 +221,29 @@ class Tags
             return;
         }
 
-        Helpers::debug('INVALIDATING: CDN tags for models');
-
         $models =
             $models instanceof Model ? collect([$models]) : collect($models);
+
+        $models = $models->filter(
+            fn($model) => $this->tagIsNotExcluded(
+                $model instanceof Model ? get_class($model) : $model,
+            ),
+        );
+
+        if ($models->isEmpty()) {
+            return;
+        }
+
+        Helpers::debug(
+            'INVALIDATING tags for models: ' .
+                $models
+                    ->map(
+                        fn(Model|string $model) => $model instanceof Model
+                            ? $this->makeModelName($model)
+                            : $model,
+                    )
+                    ->join(', '),
+        );
 
         InvalidateTags::dispatch((new Invalidation())->setModels($models));
     }
@@ -239,6 +267,10 @@ class Tags
 
     protected function invalidateObsoleteTags(): void
     {
+        if (!$this->enabled()) {
+            return;
+        }
+
         /**
          * Filter purged urls from obsolete tags.
          * Making sure we invalidate the most busy pages first.
@@ -299,7 +331,7 @@ class Tags
 
     protected function dispatchInvalidations(Invalidation $invalidation): void
     {
-        if ($invalidation->isEmpty()) {
+        if ($invalidation->isEmpty() || !$this->enabled()) {
             return;
         }
 
@@ -313,6 +345,10 @@ class Tags
 
     protected function invalidateEntireCache(Invalidation $invalidation): void
     {
+        if (!$this->enabled()) {
+            return;
+        }
+
         Helpers::debug('INVALIDATING: entire cache...');
 
         $invalidation->setInvalidateAll(true);
@@ -326,9 +362,34 @@ class Tags
         $this->markUrlsAsPurged($invalidation);
     }
 
-    public function invalidateAll(): Invalidation
+    /*
+     * Optimized for speed, 2000 calls to EdgeFlush::tags()->addTag($model) are now only 8ms
+     */
+    protected function wasNotProcessed(Model $model): bool
     {
-        if (!$this->enabled()) {
+        $id = $model->getAttributes()[$model->getKeyName()] ?? null;
+
+        if ($id === null) {
+            return false; /// don't process models with no ID yet
+        }
+
+        $key = $model->getTable() . '-' . $id;
+
+        if (
+            filled($this->processedTags[$key] ?? null) &&
+            (bool) $this->processedTags[$key]
+        ) {
+            return false;
+        }
+
+        $this->processedTags[$key] = true;
+
+        return true;
+    }
+
+    public function invalidateAll(bool $force = false): Invalidation
+    {
+        if (!$this->enabled() && !$force) {
             return $this->unsuccessfulInvalidation();
         }
 
@@ -385,7 +446,7 @@ class Tags
 
         $this->dbStatement("
             update edge_flush_urls efu
-            set was_purged_at = $now
+            set was_purged_at = '$now'
             from (
                     select id
                     from edge_flush_urls
@@ -418,43 +479,51 @@ class Tags
 
     public function getMaxInvalidations(): int
     {
-        return min(
-            EdgeFlush::cdn()->maxUrls(),
-            config('edge-flush.invalidations.batch.size'),
+        return Helpers::toInt(
+            min(
+                EdgeFlush::cdn()->maxUrls(),
+                config('edge-flush.invalidations.batch.size'),
+            ),
         );
     }
 
     public function dbStatement(string $sql): bool
     {
-        return DB::statement(DB::raw($sql));
+        return DB::statement((string) DB::raw($sql));
     }
 
     public function enabled(): bool
     {
-        return EdgeFlush::invalidationServiceIsEnabled();
+        return EdgeFlush::invalidationServiceIsEnabled() &&
+            EdgeFlush::cdn()->enabled();
     }
 
     /**
      * @param string $url
-     * @return mixed
+     * @return Url
      */
-    function createUrl(string $url)
+    function createUrl(string $url): Url
     {
         $url = Helpers::sanitizeUrl($url);
 
-        $url = Url::firstOrCreate(
+        return Url::firstOrCreate(
             ['url_hash' => sha1($url)],
             [
                 'url' => Str::limit($url, 255),
                 'hits' => 1,
             ],
         );
-
-        return $url;
     }
 
-    public function makeTagIndex(Url $url, array $tags, string $model): string
-    {
+    public function makeTagIndex(
+        Url|string $url,
+        array $tags,
+        string $model
+    ): string {
+        if (is_string($url)) {
+            $url = $this->createUrl($url);
+        }
+
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
 
         return sha1($index);
@@ -523,7 +592,7 @@ class Tags
     {
         $list = $urls
             ->pluck('id')
-            ->map(fn($item) => "$item")
+            ->map(fn($item) => Helpers::toString($item))
             ->join(',');
 
         $sql = "

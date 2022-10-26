@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Jobs;
 
@@ -37,7 +37,7 @@ class StoreTags implements ShouldQueue
      *
      * @return void
      */
-    public function handle()
+    public function handle(): void
     {
         EdgeFlush::tags()->storeCacheTags(
             $this->models,

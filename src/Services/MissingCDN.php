@@ -4,16 +4,18 @@ namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\Contracts\CDNService;
 
-class DummyCDN extends BaseService implements CDNService
+class MissingCDN extends BaseService implements CDNService
 {
+    protected bool|null $enabled = false;
+
     public function invalidate(Invalidation $invalidation): Invalidation
     {
-        return $this->successfulInvalidation();
+        return $this->unsuccessfulInvalidation();
     }
 
     public function invalidateAll(): Invalidation
     {
-        return $this->successfulInvalidation();
+        return $this->unsuccessfulInvalidation();
     }
 
     public function maxUrls(): int

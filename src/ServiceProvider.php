@@ -1,12 +1,14 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush;
 
+use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
-use A17\EdgeFlush\Services\BaseService;
-use A17\EdgeFlush\Services\CacheControl;
+use Illuminate\Support\Facades\Event;
+use A17\EdgeFlush\Listeners\EloquentSaved;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
-use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushxception;
+use A17\EdgeFlush\Console\Commands\InvalidateAll;
+use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushException;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 
 class ServiceProvider extends IlluminateServiceProvider
@@ -16,6 +18,10 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->publishConfig();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        $this->loadCommands();
+
+        $this->bootEventListeners();
     }
 
     public function register(): void
@@ -48,18 +54,18 @@ class ServiceProvider extends IlluminateServiceProvider
     public function configureContainer(): void
     {
         $this->app->singleton('a17.edge-flush.service', function ($app) {
-            $service = config('edge-flush.classes.cdn');
+            $service = Helpers::configString('edge-flush.classes.cdn') ?? '';
 
             if (blank($service)) {
-                EdgeFlushxception::missingService();
+                EdgeFlushException::missingService();
             }
 
             if (!class_exists($service)) {
-                EdgeFlushxception::classNotFound($service);
+                EdgeFlushException::classNotFound($service);
             }
 
             return new EdgeFlush(
-                app($service),
+                $service,
                 $app->make(config('edge-flush.classes.cache-control')),
                 $app->make(config('edge-flush.classes.tags')),
                 $app->make(config('edge-flush.classes.warmer')),
@@ -69,5 +75,15 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->app->singleton('a17.edge-flush.cache-control', function () {
             return EdgeFlushFacade::cacheControl();
         });
+    }
+
+    public function loadCommands(): void
+    {
+        $this->commands([InvalidateAll::class]);
+    }
+
+    public function bootEventListeners(): void
+    {
+        Event::listen('eloquent.saved: *', EloquentSaved::class);
     }
 }

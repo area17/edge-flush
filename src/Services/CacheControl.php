@@ -1,14 +1,13 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Support\Constants;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
@@ -87,7 +86,7 @@ class CacheControl extends BaseService implements ServiceContract
 
         if (!$this->methodIsCachable()) {
             return $this->buildStrategy(
-                config(
+                Helpers::configString(
                     'edge-flush.default-strategies.non-cachable-http-methods',
                 ),
             );
@@ -95,16 +94,22 @@ class CacheControl extends BaseService implements ServiceContract
 
         if ($this->containsValidForm($response)) {
             return $this->buildStrategy(
-                config('edge-flush.default-strategies.pages-with-valid-forms'),
+                Helpers::configString(
+                    'edge-flush.default-strategies.pages-with-valid-forms',
+                ),
             );
         }
 
         return $this->isCachable($response)
             ? $this->buildStrategy(
-                config('edge-flush.default-strategies.cachable-requests'),
+                Helpers::configString(
+                    'edge-flush.default-strategies.cachable-requests',
+                ),
             )
             : $this->buildStrategy(
-                config('edge-flush.default-strategies.non-cachable-requests'),
+                Helpers::configString(
+                    'edge-flush.default-strategies.non-cachable-requests',
+                ),
             );
     }
 
@@ -118,7 +123,7 @@ class CacheControl extends BaseService implements ServiceContract
         if ($getContentFromResponse) {
             if (method_exists($response, 'content')) {
                 $this->_content = $response->content();
-            } elseif (method_exists($response, 'getContent')) {
+            } else {
                 $this->_content = $response->getContent();
             }
 
@@ -162,20 +167,17 @@ class CacheControl extends BaseService implements ServiceContract
     {
         $hasForm = false;
 
-        if (config('edge-flush.valid_forms.enabled', false)) {
+        if (Helpers::configBool('edge-flush.valid_forms.enabled', false)) {
             $hasForm = collect(
-                config('edge-flush.valid_forms.strings', false),
+                Helpers::configArray('edge-flush.valid_forms.strings'),
             )->reduce(function (bool $hasForm, string $string) use ($response) {
                 $string = Str::replace('%CSRF_TOKEN%', csrf_token(), $string);
 
-                $hasForm =
-                    $hasForm && $this->contentContains($response, $string);
-
-                return $hasForm;
+                return $hasForm && $this->contentContains($response, $string);
             }, true);
         }
 
-        return $hasForm;
+        return (bool) $hasForm;
     }
 
     protected function isFrontend(): bool
@@ -273,12 +275,13 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getDefaultSMaxAge(): int
     {
-        return (int) config('edge-flush.s-maxage.default', Constants::MS_WEEK);
+        return Helpers::configInt('edge-flush.s-maxage.default') ??
+            Constants::MS_WEEK;
     }
 
     public function getDefaultMaxAge(): int
     {
-        return (int) config('edge-flush.max-age.default', 0);
+        return Helpers::configInt('edge-flush.max-age.default') ?? 0;
     }
 
     public function buildStrategy(string|null $strategy): string
@@ -390,10 +393,13 @@ class CacheControl extends BaseService implements ServiceContract
 
         $route = EdgeFlush::getRequest()->route();
 
-        $route = $route instanceof Route ? $route->getName() : null;
+        $route = (string) ($route instanceof Route ? $route->getName() : null);
 
-        if (empty($route)) {
-            return config('edge-flush.routes.cache_nameless_routes', false);
+        if (blank($route)) {
+            return Helpers::configBool(
+                'edge-flush.routes.cache_nameless_routes',
+                false,
+            );
         }
 
         /**
@@ -428,7 +434,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function stripCookies(Response $response, string $strategy): Response
     {
-        $strip = config('edge-flush.strip_cookies');
+        $strip = Helpers::configArray('edge-flush.strip_cookies') ?? [];
 
         /**
          * We only strip cookies from cachable responses because those cookies (potentially logged in users), if cached by the CDN
@@ -450,18 +456,23 @@ class CacheControl extends BaseService implements ServiceContract
         return $response;
     }
 
-    public function getStrategyArray(string|null $strategy): array
+    public function getStrategyArray(string|null $strategyName): array
     {
-        if (!$this->enabled() || empty($strategy)) {
-            return config('edge-flush.strategies.zero', []);
+        if (!$this->enabled() || $strategyName === null) {
+            return Helpers::configArray('edge-flush.strategies.zero') ?? [];
         }
 
-        $strategy = config(
-            "edge-flush.built-in-strategies.$strategy",
-            $strategy,
-        );
+        $strategyName =
+            Helpers::configString(
+                "edge-flush.built-in-strategies.$strategyName",
+            ) ?? $strategyName;
 
-        return config("edge-flush.strategies.$strategy", []);
+        if (trim($strategyName) === '') {
+            return [];
+        }
+
+        return Helpers::configArray("edge-flush.strategies.$strategyName") ??
+            [];
     }
 
     public function willBeCached(
@@ -477,7 +488,7 @@ class CacheControl extends BaseService implements ServiceContract
     public function strategyDoesntContainsNoStoreDirectives(
         string $strategy
     ): bool {
-        return collect(explode(',', $strategy))->reduce(function (
+        return (bool) collect(explode(',', $strategy))->reduce(function (
             $willCache,
             $element
         ) {

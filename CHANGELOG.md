@@ -1,11 +1,35 @@
 # Changelog
 
-All notable changes to `CDN` will be documented in this file.
+All notable changes to `EdgeFlush` will be documented in this file.
 
-## 1.3.8 - 2022-09-16
+## 1.4.2 - 2022-10-26
+### Added 
+- Hook up update events to the Laravel Eloquent event system
+
+## 1.4.0 - 2022-10-25
+## 1.4.1 - 2022-10-25
 ### Changed
-- Fix model invalidations
-- Fix warmer not finding URLs to rewarm
+- Move up to PHPStan Level 9
+
+## 1.3.14 - 2022-09-28
+### Changed
+- Improve Guzzle connection errors handling
+- Allow invalidations when disabled
+- Prevent CDN service instantiation until it's really needed
+- Improve the way warmer reset tags and URLs
+
+## 1.3.XX - 2022-10-XX
+### Added 
+- Full cache invalidation command: php artisan edge-flush:invalidate-all
+
+
+## 1.3.10 - 2022-09-26
+### Fixed
+- Correctly setting was_purged_at update SQL
+
+## 1.3.9 - 2022-09-26
+### Changed
+- Improve performance by not instantiating the CDN service until it's really needed
 
 ## 1.3.5 - 2022-09-14
 ### Changed

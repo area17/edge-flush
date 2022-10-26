@@ -1,24 +1,19 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Env;
-use Faker\Extension\Helper;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Http\Request;
-use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
 use GuzzleHttp\Client as Guzzle;
-use SebastianBergmann\Timer\Timer;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Route;
 use GuzzleHttp\Promise\Utils as Promise;
+use GuzzleHttp\Exception\ConnectException as GuzzleConnectException;
 
 class Warmer
 {
-    protected Guzzle|null $guzzle;
+    protected Guzzle|null $guzzle = null;
 
     public function execute(): void
     {
@@ -31,11 +26,12 @@ class Warmer
 
     public function warm(Collection $urls): void
     {
+        $count = config('edge-flush.warmer.concurrent_requests', 10);
+
+        $count = !is_numeric($count) ? 10 : $count;
+
         while ($urls->count() > 0) {
-            $chunk = $urls->splice(
-                0,
-                config('edge-flush.warmer.concurrent_requests'),
-            );
+            $chunk = $urls->splice(0, (int) $count);
 
             $this->dispatchWarmRequests($chunk);
 
@@ -50,8 +46,12 @@ class Warmer
 
     public function getColdUrls(): Collection
     {
+        $max = config('edge-flush.warmer.max_urls', 100);
+
+        $max = !is_numeric($max) ? 100 : (int) $max;
+
         return Url::whereNotNull('was_purged_at')
-            ->take(config('edge-flush.warmer.max_urls'))
+            ->take($max)
             ->orderBy('hits', 'desc')
             ->get()
             ->groupBy('invalidation_id')
@@ -65,7 +65,7 @@ class Warmer
 
     protected function dispatchWarmRequests(Collection $urls): void
     {
-        foreach (config('edge-flush.warmer.types', []) as $type) {
+        foreach ((array) config('edge-flush.warmer.types', []) as $type) {
             if ($type === 'internal') {
                 $this->dispatchInternalWarmRequests($urls);
             }
@@ -78,7 +78,11 @@ class Warmer
 
     public function dispatchInternalWarmRequests(Collection $urls): void
     {
-        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url->url));
+        $urls->map(
+            fn($url) => $this->dispatchInternalWarmRequest(
+                $url instanceof Url ? $url->url : $url,
+            ),
+        );
     }
 
     public function dispatchInternalWarmRequest(string $url): void
@@ -98,17 +102,19 @@ class Warmer
     {
         $startTime = microtime(true);
 
-        $responses = Promise::inspectAll(
-            $urls
-                ->map(function (Url $url) {
-                    Helpers::debug("WARMING: $url->url");
+        /** @var \GuzzleHttp\Promise\PromiseInterface[] $promises */
+        $promises = [];
 
-                    return $this->getGuzzle()->getAsync($url->url, [
-                        'headers' => $this->getHeaders($url->url),
-                    ]);
-                })
-                ->toArray(),
-        );
+        /** @var Url $url */
+        foreach ($urls as $url) {
+            Helpers::debug("WARMING: $url->url");
+
+            $promises[] = $this->getGuzzle()->getAsync($url->url, [
+                'headers' => $this->getHeaders($url->url),
+            ]);
+        }
+
+        $responses = Promise::inspectAll($promises);
 
         $executionTime = microtime(true) - $startTime;
 
@@ -124,10 +130,14 @@ class Warmer
 
                 $url = $context['url'] ?? 'missing url';
 
-                Helpers::debug(
-                    "WARMER-REJECTED: $error - $url - " .
-                        $response['reason']->getResponse()->getBody(),
-                );
+                if ($response['reason'] instanceof GuzzleConnectException) {
+                    Helpers::debug("WARMER-ERROR: $error - $url");
+                } else {
+                    Helpers::debug(
+                        "WARMER-REJECTED: $error - $url - " .
+                            $response['reason']->getResponse()->getBody(),
+                    );
+                }
             } else {
                 Helpers::debug(
                     "WARMER-SUCCESS : {$response['value']->getStatusCode()} - " .
@@ -139,7 +149,7 @@ class Warmer
 
     public function getGuzzle(): Guzzle
     {
-        if (!empty($this->guzzle)) {
+        if ($this->guzzle instanceof Guzzle) {
             return $this->guzzle;
         }
 
@@ -169,7 +179,7 @@ class Warmer
 
     public function isWarming(Request|null $request = null): bool
     {
-        if (empty($request)) {
+        if (!$request instanceof Request) {
             $request = EdgeFlush::getRequest();
         }
 
@@ -178,6 +188,10 @@ class Warmer
 
     public function invalidationIsCompleted(string $invalidationId): bool
     {
+        if (blank($invalidationId)) {
+            return true;
+        }
+
         return EdgeFlush::cdn()->invalidationIsCompleted($invalidationId);
     }
 
@@ -197,21 +211,25 @@ class Warmer
 
             'curl' =>
                 [
-                    CURLOPT_CONNECT_ONLY => config(
+                    CURLOPT_CONNECT_ONLY => Helpers::configBool(
                         'edge-flush.warmer.curl.connect_only',
                         false,
                     ),
 
-                    CURLOPT_NOBODY => !config(
+                    CURLOPT_NOBODY => !Helpers::configBool(
                         'edge-flush.warmer.curl.get_body',
                         true,
                     ),
 
-                    CURLOPT_ACCEPT_ENCODING => !config(
+                    CURLOPT_ACCEPT_ENCODING => !Helpers::configBool(
                         'edge-flush.warmer.curl.compress',
                         true,
                     ),
-                ] + (array) config('edge-flush.warmer.curl.extra_options', []),
-        ] + (array) config('edge-flush.warmer.extra_options');
+                ] +
+                (array) Helpers::configArray(
+                    'edge-flush.warmer.curl.extra_options',
+                    [],
+                ),
+        ] + (array) Helpers::configArray('edge-flush.warmer.extra_options');
     }
 }

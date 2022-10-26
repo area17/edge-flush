@@ -1,15 +1,17 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
-use Faker\Provider\Base;
 use Illuminate\Http\Request;
+use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Contracts\CDNService;
 use Symfony\Component\HttpFoundation\Response;
 
 class EdgeFlush extends BaseService
 {
-    public CDNService $cdn;
+    public string|null $cdnClass = null;
+
+    public CDNService|null $cdn = null;
 
     public CacheControl $cacheControl;
 
@@ -20,12 +22,12 @@ class EdgeFlush extends BaseService
     public Request $request;
 
     public function __construct(
-        CDNService $cdn,
+        string $cdnClass,
         CacheControl $cacheControl,
         Tags $tags,
         Warmer $warmer
     ) {
-        $this->cdn = $cdn;
+        $this->cdnClass = $cdnClass;
 
         $this->cacheControl = $cacheControl;
 
@@ -33,7 +35,7 @@ class EdgeFlush extends BaseService
 
         $this->warmer = $warmer;
 
-        $this->enabled = config('edge-flush.enabled', false);
+        $this->enabled = Helpers::configBool('edge-flush.enabled', false);
     }
 
     public function makeResponse(Response $response): Response
@@ -43,7 +45,7 @@ class EdgeFlush extends BaseService
         }
 
         return $this->cacheControl->makeResponse(
-            $this->cdn->makeResponse($response),
+            $this->cdn()->makeResponse($response),
         );
     }
 
@@ -54,6 +56,14 @@ class EdgeFlush extends BaseService
 
     public function cdn(): CDNService
     {
+        if ($this->cdn === null || $this->cdn instanceof MissingCDN) {
+            if ($this->cdnClass !== null) {
+                $this->cdn = app($this->cdnClass);
+            } else {
+                $this->cdn = app(MissingCDN::class);
+            }
+        }
+
         return $this->cdn;
     }
 
@@ -87,17 +97,24 @@ class EdgeFlush extends BaseService
     public function storeTagsServiceIsEnabled(): bool
     {
         return $this->enabled() &&
-            config('edge-flush.enabled-services.store-tags', false);
+            Helpers::configBool(
+                'edge-flush.enabled-services.store-tags',
+                false,
+            );
     }
 
     public function invalidationServiceIsEnabled(): bool
     {
         return $this->enabled() &&
-            config('edge-flush.enabled-services.invalidation', false);
+            Helpers::configBool(
+                'edge-flush.enabled-services.invalidation',
+                false,
+            );
     }
 
     public function warmerServiceIsEnabled(): bool
     {
-        return $this->enabled() && config('edge-flush.warmer.enabled', false);
+        return $this->enabled() &&
+            Helpers::configBool('edge-flush.warmer.enabled', false);
     }
 }
