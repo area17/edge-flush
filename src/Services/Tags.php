@@ -43,10 +43,6 @@ class Tags
         string $key = null,
         array $allowedKeys = []
     ): void {
-        if ($key === 'name') {
-            dump(['title', $model->name]);
-        }
-
         if (
             EdgeFlush::enabled() &&
             filled($tag = $this->makeModelName($model, $key, $allowedKeys)) &&
