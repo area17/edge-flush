@@ -82,7 +82,7 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->commands([InvalidateAll::class]);
     }
 
-    public function bootEventListeners()
+    public function bootEventListeners(): void
     {
         Event::listen('eloquent.saved: *', EloquentSaved::class);
     }

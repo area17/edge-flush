@@ -3,14 +3,19 @@
 namespace A17\EdgeFlush\Behaviours;
 
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property array $attributes
+ */
 trait CachedOnCDN
 {
     public function invalidateCDNCache(Model $model): void
     {
-        $this->edgeFlushIsEnabled() &&
+        if ($this->edgeFlushIsEnabled()) {
             EdgeFlush::tags()->dispatchInvalidationsForModel($model);
+        }
     }
 
     public function getCDNCacheTag(): string
@@ -27,6 +32,6 @@ trait CachedOnCDN
 
     public function edgeFlushIsEnabled(): bool
     {
-        return config('edge-flush.enabled', false);
+        return Helpers::configBool('edge-flush.enabled', false);
     }
 }

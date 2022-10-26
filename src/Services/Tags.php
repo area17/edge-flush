@@ -217,8 +217,11 @@ class Tags
         $models =
             $models instanceof Model ? collect([$models]) : collect($models);
 
-        $models = $models
-            ->filter(fn($model) => $this->tagIsNotExcluded($model instanceof Model ? get_class($model) : $model));
+        $models = $models->filter(
+            fn($model) => $this->tagIsNotExcluded(
+                $model instanceof Model ? get_class($model) : $model,
+            ),
+        );
 
         if ($models->isEmpty()) {
             return;
@@ -227,7 +230,11 @@ class Tags
         Helpers::debug(
             'INVALIDATING tags for models: ' .
                 $models
-                    ->map(fn($model) => $model instanceof Model ? $this->makeModelName($model) : $model)
+                    ->map(
+                        fn(Model|string $model) => $model instanceof Model
+                            ? $this->makeModelName($model)
+                            : $model,
+                    )
                     ->join(', '),
         );
 

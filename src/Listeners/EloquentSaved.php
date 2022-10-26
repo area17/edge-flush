@@ -10,7 +10,7 @@ class EloquentSaved
 {
     use CachedOnCDN;
 
-    public function handle(string $event, $models): void
+    public function handle(string $event, array $models): void
     {
         foreach ($models as $model) {
             $this->invalidateCDNCache($model);
