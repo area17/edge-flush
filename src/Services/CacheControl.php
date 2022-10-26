@@ -458,7 +458,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getStrategyArray(string|null $strategyName): array
     {
-        if (!$this->enabled() || $strategyName !== null) {
+        if (!$this->enabled() || $strategyName == null) {
             return Helpers::configArray('edge-flush.strategies.zero') ?? [];
         }
 
@@ -467,7 +467,7 @@ class CacheControl extends BaseService implements ServiceContract
                 "edge-flush.built-in-strategies.$strategyName",
             ) ?? $strategyName;
 
-        if ($strategyName !== null) {
+        if ($strategyName == null) {
             return [];
         }
 
