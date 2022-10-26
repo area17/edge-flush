@@ -12,17 +12,6 @@ trait MakeTag
         string $key = null,
         array $allowedKeys = []
     ): string|null {
-        if ($key === 'title') {
-            info([
-                '------ makeModelName ----',
-                get_class($model),
-                $key,
-                $allowedKeys,
-                $this->keyIsAllowed($key, $allowedKeys),
-                $model->getCDNCacheTag($key),
-            ]);
-        }
-
         try {
             return method_exists($model, 'getCDNCacheTag') &&
                 $this->keyIsAllowed($key, $allowedKeys)
