@@ -4,6 +4,8 @@ namespace A17\EdgeFlush;
 
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
+use Illuminate\Support\Facades\Event;
+use A17\EdgeFlush\Listeners\EloquentSaved;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Console\Commands\InvalidateAll;
 use A17\EdgeFlush\Exceptions\EdgeFlush as EdgeFlushException;
@@ -18,6 +20,8 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->loadCommands();
+
+        $this->bootEventListeners();
     }
 
     public function register(): void
@@ -76,5 +80,10 @@ class ServiceProvider extends IlluminateServiceProvider
     public function loadCommands(): void
     {
         $this->commands([InvalidateAll::class]);
+    }
+
+    public function bootEventListeners(): void
+    {
+        Event::listen('eloquent.saved: *', EloquentSaved::class);
     }
 }
