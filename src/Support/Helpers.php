@@ -160,7 +160,7 @@ class Helpers
         ];
     }
 
-    public static function debug(...$data): bool
+    public static function debug(array|string $data): bool
     {
         $debugIsOn = (bool) config('edge-flush.debug', false);
 
