@@ -214,10 +214,15 @@ class Tags
             return;
         }
 
-        Helpers::debug('INVALIDATING: CDN tags for models');
-
         $models =
             $models instanceof Model ? collect([$models]) : collect($models);
+
+        Helpers::debug(
+            'INVALIDATING tags for models: ' .
+                $models
+                    ->map(fn($model) => $model instanceof Model ? get_class($model) : $model)
+                    ->join(', '),
+        );
 
         InvalidateTags::dispatch((new Invalidation())->setModels($models));
     }
