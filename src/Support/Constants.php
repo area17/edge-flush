@@ -4,7 +4,11 @@ namespace A17\EdgeFlush\Support;
 
 class Constants
 {
-    // ----- by milliseconds
+    // ----- tags
+
+    const ALL_TAGS = '--all--';
+
+    // ----- time by milliseconds
 
     const MILLISECOND = 1;
 
@@ -18,7 +22,7 @@ class Constants
 
     const MS_WEEK = self::MS_DAY * 7;
 
-    // ----- by seconds
+    // ----- time by seconds
 
     const SECOND = 1;
 

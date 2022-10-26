@@ -22,8 +22,10 @@ trait MakeTag
         }
     }
 
-    public function keyIsAllowed(string $key = null, array $allowedKeys = []): bool
-    {
+    public function keyIsAllowed(
+        string $key = null,
+        array $allowedKeys = []
+    ): bool {
         if ($allowedKeys === []) {
             return true;
         }

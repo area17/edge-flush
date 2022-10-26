@@ -43,12 +43,19 @@ class Tags
         string $key = null,
         array $allowedKeys = []
     ): void {
-        if (
-            EdgeFlush::enabled() &&
-            filled($tag = $this->makeModelName($model, $key, $allowedKeys)) &&
-            blank($this->tags[$tag] ?? null)
-        ) {
-            $this->tags[$tag] = $tag;
+        if (!EdgeFlush::enabled() || blank($model->getAttributes()[$key] ?? null)) {
+            return;
+        }
+
+        $tags = [
+            $this->makeModelName($model, Constants::ALL_TAGS, $allowedKeys),
+            $this->makeModelName($model, $key, $allowedKeys),
+        ];
+
+        foreach ($tags as $tag) {
+            if (blank($this->tags[$tag] ?? null)) {
+                $this->tags[$tag] = $tag;
+            }
         }
     }
 
@@ -157,16 +164,14 @@ class Tags
 
             $now = (string) now();
 
-            $indexes = collect($models)->map(function (mixed $model) use (
-                $tags,
-                $url,
-                $now
-            ) {
-                $model = Helpers::toString($model);
+            $indexes = collect($models)
+                ->filter()
+                ->map(function (mixed $model) use ($tags, $url, $now) {
+                    $model = Helpers::toString($model);
 
-                $index = $this->makeTagIndex($url, $tags, $model);
+                    $index = $this->makeTagIndex($url, $tags, $model);
 
-                $this->dbStatement("
+                    $this->dbStatement("
                         insert into edge_flush_tags (index, url_id, tag, model, created_at, updated_at)
                         select '{$index}', {$url->id}, '{$tags['cdn']}', '{$model}', '{$now}', '{$now}'
                         where not exists (
@@ -176,8 +181,8 @@ class Tags
                         )
                         ");
 
-                return $index;
-            });
+                    return $index;
+                });
         }, 5);
 
         if ($indexes->isNotEmpty()) {
