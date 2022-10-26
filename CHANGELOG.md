@@ -2,7 +2,12 @@
 
 All notable changes to `EdgeFlush` will be documented in this file.
 
-## 1.3.X - 2022-09-XX
+## 1.4.2 - 2022-10-26
+### Added 
+- Hook up update events to the Laravel Eloquent event system
+
+## 1.4.0 - 2022-10-25
+## 1.4.1 - 2022-10-25
 ### Changed
 - Move up to PHPStan Level 9
 
