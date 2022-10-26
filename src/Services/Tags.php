@@ -48,7 +48,7 @@ class Tags
         }
 
         $tags = [
-            $this->makeModelName($model, Constants::ALL_TAGS, $allowedKeys),
+            $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys),
             $this->makeModelName($model, $key, $allowedKeys),
         ];
 

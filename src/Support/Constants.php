@@ -6,7 +6,7 @@ class Constants
 {
     // ----- tags
 
-    const ALL_TAGS = '--all--';
+    const ANY_TAG = '--any--';
 
     // ----- time by milliseconds
 
