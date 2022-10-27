@@ -2,6 +2,7 @@
 
 namespace A17\EdgeFlush\Services;
 
+use Illuminate\Support\Str;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
 use Illuminate\Support\Collection;
@@ -63,6 +64,16 @@ abstract class BaseService implements ServiceContract
 
     public function match(string $patten, string $string): bool
     {
+        if ($patten === $string) {
+            return true;
+        }
+
+        if ($patten[0] === '|' && $patten[strlen($patten) - 1] === '|') {
+            preg_match($patten, $string, $matches);
+
+            return count($matches) > 0;
+        }
+
         $patten = str_replace('\\', '_', $patten);
 
         $string = str_replace('\\', '_', $string);
