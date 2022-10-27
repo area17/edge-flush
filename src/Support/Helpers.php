@@ -89,20 +89,20 @@ class Helpers
      */
     public static function rebuildUrl(array $components): string
     {
-        $url = $components['scheme'] . '://';
+        $url = ($components['scheme'] ?? 'https') . '://';
 
         if (
-            filled($components['username']) &&
-            filled($components['password'])
+            filled($components['username'] ?? null) &&
+            filled($components['password'] ?? null)
         ) {
             $url .=
                 $components['username'] . ':' . $components['password'] . '@';
         }
 
-        $url .= $components['host'];
+        $url .= $components['host'] ?? 'localhost';
 
         if (
-            filled($components['port']) &&
+            filled($components['port'] ?? null) &&
             (($components['scheme'] === 'http' && $components['port'] !== 80) ||
                 ($components['scheme'] === 'https' &&
                     $components['port'] !== 443))
@@ -110,15 +110,15 @@ class Helpers
             $url .= ':' . $components['port'];
         }
 
-        if (filled($components['path'])) {
+        if (filled($components['path'] ?? null)) {
             $url .= $components['path'];
         }
 
-        if (filled($components['fragment'])) {
+        if (filled($components['fragment'] ?? null)) {
             $url .= '#' . $components['fragment'];
         }
 
-        if (filled($components['query'])) {
+        if (filled($components['query'] ?? null)) {
             $url .= '?' . http_build_query($components['query']);
         }
 
