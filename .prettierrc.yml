@@ -1,7 +1,7 @@
 ### General
 arrowParens: always
 trailingComma: none
-printWidth: 80
+printWidth: 120
 tabWidth: 4
 useTabs: false
 singleQuote: true
