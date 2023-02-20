@@ -29,6 +29,8 @@ class Tags
 
     protected Collection $tags;
 
+    protected Collection $invalidationDispatched;
+
     public Collection $processedTags;
 
     public function __construct()
@@ -36,6 +38,8 @@ class Tags
         $this->tags = collect();
 
         $this->processedTags = collect();
+
+        $this->invalidationDispatched = collect();
     }
 
     public function addTag(Model $model): void
@@ -183,14 +187,6 @@ class Tags
                 ->join(',');
 
             $this->dbStatement("
-                        update edge_flush_tags
-                        set obsolete = false
-                        where index in ({$indexes})
-                          and is_valid = true
-                          and obsolete = false
-                        ");
-
-            $this->dbStatement("
                         update edge_flush_urls
                         set was_purged_at = null,
                             invalidation_id = null
@@ -201,13 +197,26 @@ class Tags
                             from edge_flush_tags
                             where index in ({$indexes})
                               and is_valid = true
-                              and obsolete = false
+                              and obsolete = true
                           )
+                        ");
+
+            $this->dbStatement("
+                        update edge_flush_tags
+                        set obsolete = false
+                        where index in ({$indexes})
+                          and is_valid = true
+                          and obsolete = true
                         ");
         }
     }
 
     public function dispatchInvalidationsForModel(Collection|string|Model $models): void {
+        Helpers::debug([
+            'dispatchInvalidationsForModel - models: ',
+            $models->map(fn(Model $model) => get_class($model)." ({$model->id})")->implode(', ')
+        ]);
+
         if (blank($models)) {
             return;
         }
@@ -218,25 +227,25 @@ class Tags
             return;
         }
 
+        $models = $this->onlyValidModels($models);
+
+        $models = $this->notYetDispatched($models);
+
+        if ($models->isEmpty()) {
+            return;
+        }
+
         /**
          * @var Model $model
          */
-        $model = $models instanceof Collection
-            ? $models->first()
-            : $models;
-
-        if (!$this->modelBelongsToProject($model)) {
-            return;
-        }
+        $model = $models->first();
 
         $model->wasRecentlyCreated
             ? $this->dispatchInvalidationsForCreatedModel($models)
             : $this->dispatchInvalidationsForUpdatedModel($models);
     }
 
-    public function dispatchInvalidationsForCreatedModel(
-        Collection|string|Model $models
-    ): void {
+    public function dispatchInvalidationsForCreatedModel(Collection $models): void {
         /**
          * @var string $strategy
          */
@@ -251,9 +260,7 @@ class Tags
         throw new \Exception("Strategy '{$strategy}' Not implemented");
     }
 
-    public function dispatchInvalidationsForUpdatedModel(
-        Collection|string|Model $models
-    ): void {
+    public function dispatchInvalidationsForUpdatedModel(Collection $models): void {
         /**
          * @var string $strategy
          */
@@ -267,23 +274,6 @@ class Tags
 
         if ($strategy !== 'invalidate-dependents') {
             throw new \Exception("Strategy '{$strategy}' Not implemented");
-        }
-
-        if (blank($models)) {
-            return;
-        }
-
-        $models =
-            $models instanceof Model ? collect([$models]) : collect($models);
-
-        $models = $models->filter(
-            fn($model) => $this->tagIsNotExcluded(
-                $model instanceof Model ? get_class($model) : $model,
-            ),
-        );
-
-        if ($models->isEmpty()) {
-            return;
         }
 
         Helpers::debug(
@@ -448,6 +438,8 @@ class Tags
         $count = 0;
 
         do {
+            Helpers::debug('Invalidating all tags... -> '.$count);
+
             if ($count++ > 0) {
                 sleep(2);
             }
@@ -682,10 +674,38 @@ class Tags
         $this->dbStatement($sql);
     }
 
-    public function modelBelongsToProject(Model $model): bool
+    public function onlyValidModels($models)
     {
-        $ignore = config('edge-flush.invalidations.models.ignore', []);
+        $models =
+            $models instanceof Model ? collect([$models]) : collect($models);
 
-        return !in_array(get_class($model), (array) $ignore);
+        return $models->filter(
+            fn($model) => $this->tagIsNotExcluded(
+                $model instanceof Model ? get_class($model) : $model,
+            ),
+        );
+    }
+
+    public function notYetDispatched($models)
+    {
+        $tags = $models->mapWithKeys(
+            function ($model) {
+                $tag = $this->makeModelName(
+                    $model
+                );
+
+                return [$tag => $tag];
+            }
+        );
+
+        $missing = $tags->diff($this->invalidationDispatched);
+
+        $this->invalidationDispatched = $this->invalidationDispatched->merge(
+            $missing
+        );
+
+        return $models->filter(fn($model) => $missing->contains(
+            $this->makeModelName($model)
+        ));
     }
 }

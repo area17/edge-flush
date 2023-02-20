@@ -277,9 +277,18 @@ return [
      */
     'tags' => [
         'excluded-model-classes' => [
+            // Twill modules
             '\Models\Translations*',
             '\Models\Slugs*',
             '\Models\Revisions*',
+
+            // Twill capsules
+            '*\Models\*Translation',
+            '*\Models\*Slug',
+            '*\Models\*Revision',
+
+            // Other classes
+            'Spatie\Activitylog\Models\Activity',
         ],
 
         'format' => 'app-%environment%-%sha1%',
@@ -326,10 +335,6 @@ return [
                 'strategy' => 'invalidate-all',
             ]
         ],
-
-        'models' => [
-            'ignore' => \Spatie\Activitylog\Models\Activity::class,
-        ]
     ],
 
     /**
