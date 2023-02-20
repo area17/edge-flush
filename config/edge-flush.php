@@ -316,6 +316,20 @@ return [
 
             'roots' => ['/*'],
         ],
+
+        'crud-strategy' => [
+            'update' => [
+                'strategy' => 'invalidate-dependents', // invalidate-dependents, invalidate-all
+            ],
+
+            'create' => [
+                'strategy' => 'invalidate-all',
+            ]
+        ],
+
+        'models' => [
+            'ignore' => \Spatie\Activitylog\Models\Activity::class,
+        ]
     ],
 
     /**

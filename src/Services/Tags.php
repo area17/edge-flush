@@ -207,9 +207,68 @@ class Tags
         }
     }
 
-    public function dispatchInvalidationsForModel(
+    public function dispatchInvalidationsForModel(Collection|string|Model $models): void {
+        if (blank($models)) {
+            return;
+        }
+
+        if (is_string($models)) {
+            $this->dispatchInvalidationsForUpdatedModel($models);
+
+            return;
+        }
+
+        /**
+         * @var Model $model
+         */
+        $model = $models instanceof Collection
+            ? $models->first()
+            : $models;
+
+        if (!$this->modelBelongsToProject($model)) {
+            return;
+        }
+
+        $model->wasRecentlyCreated
+            ? $this->dispatchInvalidationsForCreatedModel($models)
+            : $this->dispatchInvalidationsForUpdatedModel($models);
+    }
+
+    public function dispatchInvalidationsForCreatedModel(
         Collection|string|Model $models
     ): void {
+        /**
+         * @var string $strategy
+         */
+        $strategy = config('edge-flush.crud-strategy.update.strategy', 'invalidate-all');
+
+        if ($strategy === 'invalidate-all') {
+            $this->invalidateAll(true);
+
+            return;
+        }
+
+        throw new \Exception("Strategy '{$strategy}' Not implemented");
+    }
+
+    public function dispatchInvalidationsForUpdatedModel(
+        Collection|string|Model $models
+    ): void {
+        /**
+         * @var string $strategy
+         */
+        $strategy = config('edge-flush.crud-strategy.update.strategy', 'invalidate-dependents');
+
+        if ($strategy === 'invalidate-all') {
+            $this->invalidateAll(true);
+
+            return;
+        }
+
+        if ($strategy !== 'invalidate-dependents') {
+            throw new \Exception("Strategy '{$strategy}' Not implemented");
+        }
+
         if (blank($models)) {
             return;
         }
@@ -229,16 +288,16 @@ class Tags
 
         Helpers::debug(
             'INVALIDATING tags for models: ' .
-                $models
-                    ->map(
-                        fn(Model|string $model) => $model instanceof Model
-                            ? $this->makeModelName($model)
-                            : $model,
-                    )
-                    ->join(', '),
+            $models
+                ->map(
+                    fn(Model|string $model) => $model instanceof Model
+                        ? $this->makeModelName($model)
+                        : $model,
+                )
+                ->join(', '),
         );
 
-        InvalidateTags::dispatch((new Invalidation())->setModels($models));
+        dispatch(new InvalidateTags((new Invalidation())->setModels($models)));
     }
 
     public function invalidateTags(Invalidation $invalidation): void
@@ -621,5 +680,12 @@ class Tags
             ";
 
         $this->dbStatement($sql);
+    }
+
+    public function modelBelongsToProject(Model $model): bool
+    {
+        $ignore = config('edge-flush.invalidations.models.ignore', []);
+
+        return !in_array(get_class($model), (array) $ignore);
     }
 }

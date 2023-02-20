@@ -361,6 +361,7 @@ class Invalidation
             'success',
             'type',
             'invalidateAll',
+            'models',
             'modelNames',
             'tagNames',
             'urlNames',
