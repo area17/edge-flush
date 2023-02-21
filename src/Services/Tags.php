@@ -217,13 +217,13 @@ class Tags
         }
 
         if (is_string($models)) {
-            $this->dispatchInvalidationsForUpdatedModel(collect($models));
+            $this->dispatchInvalidationsForUpdatedModel(collect([$models]));
 
             return;
         }
 
         if ($models instanceof Model) {
-            $models = new Collection($models);
+            $models = collect([$models]);
         }
 
         $models = $this->onlyValidModels($models);
