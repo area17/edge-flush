@@ -101,7 +101,9 @@ class Invalidation
             return $this;
         }
 
-        $statusCode = $invalidation['@metadata']['statusCode'];
+        $metadata = $invalidation['@metadata'];
+
+        $statusCode = is_array($metadata) ? $metadata['statusCode'] : 500;
 
         $invalidation = Helpers::toArray($invalidation['Invalidation']);
 

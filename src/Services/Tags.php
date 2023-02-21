@@ -212,19 +212,18 @@ class Tags
     }
 
     public function dispatchInvalidationsForModel(Collection|string|Model $models): void {
-        Helpers::debug([
-            'dispatchInvalidationsForModel - models: ',
-            $models->map(fn(Model $model) => get_class($model)." ({$model->id})")->implode(', ')
-        ]);
-
         if (blank($models)) {
             return;
         }
 
         if (is_string($models)) {
-            $this->dispatchInvalidationsForUpdatedModel($models);
+            $this->dispatchInvalidationsForUpdatedModel(collect($models));
 
             return;
+        }
+
+        if ($models instanceof Model) {
+            $models = new Collection($models);
         }
 
         $models = $this->onlyValidModels($models);
@@ -234,6 +233,12 @@ class Tags
         if ($models->isEmpty()) {
             return;
         }
+
+        Helpers::debug([
+            'dispatchInvalidationsForModel - models: ',
+            /** @phpstan-ignore-next-line */
+            $models->map(fn(Model $model) => get_class($model)." ({$model->id})")->implode(', ')
+        ]);
 
         /**
          * @var Model $model
@@ -280,6 +285,7 @@ class Tags
             'INVALIDATING tags for models: ' .
             $models
                 ->map(
+                    /** @phpstan-ignore-next-line */
                     fn(Model|string $model) => $model instanceof Model
                         ? $this->makeModelName($model)
                         : $model,
@@ -674,11 +680,8 @@ class Tags
         $this->dbStatement($sql);
     }
 
-    public function onlyValidModels($models)
+    public function onlyValidModels(Collection $models): Collection
     {
-        $models =
-            $models instanceof Model ? collect([$models]) : collect($models);
-
         return $models->filter(
             fn($model) => $this->tagIsNotExcluded(
                 $model instanceof Model ? get_class($model) : $model,
@@ -686,7 +689,7 @@ class Tags
         );
     }
 
-    public function notYetDispatched($models)
+    public function notYetDispatched(Collection $models): Collection
     {
         $tags = $models->mapWithKeys(
             function ($model) {
