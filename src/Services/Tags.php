@@ -29,6 +29,8 @@ class Tags
 
     protected Collection $tags;
 
+    protected Collection $invalidationDispatched;
+
     public Collection $processedTags;
 
     public function __construct()
@@ -36,6 +38,8 @@ class Tags
         $this->tags = collect();
 
         $this->processedTags = collect();
+
+        $this->invalidationDispatched = collect();
     }
 
     public function addTag(
@@ -191,14 +195,6 @@ class Tags
                 ->join(',');
 
             $this->dbStatement("
-                        update edge_flush_tags
-                        set obsolete = false
-                        where index in ({$indexes})
-                          and is_valid = true
-                          and obsolete = false
-                        ");
-
-            $this->dbStatement("
                         update edge_flush_urls
                         set was_purged_at = null,
                             invalidation_id = null
@@ -209,44 +205,103 @@ class Tags
                             from edge_flush_tags
                             where index in ({$indexes})
                               and is_valid = true
-                              and obsolete = false
+                              and obsolete = true
                           )
+                        ");
+
+            $this->dbStatement("
+                        update edge_flush_tags
+                        set obsolete = false
+                        where index in ({$indexes})
+                          and is_valid = true
+                          and obsolete = true
                         ");
         }
     }
 
-    public function dispatchInvalidationsForModel(
-        Collection|string|Model $models
-    ): void {
+    public function dispatchInvalidationsForModel(Collection|string|Model $models): void {
         if (blank($models)) {
             return;
         }
 
-        $models =
-            $models instanceof Model ? collect([$models]) : collect($models);
+        if (is_string($models)) {
+            $this->dispatchInvalidationsForUpdatedModel(collect([$models]));
 
-        $models = $models->filter(
-            fn($model) => $this->tagIsNotExcluded(
-                $model instanceof Model ? get_class($model) : $model,
-            ),
-        );
+            return;
+        }
+
+        if ($models instanceof Model) {
+            $models = collect([$models]);
+        }
+
+        $models = $this->onlyValidModels($models);
+
+        $models = $this->notYetDispatched($models);
 
         if ($models->isEmpty()) {
             return;
         }
 
+        Helpers::debug([
+            'dispatchInvalidationsForModel - models: ',
+            /** @phpstan-ignore-next-line */
+            $models->map(fn(Model $model) => get_class($model)." ({$model->id})")->implode(', ')
+        ]);
+
+        /**
+         * @var Model $model
+         */
+        $model = $models->first();
+
+        $model->wasRecentlyCreated
+            ? $this->dispatchInvalidationsForCreatedModel($models)
+            : $this->dispatchInvalidationsForUpdatedModel($models);
+    }
+
+    public function dispatchInvalidationsForCreatedModel(Collection $models): void {
+        /**
+         * @var string $strategy
+         */
+        $strategy = config('edge-flush.crud-strategy.update.strategy', 'invalidate-all');
+
+        if ($strategy === 'invalidate-all') {
+            $this->invalidateAll(true);
+
+            return;
+        }
+
+        throw new \Exception("Strategy '{$strategy}' Not implemented");
+    }
+
+    public function dispatchInvalidationsForUpdatedModel(Collection $models): void {
+        /**
+         * @var string $strategy
+         */
+        $strategy = config('edge-flush.crud-strategy.update.strategy', 'invalidate-dependents');
+
+        if ($strategy === 'invalidate-all') {
+            $this->invalidateAll(true);
+
+            return;
+        }
+
+        if ($strategy !== 'invalidate-dependents') {
+            throw new \Exception("Strategy '{$strategy}' Not implemented");
+        }
+
         Helpers::debug(
             'INVALIDATING tags for models: ' .
-                $models
-                    ->map(
-                        fn(Model|string $model) => $model instanceof Model
-                            ? $this->makeModelName($model)
-                            : $model,
-                    )
-                    ->join(', '),
+            $models
+                ->map(
+                    /** @phpstan-ignore-next-line */
+                    fn(Model|string $model) => $model instanceof Model
+                        ? $this->makeModelName($model)
+                        : $model,
+                )
+                ->join(', '),
         );
 
-        InvalidateTags::dispatch((new Invalidation())->setModels($models));
+        dispatch(new InvalidateTags((new Invalidation())->setModels($models)));
     }
 
     public function invalidateTags(Invalidation $invalidation): void
@@ -397,6 +452,8 @@ class Tags
         $count = 0;
 
         do {
+            Helpers::debug('Invalidating all tags... -> '.$count);
+
             if ($count++ > 0) {
                 sleep(2);
             }
@@ -629,5 +686,37 @@ class Tags
             ";
 
         $this->dbStatement($sql);
+    }
+
+    public function onlyValidModels(Collection $models): Collection
+    {
+        return $models->filter(
+            fn($model) => $this->tagIsNotExcluded(
+                $model instanceof Model ? get_class($model) : $model,
+            ),
+        );
+    }
+
+    public function notYetDispatched(Collection $models): Collection
+    {
+        $tags = $models->mapWithKeys(
+            function ($model) {
+                $tag = $this->makeModelName(
+                    $model
+                );
+
+                return [$tag => $tag];
+            }
+        );
+
+        $missing = $tags->diff($this->invalidationDispatched);
+
+        $this->invalidationDispatched = $this->invalidationDispatched->merge(
+            $missing
+        );
+
+        return $models->filter(fn($model) => $missing->contains(
+            $this->makeModelName($model)
+        ));
     }
 }

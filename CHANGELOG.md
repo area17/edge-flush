@@ -2,6 +2,10 @@
 
 All notable changes to `EdgeFlush` will be documented in this file.
 
+## 1.4.3 - 2022-10-27
+### Added
+- Fix URLs not being correctly parsed with username and password
+
 ## 1.4.2 - 2022-10-26
 ### Added 
 - Hook up update events to the Laravel Eloquent event system

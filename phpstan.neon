@@ -31,3 +31,6 @@ parameters:
       strictCalls: false
       switchConditionsMatchingType: true
       noVariableVariables: false
+
+  stubFiles:
+      - tests/Static/phpstan/stubs/Model.php

@@ -8,10 +8,16 @@ use A17\EdgeFlush\Services\Invalidation;
 trait MakeTag
 {
     public function makeModelName(
-        Model $model,
+        mixed $model,
         string $key = null,
         array $allowedKeys = []
     ): string|null {
+        if (!$model instanceof Model) {
+            $model = json_encode($model);
+
+            return $model === false ? null : sha1($model);
+        }
+
         try {
             return method_exists($model, 'getCDNCacheTag') &&
                 $this->keyIsAllowed($key, $allowedKeys)

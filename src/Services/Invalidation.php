@@ -101,6 +101,10 @@ class Invalidation
             return $this;
         }
 
+        $metadata = $invalidation['@metadata'];
+
+        $statusCode = is_array($metadata) ? $metadata['statusCode'] : 500;
+
         $invalidation = Helpers::toArray($invalidation['Invalidation']);
 
         $time = $invalidation['CreateTime'] ?? null;
@@ -109,7 +113,8 @@ class Invalidation
 
         $this->setId($invalidation['Id'] ?? null)
             ->setStatus($invalidation['Status'] ?? null)
-            ->setCreatedAt($time);
+            ->setCreatedAt($time)
+            ->setSuccess($statusCode === 201);
 
         return $this;
     }
@@ -361,6 +366,7 @@ class Invalidation
             'success',
             'type',
             'invalidateAll',
+            'models',
             'modelNames',
             'tagNames',
             'urlNames',

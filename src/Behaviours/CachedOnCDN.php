@@ -6,9 +6,6 @@ use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * @property array $attributes
- */
 trait CachedOnCDN
 {
     public function invalidateCDNCache(Model $model): void
@@ -20,9 +17,11 @@ trait CachedOnCDN
 
     public function getCDNCacheTag(string $key = null): string
     {
+        /** @phpstan-ignore-next-line */
         return $this->attributes['id'] ?? false
             ? static::class .
                     '-' .
+                    /** @phpstan-ignore-next-line */
                     $this->attributes['id'] .
                     (filled($key) ? "[{$key}]" : '')
             : '';

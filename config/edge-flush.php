@@ -277,9 +277,18 @@ return [
      */
     'tags' => [
         'excluded-model-classes' => [
+            // Twill modules
             '\Models\Translations*',
             '\Models\Slugs*',
             '\Models\Revisions*',
+
+            // Twill capsules
+            '*\Models\*Translation',
+            '*\Models\*Slug',
+            '*\Models\*Revision',
+
+            // Other classes
+            'Spatie\Activitylog\Models\Activity',
         ],
 
         'format' => 'app-%environment%-%sha1%',
@@ -315,6 +324,16 @@ return [
             'flush_roots_if_exceeds' => 15000,
 
             'roots' => ['/*'],
+        ],
+
+        'crud-strategy' => [
+            'update' => [
+                'strategy' => 'invalidate-dependents', // invalidate-dependents, invalidate-all
+            ],
+
+            'create' => [
+                'strategy' => 'invalidate-all',
+            ]
         ],
     ],
 
