@@ -37,6 +37,6 @@ trait CachedOnCDN
 
     public function edgeFlushIsEnabled(): bool
     {
-        return Helpers::configBool('edge-flush.enabled', false);
+        return Helpers::configBool('edge-flush.enabled.package', false);
     }
 }
