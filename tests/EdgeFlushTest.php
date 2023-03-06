@@ -13,7 +13,7 @@ class EdgeFlushTest extends TestCase
     {
         parent::setUp();
 
-        config(['edge-flush.enabled' => true]);
+        config(['edge-flush.enabled.package' => true]);
 
         EdgeFlush::setRequest(new \Illuminate\Http\Request());
     }
@@ -106,7 +106,7 @@ class EdgeFlushTest extends TestCase
 
         $response = response()->json([]);
 
-        config(['edge-flush.enabled' => false]);
+        config(['edge-flush.enabled.package' => false]);
 
         $this->assertEquals($this->disabledValues, $this->getValues($response));
     }

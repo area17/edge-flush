@@ -83,7 +83,7 @@ abstract class BaseService implements ServiceContract
 
     public function enabled(): bool
     {
-        return $this->enabled ??= Helpers::configBool('edge-flush.enabled');
+        return $this->enabled ??= Helpers::configBool('edge-flush.enabled.package');
     }
 
     public function enable(): void

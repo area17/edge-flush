@@ -35,7 +35,7 @@ class EdgeFlush extends BaseService
 
         $this->warmer = $warmer;
 
-        $this->enabled = Helpers::configBool('edge-flush.enabled', false);
+        $this->enabled = Helpers::configBool('edge-flush.enabled.package', false);
     }
 
     public function makeResponse(Response $response): Response
@@ -98,7 +98,7 @@ class EdgeFlush extends BaseService
     {
         return $this->enabled() &&
             Helpers::configBool(
-                'edge-flush.enabled-services.store-tags',
+                'edge-flush.enabled.services.store-tags',
                 false,
             );
     }
@@ -107,7 +107,7 @@ class EdgeFlush extends BaseService
     {
         return $this->enabled() &&
             Helpers::configBool(
-                'edge-flush.enabled-services.invalidation',
+                'edge-flush.enabled.services.invalidation',
                 false,
             );
     }

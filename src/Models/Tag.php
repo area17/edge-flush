@@ -15,7 +15,7 @@ class Tag extends Model
 {
     protected $table = 'edge_flush_tags';
 
-    protected $fillable = ['index', 'model', 'tag', 'url_id'];
+    protected $fillable = ['index_hash', 'model', 'tag', 'url_id'];
 
     protected $with = ['url'];
 

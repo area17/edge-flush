@@ -176,12 +176,12 @@ class Tags
                     $index = $this->makeTagIndex($url, $tags, $model);
 
                     $this->dbStatement("
-                        insert into edge_flush_tags (index, url_id, tag, model, created_at, updated_at)
+                        insert into edge_flush_tags (index_hash, url_id, tag, model, created_at, updated_at)
                         select '{$index}', {$url->id}, '{$tags['cdn']}', '{$model}', '{$now}', '{$now}'
                         where not exists (
                             select 1
                             from edge_flush_tags
-                            where index = '{$index}'
+                            where index_hash = '{$index}'
                         )
                         ");
 
@@ -203,7 +203,7 @@ class Tags
                           and id in (
                             select url_id
                             from edge_flush_tags
-                            where index in ({$indexes})
+                            where index_hash in ({$indexes})
                               and is_valid = true
                               and obsolete = true
                           )
@@ -212,7 +212,7 @@ class Tags
             $this->dbStatement("
                         update edge_flush_tags
                         set obsolete = false
-                        where index in ({$indexes})
+                        where index_hash in ({$indexes})
                           and is_valid = true
                           and obsolete = true
                         ");
