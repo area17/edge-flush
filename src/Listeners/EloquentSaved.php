@@ -2,9 +2,9 @@
 
 namespace A17\EdgeFlush\Listeners;
 
+use Illuminate\Queue\InteractsWithQueue;
 use A17\EdgeFlush\Behaviours\CachedOnCDN;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 
 class EloquentSaved
 {
@@ -13,7 +13,9 @@ class EloquentSaved
     public function handle(string $event, array $models): void
     {
         foreach ($models as $model) {
-            $this->invalidateCDNCache($model);
+            if (filled($model)) {
+                $this->invalidateCDNCache($model);
+            }
         }
     }
 }

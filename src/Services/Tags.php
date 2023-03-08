@@ -2,30 +2,31 @@
 
 namespace A17\EdgeFlush\Services;
 
+use Illuminate\Support\Str;
 use A17\EdgeFlush\EdgeFlush;
+use Illuminate\Http\Request;
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
 use A17\EdgeFlush\Jobs\StoreTags;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use A17\EdgeFlush\Support\Helpers;
 use SebastianBergmann\Timer\Timer;
-use A17\EdgeFlush\Support\Constants;
-use A17\EdgeFlush\Jobs\InvalidateTags;
 use Illuminate\Support\Facades\DB;
+use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Support\Constants;
 use A17\EdgeFlush\Behaviours\MakeTag;
 use Illuminate\Database\Query\Builder;
+use A17\EdgeFlush\Jobs\InvalidateTags;
+use A17\EdgeFlush\Behaviours\Database;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
+use A17\EdgeFlush\Behaviours\ControlsInvalidations;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use A17\EdgeFlush\Behaviours\ControlsInvalidations;
 
 class Tags
 {
-    use ControlsInvalidations, MakeTag;
+    use ControlsInvalidations, MakeTag, Database;
 
     protected Collection $tags;
 
@@ -367,9 +368,34 @@ class Tags
     {
         $type = $invalidation->type();
 
-        $items = $invalidation->queryItemsList();
+        $list = $invalidation->queryItemsList();
+        
+        if ($list === "''") {
+            return;
+        }
 
-        $this->dbStatement("
+        $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
+    }
+
+    protected function markTagsAsObsoleteSql(string $type, string $list)
+    {
+        if ($this->isMySQL()) {
+            return "
+                select id
+                from edge_flush_tags
+                where is_valid = true
+                  and obsolete = false
+                  and {$type} in ({$list})
+                order by id
+                for update;
+
+                update edge_flush_tags eft
+                set obsolete = true
+                where {$type} in ({$list});
+            ";
+        }
+
+        return "
             update edge_flush_tags eft
             set obsolete = true
             from (
@@ -377,12 +403,12 @@ class Tags
                     from edge_flush_tags
                     where is_valid = true
                       and obsolete = false
-                      and {$type} in ({$items})
+                      and {$type} in ({$list})
                     order by id
                     for update
                 ) tags
             where eft.id = tags.id
-        ");
+        ";
     }
 
     protected function dispatchInvalidations(Invalidation $invalidation): void
@@ -485,24 +511,59 @@ class Tags
 
     protected function deleteAllTags(): void
     {
-        // Purge all tags
-        $this->dbStatement("
-            update edge_flush_tags eft
-            set obsolete = true
-            from (
-                    select id
-                    from edge_flush_tags
-                    where obsolete = false
-                    order by id
-                    for update
-                ) tags
-            where eft.id = tags.id
-        ");
+        $this->dbStatement($this->purgeAllTagsSql());
 
-        // Purge all urls
+        $this->dbStatement($this->purgeAllUrlsSql());
+    }
+
+    protected function purgeAllTagsSql()
+    {
+        if ($this->isMySQL()) {
+            return "
+                select id
+                from edge_flush_tags
+                where obsolete = false
+                order by id
+                for update;
+
+                update edge_flush_tags eft
+                set obsolete = true
+                where obsolete = false;
+            ";
+        }
+
+        return "
+                update edge_flush_tags eft
+                set obsolete = true
+                from (
+                        select id
+                        from edge_flush_tags
+                        where obsolete = false
+                        order by id
+                        for update
+                    ) tags
+                where eft.id = tags.id
+            ";
+    }
+
+    protected function purgeAllUrlsSql()
+    {
         $now = (string) now();
 
-        $this->dbStatement("
+        if ($this->isMySQL()) {
+            return "
+                select id
+                from edge_flush_urls
+                where is_valid = true
+                for update;
+
+                update edge_flush_urls efu
+                set was_purged_at = '$now'
+                where is_valid = true;
+            ";
+        }
+
+        return "
             update edge_flush_urls efu
             set was_purged_at = '$now'
             from (
@@ -513,7 +574,7 @@ class Tags
                     for update
                 ) urls
             where efu.id = urls.id
-        ");
+        ";
     }
 
     public function domainAllowed(string|null $url): bool
@@ -547,7 +608,23 @@ class Tags
 
     public function dbStatement(string $sql): bool
     {
-        return DB::statement((string) DB::raw($sql));
+        $statements = explode(';', $sql);
+
+        foreach ($statements as $statement) {
+            if (blank($statement)) {
+                continue;
+            }
+
+            $result = DB::statement((string) $statement);
+
+            dump($statement);
+
+            if (!$result) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function enabled(): bool
@@ -591,12 +668,45 @@ class Tags
     {
         $list = $invalidation->queryItemsList('url');
 
+        if ($list === "''") {
+            return;
+        }
+
         $time = (string) now();
 
         $invalidationId = $invalidation->id();
 
         if ($invalidation->invalidateAll()) {
-            $sql = "
+            $sql = $this->invaliadateAllUrlsSql($time, $invalidationId);
+        } elseif ($invalidation->type() === 'tag') {
+            $sql = $this->invalidateUrlsForTagsSql($time, $invalidationId, $list);
+        } else {
+            $sql = $this->invalidateAllUrlsForListSql($time, $invalidationId, $list);
+        }
+
+        $this->dbStatement($sql);
+    }
+
+    protected function invaliadateAllUrlsSql($time, $invalidationId)
+    {
+        if ($this->isMySQL()) {
+            return "
+                select efu.id
+                from edge_flush_urls efu
+                where efu.is_valid = true
+                  and was_purged_at is null
+                order by efu.id
+                for update;
+
+                update edge_flush_urls efu
+                set was_purged_at = '{$time}',
+                    invalidation_id = '{$invalidationId}'
+                where efu.is_valid = true
+                  and was_purged_at is null;
+            ";
+        }
+
+        return "
                 update edge_flush_urls efu
                 set was_purged_at = '{$time}',
                     invalidation_id = '{$invalidationId}'
@@ -610,8 +720,29 @@ class Tags
                     ) urls
                 where efu.id = urls.id
             ";
-        } elseif ($invalidation->type() === 'tag') {
-            $sql = "
+    }
+
+    protected function invalidateUrlsForTagsSql($time, $invalidationId, $list)
+    {
+        if ($this->isMySQL()) {
+            return "
+                select efu.id
+                from edge_flush_urls efu
+                join edge_flush_tags eft on eft.url_id = efu.id
+                where efu.is_valid = true
+                  and eft.url in ({$list})
+                order by efu.id
+                for update;
+
+                update edge_flush_urls efu
+                set was_purged_at = '{$time}',
+                    invalidation_id = '{$invalidationId}'
+                where efu.is_valid = true
+                  and eft.url in ({$list});
+            ";
+        }
+
+        return "
                 update edge_flush_urls efu
                 set was_purged_at = '{$time}',
                     invalidation_id = '{$invalidationId}'
@@ -626,24 +757,41 @@ class Tags
                     ) urls
                 where efu.id = urls.id
             ";
-        } else {
-            $sql = "
+    }
+
+    protected function invalidateAllUrlsForListSql()
+    {
+        if ($this->isMySQL()) {
+            return "
+                select efu.id
+                from edge_flush_urls efu
+                where efu.is_valid = true
+                  and efu.url in ({$list})
+                order by efu.id
+                for update;
+
                 update edge_flush_urls efu
                 set was_purged_at = '{$time}',
                     invalidation_id = '{$invalidationId}'
-                from (
-                        select efu.id
-                        from edge_flush_urls efu
-                        where efu.is_valid = true
-                          and efu.url in ({$list})
-                        order by efu.id
-                        for update
-                    ) urls
-                where efu.id = urls.id
+                where efu.is_valid = true
+                  and efu.url in ({$list});
             ";
         }
 
-        $this->dbStatement($sql);
+        return "
+            update edge_flush_urls efu
+            set was_purged_at = '{$time}',
+                invalidation_id = '{$invalidationId}'
+            from (
+                    select efu.id
+                    from edge_flush_urls efu
+                    where efu.is_valid = true
+                      and efu.url in ({$list})
+                    order by efu.id
+                    for update
+                ) urls
+            where efu.id = urls.id
+        ";
     }
 
     public function markUrlsAsWarmed(Collection $urls): void
@@ -653,7 +801,36 @@ class Tags
             ->map(fn($item) => Helpers::toString($item))
             ->join(',');
 
-        $sql = "
+        if ($list === "''") {
+            return;
+        }
+
+        $this->dbStatement($this->markTagsAsWarmedSql($list));
+
+        $this->dbStatement($this->markUrlsAsWarmedSql($list));
+    }
+
+    protected function markTagsAsWarmedSql($list)
+    {
+        if ($this->isMySQL()) {
+            return "
+                select id
+                from edge_flush_tags
+                where is_valid = true
+                  and obsolete = true
+                  and url_id in ({$list})
+                order by id
+                for update;
+
+                update edge_flush_tags eft
+                set obsolete = false
+                where is_valid = true
+                  and obsolete = true
+                  and url_id in ({$list});
+            ";
+        }
+
+        return "
             update edge_flush_tags eft
             set obsolete = false
             from (
@@ -666,26 +843,42 @@ class Tags
                     for update
                 ) tags
             where eft.id = tags.id
-            ";
+        ";
+    }
 
-        $this->dbStatement($sql);
+    protected function markUrlsAsWarmedSql($list)
+    {
+        if ($this->isMySQL()) {
+            return "
+                select efu.id
+                from edge_flush_urls efu
+                where efu.is_valid = true
+                  and efu.id in ({$list})
+                order by efu.id
+                for update;
 
-        $sql = "
                 update edge_flush_urls efu
                 set was_purged_at = null,
                     invalidation_id = null
-                from (
-                        select efu.id
-                        from edge_flush_urls efu
-                        where efu.is_valid = true
-                          and efu.id in ({$list})
-                        order by efu.id
-                        for update
-                    ) urls
-                where efu.id = urls.id
+                where efu.is_valid = true
+                  and efu.id in ({$list});
             ";
+        }
 
-        $this->dbStatement($sql);
+        return "
+            update edge_flush_urls efu
+            set was_purged_at = null,
+                invalidation_id = null
+            from (
+                    select efu.id
+                    from edge_flush_urls efu
+                    where efu.is_valid = true
+                      and efu.id in ({$list})
+                    order by efu.id
+                    for update
+                ) urls
+            where efu.id = urls.id
+        ";
     }
 
     public function onlyValidModels(Collection $models): Collection
