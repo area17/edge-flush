@@ -12,6 +12,8 @@ parameters:
 
   checkMissingIterableValueType: false
 
+  checkGenericClassInNonGenericObjectType: false
+
   reportUnmatchedIgnoredErrors: false
 
   ignoreErrors:
@@ -33,4 +35,4 @@ parameters:
       noVariableVariables: false
 
   stubFiles:
-      - tests/Static/phpstan/stubs/Model.php
+      - tests/Static/phpstan/stubs/laravel-helpers.php

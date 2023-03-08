@@ -24,7 +24,7 @@ class Invalidation
 
     protected string|null $type = null;
 
-    protected bool $invalidateAll = false;
+    protected bool $mustInvalidateAll = false;
 
     protected Carbon|string|null $createdAt = null;
 
@@ -163,31 +163,23 @@ class Invalidation
     {
         $this->type = 'tag';
 
-        $this->tags = $tags;
+        if ($tags->isEmpty()) {
+            $this->tags = new Collection();
+
+            return $this;
+        }
+
+        if (is_string($tags[0])) {
+            $this->tagNames = $tags;
+        } else {
+            $this->tags = $tags;
+        }
 
         return $this;
     }
 
     public function isEmpty(): bool
     {
-        //        dd(
-        //            [
-        //                'tags' => $this->tags()->isEmpty(),
-        //                'tagNames' => $this->tagNames()->isEmpty(),
-        //                'models' => $this->models()->isEmpty(),
-        //                'modelNames' => $this->modelNames()->isEmpty(),
-        //                'urls' => $this->urls()->isEmpty(),
-        //                'urlNames' => $this->urlNames()->isEmpty(),
-        //
-        //                'result' => $this->tags()->isEmpty() &&
-        //                    $this->tagNames()->isEmpty() &&
-        //                    $this->models()->isEmpty() &&
-        //                    $this->modelNames()->isEmpty() &&
-        //                    $this->urls()->isEmpty() &&
-        //                    $this->urlNames()->isEmpty()
-        //            ]
-        //        );
-
         return blank($this->type()) ||
             ($this->tags()->isEmpty() &&
                 $this->tagNames()->isEmpty() &&
@@ -201,15 +193,25 @@ class Invalidation
     {
         $this->type = 'model';
 
-        $this->models = $models;
+        if ($models->isEmpty()) {
+            $this->models = $this->modelNames = $models;
 
-        $this->modelNames = collect($models)->map(function (mixed $model) {
-            if ($model instanceof Model) {
-                return $this->makeModelName($model);
-            }
+            return $this;
+        }
 
-            return $model;
-        });
+        if (is_string($models[0])) {
+            $this->modelNames = $models;
+        } else {
+            $this->models = $models;
+
+            $this->modelNames = (new Collection($models))->map(function (mixed $model) {
+                if ($model instanceof Model) {
+                    return $this->makeModelName($model);
+                }
+
+                return $model;
+            });
+        }
 
         return $this;
     }
@@ -290,7 +292,7 @@ class Invalidation
             return $this->urlNames();
         }
 
-        return collect();
+        return new Collection();
     }
 
     public function type(): string|null
@@ -346,16 +348,16 @@ class Invalidation
         return $this->urlNames = $this->urls()->map->url;
     }
 
-    public function setInvalidateAll(bool $value = true): self
+    public function setMustInvalidateAll(bool $value = true): self
     {
-        $this->invalidateAll = $value;
+        $this->mustInvalidateAll = $value;
 
         return $this;
     }
 
-    public function invalidateAll(): bool
+    public function mustInvalidateAll(): bool
     {
-        return $this->invalidateAll;
+        return $this->mustInvalidateAll;
     }
 
     public function __sleep(): array
@@ -367,6 +369,7 @@ class Invalidation
             'type',
             'invalidateAll',
             'models',
+            'mustInvalidateAll',
             'modelNames',
             'tagNames',
             'urlNames',
@@ -380,18 +383,18 @@ class Invalidation
 
     private function instantiate(): void
     {
-        $this->tags ??= collect();
+        $this->tags ??= new Collection();
 
-        $this->tagNames ??= collect();
+        $this->tagNames ??= new Collection();
 
-        $this->urls ??= collect();
+        $this->urls ??= new Collection();
 
-        $this->urlNames ??= collect();
+        $this->urlNames ??= new Collection();
 
-        $this->models ??= collect();
+        $this->models ??= new Collection();
 
-        $this->modelNames ??= collect();
+        $this->modelNames ??= new Collection();
 
-        $this->paths ??= collect();
+        $this->paths ??= new Collection();
     }
 }

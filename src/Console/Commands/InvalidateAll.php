@@ -17,7 +17,7 @@ class InvalidateAll extends Command
     /**
      * The console command description.
      *
-     * @var string
+     * @var null|string
      */
     protected $description = 'Invalidate all pages from CDN cache';
 

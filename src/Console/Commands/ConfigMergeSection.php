@@ -2,9 +2,9 @@
 
 namespace A17\EdgeFlush\Console\Commands;
 
+use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Console\Command;
 use A17\EdgeFlush\Exceptions\PackageException;
-use A17\EdgeFlush\Support\Facades\EdgeFlush;
 
 class ConfigMergeSection extends Command
 {
@@ -18,7 +18,7 @@ class ConfigMergeSection extends Command
     /**
      * The console command description.
      *
-     * @var string
+     * @var null|string
      */
     protected $description = 'Merge a section into the published config file';
 
@@ -157,13 +157,13 @@ class ConfigMergeSection extends Command
 
     public function extractArray(string|false|null $content): string|null
     {
-        if ($content === false || $content === null || empty($content)) {
+        if ($content === false || blank($content)) {
             $this->throw('The section file is empty.');
 
             return null;
         }
 
-        $lines = explode("\n", $content);
+        $lines = is_string($content) ? explode("\n", $content) : [];
 
         foreach ($lines as $key => $line) {
             if (blank($line)) {
@@ -179,7 +179,7 @@ class ConfigMergeSection extends Command
             $lines[$key] = '    ' . $line;
         }
 
-        $content = trim($content);
+        $content = is_string($content) ? trim($content) : '';
 
         return trim(implode("\n", $lines));
     }

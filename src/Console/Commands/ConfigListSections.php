@@ -2,11 +2,11 @@
 
 namespace A17\EdgeFlush\Console\Commands;
 
-
+use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Support\EdgeFlush;
 use A17\EdgeFlush\Exceptions\PackageException;
-use A17\EdgeFlush\Support\Facades\EdgeFlush;
 
 class ConfigListSections extends Command
 {
@@ -20,7 +20,7 @@ class ConfigListSections extends Command
     /**
      * The console command description.
      *
-     * @var string
+     * @var null|string
      */
     protected $description = 'List all sections that can be merged into the published config file';
 
@@ -33,9 +33,10 @@ class ConfigListSections extends Command
     {
         $this->table(
             ['Section', 'Merge command'],
-            (new Collection(config('edge-flush.package.sections')))
+            Helpers::collect(config('edge-flush.package.sections'))
                 ->sort()
-                ->map(fn($value) => [$value, "php artisan edge-flush:config:merge {$value}"])
+                ->map(fn($value) => is_string($value) ? [$value, "php artisan edge-flush:config:merge {$value}"] : null)
+                ->filter()
                 ->toArray(),
         );
 

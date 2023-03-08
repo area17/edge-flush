@@ -6,9 +6,7 @@ class EdgeFlush extends \Exception
 {
     public static function missingService(): void
     {
-        throw new self(
-            'CDN service configuration is missing, please check config/cdn.php.',
-        );
+        throw new self('CDN service configuration is missing, please check config/cdn.php.');
     }
 
     public static function classNotFound(string $class): void

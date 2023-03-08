@@ -4,11 +4,14 @@ namespace A17\EdgeFlush\Services;
 
 use A17\EdgeFlush\Contracts\CDNService;
 
+/**
+ * Let's just simulate a real CDN with this dummy
+ */
 class DummyCDN extends BaseService implements CDNService
 {
     public function invalidate(Invalidation $invalidation): Invalidation
     {
-        return $this->successfulInvalidation();
+        return $invalidation->setSuccess(true);
     }
 
     public function invalidateAll(): Invalidation
@@ -18,11 +21,11 @@ class DummyCDN extends BaseService implements CDNService
 
     public function maxUrls(): int
     {
-        return 0;
+        return 500;
     }
 
     public function invalidationIsCompleted(string $invalidationId): bool
     {
-        return false;
+        return true;
     }
 }

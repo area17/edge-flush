@@ -23,6 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @method static bool invalidationServiceIsEnabled()
  * @method static bool storeTagsServiceIsEnabled()
  * @method static bool warmerServiceIsEnabled()
+ * @method static string packageName()
  **/
 class EdgeFlush extends Facade
 {

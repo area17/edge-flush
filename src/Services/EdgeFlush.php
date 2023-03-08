@@ -21,12 +21,8 @@ class EdgeFlush extends BaseService
 
     public Request $request;
 
-    public function __construct(
-        string $cdnClass,
-        CacheControl $cacheControl,
-        Tags $tags,
-        Warmer $warmer
-    ) {
+    public function __construct(string $cdnClass, CacheControl $cacheControl, Tags $tags, Warmer $warmer)
+    {
         $this->cdnClass = $cdnClass;
 
         $this->cacheControl = $cacheControl;
@@ -44,9 +40,7 @@ class EdgeFlush extends BaseService
             return $response;
         }
 
-        return $this->cacheControl->makeResponse(
-            $this->cdn()->makeResponse($response),
-        );
+        return $this->cacheControl->makeResponse($this->cdn()->makeResponse($response));
     }
 
     public function instance(): self
@@ -96,25 +90,21 @@ class EdgeFlush extends BaseService
 
     public function storeTagsServiceIsEnabled(): bool
     {
-        return $this->enabled() &&
-            Helpers::configBool(
-                'edge-flush.enabled.services.store-tags',
-                false,
-            );
+        return $this->enabled() && Helpers::configBool('edge-flush.enabled.services.store-tags', false);
     }
 
     public function invalidationServiceIsEnabled(): bool
     {
-        return $this->enabled() &&
-            Helpers::configBool(
-                'edge-flush.enabled.services.invalidation',
-                false,
-            );
+        return $this->enabled() && Helpers::configBool('edge-flush.enabled.services.invalidation', false);
     }
 
     public function warmerServiceIsEnabled(): bool
     {
-        return $this->enabled() &&
-            Helpers::configBool('edge-flush.warmer.enabled', false);
+        return $this->enabled() && Helpers::configBool('edge-flush.warmer.enabled', false);
+    }
+
+    public function packageName(): string
+    {
+        return Helpers::configString('edge-flush.package.name') ?? 'edge-flush';
     }
 }

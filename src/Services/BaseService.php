@@ -17,11 +17,8 @@ abstract class BaseService implements ServiceContract
 
     protected bool|null $enabled = null;
 
-    public function addHeadersToResponse(
-        Response $response,
-        string $service,
-        string $tag
-    ): Response {
+    public function addHeadersToResponse(Response $response, string $service, string $tag): Response
+    {
         if (!$this->enabled()) {
             return $response;
         }
@@ -39,12 +36,7 @@ abstract class BaseService implements ServiceContract
             return $response;
         }
 
-        Helpers::debug(
-            'CACHABLE-MATRIX: ' .
-                json_encode(
-                    EdgeFlush::cacheControl()->getCachableMatrix($response),
-                ),
-        );
+        Helpers::debug('CACHABLE-MATRIX: ' . json_encode(EdgeFlush::cacheControl()->getCachableMatrix($response)));
 
         return $this->addHeadersToResponse(
             $response,
@@ -55,9 +47,8 @@ abstract class BaseService implements ServiceContract
 
     public function matchAny(string $string, array $patterns): bool
     {
-        return (bool) collect($patterns)->reduce(
-            fn($matched, $pattern) => $matched ||
-                $this->match($pattern, $string),
+        return !!(new Collection($patterns))->reduce(
+            fn($matched, $pattern) => $matched || $this->match($pattern, $string),
             false,
         );
     }
@@ -96,39 +87,31 @@ abstract class BaseService implements ServiceContract
         $this->enabled = false;
     }
 
-    public function getInvalidationPathsForTags(
-        Invalidation $invalidation
-    ): Collection {
+    public function getInvalidationPathsForTags(Invalidation $invalidation): Collection
+    {
         return $invalidation->paths();
     }
 
     public function addHeadersFromRequest(Response $response): void
     {
-        collect(Helpers::configArray('edge-flush.headers.from-request'))->each(
-            function (string $header) use ($response) {
-                if (filled($value = request()->header($header))) {
-                    $response->headers->set($header, $value);
-                }
-            },
+        (new Collection(Helpers::configArray('edge-flush.headers.from-request')))->each(function (string $header) use (
+            $response
+        ) {
+            if (filled($value = request()->header($header))) {
+                $response->headers->set($header, $value);
+            }
+        });
+    }
+
+    private function addTagToHeaders(string $service, Response $response, string $value): void
+    {
+        (new Collection(Helpers::configArray("edge-flush.headers.$service")))->each(
+            fn(string $header) => $response->headers->set($header, (new Collection([$value]))->join(', ')),
         );
     }
 
-    private function addTagToHeaders(
-        string $service,
-        Response $response,
-        string $value
-    ): void {
-        collect(Helpers::configArray("edge-flush.headers.$service"))->each(
-            fn(string $header) => $response->headers->set(
-                $header,
-                collect($value)->join(', '),
-            ),
-        );
-    }
-
-    public function createInvalidation(
-        Invalidation|array $invalidation = null
-    ): Invalidation {
+    public function createInvalidation(Invalidation|array $invalidation = null): Invalidation
+    {
         $invalidation ??= new Invalidation();
 
         if (is_array($invalidation)) {
@@ -145,8 +128,8 @@ abstract class BaseService implements ServiceContract
 
             $invalidation = new Invalidation();
 
-            $invalidation->setPaths(collect($paths));
-            $invalidation->setTags(collect($tags));
+            $invalidation->setPaths(new Collection($paths));
+            $invalidation->setTags(new Collection($tags));
         }
 
         return $invalidation;

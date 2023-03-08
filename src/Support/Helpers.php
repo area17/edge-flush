@@ -46,17 +46,20 @@ class Helpers
             $list = $routes[$routeName] ?? null;
         }
 
-        $list = collect($list);
+        $list = Helpers::collect($list);
 
-        $drop = collect($query)->filter(
-            fn($_, $name) => !$list->contains($name),
-        );
+        $drop = (new Collection($query))->filter(fn($_, $name) => !$list->contains($name));
 
         return static::rewriteUrl($query, $drop->keys(), $url);
     }
 
     /**
      * Deconstruct and rebuild the URL dropping query parameters
+     *
+     * @template TKey of array-key
+     * @template TValue
+     *
+     * @param array|Collection<TKey, TValue> $dropQueries
      */
     public static function rewriteUrl(
         array $parameters,
@@ -91,12 +94,8 @@ class Helpers
     {
         $url = ($components['scheme'] ?? 'https') . '://';
 
-        if (
-            filled($components['username'] ?? null) &&
-            filled($components['password'] ?? null)
-        ) {
-            $url .=
-                $components['username'] . ':' . $components['password'] . '@';
+        if (filled($components['username'] ?? null) && filled($components['password'] ?? null)) {
+            $url .= $components['username'] . ':' . $components['password'] . '@';
         }
 
         $url .= $components['host'] ?? 'localhost';
@@ -104,8 +103,7 @@ class Helpers
         if (
             filled($components['port'] ?? null) &&
             (($components['scheme'] === 'http' && $components['port'] !== 80) ||
-                ($components['scheme'] === 'https' &&
-                    $components['port'] !== 443))
+                ($components['scheme'] === 'https' && $components['port'] !== 443))
         ) {
             $url .= ':' . $components['port'];
         }
@@ -125,9 +123,9 @@ class Helpers
         return $url;
     }
 
-    public static function parseUrl(object|array|string|null $url): array
+    public static function parseUrl(string|null $url): array
     {
-        if (is_array($url)) {
+        if (blank($url)) {
             $url = '';
         }
 
@@ -139,10 +137,7 @@ class Helpers
         }
 
         /** Check if the string only a domain name **/
-        if (
-            filter_var($url, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) ===
-            $url
-        ) {
+        if (filter_var($url, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === $url) {
             $url = "https://$url";
         }
 
@@ -240,10 +235,8 @@ class Helpers
         return static::toBool(config($key, $default));
     }
 
-    public static function configArray(
-        string $key,
-        mixed $default = null
-    ): array|null {
+    public static function configArray(string $key, mixed $default = null): array|null
+    {
         if (is_null($value = config($key, $default))) {
             return null;
         }
@@ -251,10 +244,8 @@ class Helpers
         return static::toArray($value);
     }
 
-    public static function configString(
-        string $key,
-        mixed $default = null
-    ): string|null {
+    public static function configString(string $key, mixed $default = null): string|null
+    {
         if (is_null($value = config($key, $default))) {
             return null;
         }
@@ -262,10 +253,8 @@ class Helpers
         return static::toString($value);
     }
 
-    public static function configInt(
-        string $key,
-        mixed $default = null
-    ): int|null {
+    public static function configInt(string $key, mixed $default = null): int|null
+    {
         if (is_null($value = config($key, $default))) {
             return null;
         }
@@ -284,5 +273,22 @@ class Helpers
         }
 
         return $url;
+    }
+
+    public static function collect(mixed $var = []): Collection
+    {
+        if ($var instanceof Collection) {
+            return $var;
+        }
+
+        if (is_array($var)) {
+            return collect($var);
+        }
+
+        if (is_null($var)) {
+            return collect();
+        }
+
+        return collect([$var]);
     }
 }

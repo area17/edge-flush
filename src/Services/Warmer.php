@@ -8,6 +8,7 @@ use A17\EdgeFlush\Models\Url;
 use GuzzleHttp\Client as Guzzle;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Promise\Utils as Promise;
 use GuzzleHttp\Exception\ConnectException as GuzzleConnectException;
 
@@ -55,11 +56,7 @@ class Warmer
             ->orderBy('hits', 'desc')
             ->get()
             ->groupBy('invalidation_id')
-            ->filter(
-                fn($group, $invalidationId) => $this->invalidationIsCompleted(
-                    $invalidationId,
-                ),
-            )
+            ->filter(fn($group, $invalidationId) => $this->invalidationIsCompleted($invalidationId))
             ->flatten();
     }
 
@@ -78,11 +75,7 @@ class Warmer
 
     public function dispatchInternalWarmRequests(Collection $urls): void
     {
-        $urls->map(
-            fn($url) => $this->dispatchInternalWarmRequest(
-                $url instanceof Url ? $url->url : $url,
-            ),
-        );
+        $urls->map(fn($url) => $this->dispatchInternalWarmRequest($url instanceof Url ? $url->url : $url));
     }
 
     public function dispatchInternalWarmRequest(string $url): void
@@ -109,7 +102,7 @@ class Warmer
         foreach ($urls as $url) {
             Helpers::debug("WARMING: $url->url");
 
-            $promises[] = $this->getGuzzle()->getAsync($url->url, [
+            $promises[$url->url] = $this->getGuzzle()->getAsync($url->url, [
                 'headers' => $this->getHeaders($url->url),
             ]);
         }
@@ -118,11 +111,9 @@ class Warmer
 
         $executionTime = microtime(true) - $startTime;
 
-        Helpers::debug(
-            "WARMER-ELAPSED-TIME: {$executionTime}s - URLS: {$urls->count()}",
-        );
+        Helpers::debug("WARMER-ELAPSED-TIME: {$executionTime}s - URLS: {$urls->count()}");
 
-        collect($responses)->each(function ($response) {
+        (new Collection($responses))->each(function ($response) {
             if ($response['state'] === 'rejected') {
                 $context = $response['reason']->getHandlerContext();
 
@@ -133,10 +124,7 @@ class Warmer
                 if ($response['reason'] instanceof GuzzleConnectException) {
                     Helpers::debug("WARMER-ERROR: $error - $url");
                 } else {
-                    Helpers::debug(
-                        "WARMER-REJECTED: $error - $url - " .
-                            $response['reason']->getResponse()->getBody(),
-                    );
+                    Helpers::debug("WARMER-REJECTED: $error - $url - " . $response['reason']->getResponse()->getBody());
                 }
             } else {
                 Helpers::debug(
@@ -153,28 +141,30 @@ class Warmer
             return $this->guzzle;
         }
 
-        Helpers::debug(
-            'WARMER-GUZZLE-CONFIG: ' .
-                json_encode($this->getGuzzleConfiguration()),
-        );
+        Helpers::debug('WARMER-GUZZLE-CONFIG: ' . json_encode($this->getGuzzleConfiguration()));
 
         return $this->guzzle = new Guzzle($this->getGuzzleConfiguration());
     }
 
     public function addHeaders(Request $request, array $headers): void
     {
-        collect($headers)->each(
-            fn($value, $key) => $request->headers->set($key, $value),
-        );
+        (new Collection($headers))->each(fn($value, $key) => $request->headers->set($key, $value));
     }
 
     public function getHeaders(string $url): array
     {
-        return [
-            'X-Edge-Flush-Warmed-Url' => $url,
+        $headers =
+            [
+                'X-Edge-Flush-Warmed-Url' => $url,
 
-            'X-Edge-Flush-Warmed-At' => (string) now(),
-        ] + config('edge-flush.warmer.headers', []);
+                'X-Edge-Flush-Warmed-At' => (string) now(),
+            ] + config('edge-flush.warmer.headers', []);
+
+        if (blank($headers['PHP_AUTH_USER'])) {
+            unset($headers['PHP_AUTH_USER'], $headers['PHP_AUTH_PW']);
+        }
+
+        return $headers;
     }
 
     public function isWarming(Request|null $request = null): bool
@@ -197,39 +187,31 @@ class Warmer
 
     public function getGuzzleConfiguration(): array
     {
-        return [
-            'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+        $config =
+            [
+                'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
 
-            'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
+                'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
 
-            'verify' => config('edge-flush.warmer.check_ssl_certificate'),
+                'verify' => config('edge-flush.warmer.check_ssl_certificate'),
 
-            'auth' => [
-                config('edge-flush.warmer.basic_authentication.username'),
-                config('edge-flush.warmer.basic_authentication.password'),
-            ],
+                'curl' =>
+                    [
+                        CURLOPT_CONNECT_ONLY => Helpers::configBool('edge-flush.warmer.curl.connect_only', false),
 
-            'curl' =>
-                [
-                    CURLOPT_CONNECT_ONLY => Helpers::configBool(
-                        'edge-flush.warmer.curl.connect_only',
-                        false,
-                    ),
+                        CURLOPT_NOBODY => !Helpers::configBool('edge-flush.warmer.curl.get_body', true),
 
-                    CURLOPT_NOBODY => !Helpers::configBool(
-                        'edge-flush.warmer.curl.get_body',
-                        true,
-                    ),
+                        CURLOPT_ACCEPT_ENCODING => !Helpers::configBool('edge-flush.warmer.curl.compress', true),
+                    ] + (array) Helpers::configArray('edge-flush.warmer.curl.extra_options', []),
+            ] + (array) Helpers::configArray('edge-flush.warmer.extra_options');
 
-                    CURLOPT_ACCEPT_ENCODING => !Helpers::configBool(
-                        'edge-flush.warmer.curl.compress',
-                        true,
-                    ),
-                ] +
-                (array) Helpers::configArray(
-                    'edge-flush.warmer.curl.extra_options',
-                    [],
-                ),
-        ] + (array) Helpers::configArray('edge-flush.warmer.extra_options');
+        $username = config('edge-flush.warmer.basic_authentication.username');
+        $password = config('edge-flush.warmer.basic_authentication.password');
+
+        if (filled($username) and filled($password)) {
+            $config['auth'] = [$username, $password];
+        }
+
+        return $config;
     }
 }

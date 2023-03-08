@@ -17,6 +17,10 @@ class ServiceProvider extends IlluminateServiceProvider
 {
     protected string $packageName = 'edge-flush';
 
+    protected string $mainConfigPath = '';
+
+    protected bool $enabled = false;
+
     protected array $configSections = [
         'domains',
         'strategies',
@@ -48,9 +52,12 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function bootConfig(): void
     {
-        $this->publishes([
-            $this->mainConfigPath => config_path("{$this->packageName}.php", 'config'),
-        ]);
+        $this->publishes(
+            [
+                $this->mainConfigPath => config_path("{$this->packageName}.php"),
+            ],
+            'config',
+        );
     }
 
     public function registerConfig(): void
@@ -59,7 +66,7 @@ class ServiceProvider extends IlluminateServiceProvider
 
         $this->registerConfigSections();
 
-        $this->enabled = config('twill-firewall.enabled');
+        $this->enabled = (bool) config('twill-firewall.enabled');
     }
 
     public function configureContainer(): void
@@ -112,10 +119,7 @@ class ServiceProvider extends IlluminateServiceProvider
     public function registerConfigSections(): void
     {
         foreach ($this->configSections as $section) {
-            $this->mergeConfigFrom(
-                __DIR__ . "/../config/{$section}.php",
-                "{$this->packageName}"
-            );
+            $this->mergeConfigFrom(__DIR__ . "/../config/{$section}.php", "{$this->packageName}");
         }
 
         config(["{$this->packageName}.package.name" => $this->packageName]);

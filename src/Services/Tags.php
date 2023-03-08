@@ -36,18 +36,19 @@ class Tags
 
     public function __construct()
     {
-        $this->tags = collect();
+        $this->tags = Helpers::collect();
 
-        $this->processedTags = collect();
+        $this->processedTags = Helpers::collect();
 
-        $this->invalidationDispatched = collect();
+        $this->invalidationDispatched = Helpers::collect();
     }
 
-    public function addTag(
-        Model $model,
-        string $key = null,
-        array $allowedKeys = []
-    ): void {
+    public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
+    {
+        if (!$this->wasNotProcessed($model)) {
+            return;
+        }
+
         if (!EdgeFlush::enabled() || blank($model->getAttributes()[$key] ?? null)) {
             return;
         }
@@ -64,9 +65,8 @@ class Tags
         }
     }
 
-    protected function getAllTagsForModel(
-        string|null $modelString
-    ): Collection|null {
+    protected function getAllTagsForModel(string|null $modelString): Collection|null
+    {
         if (filled($modelString)) {
             return Tag::where('model', $modelString)->get();
         }
@@ -76,7 +76,7 @@ class Tags
 
     public function getTags(): Collection
     {
-        return collect($this->tags)
+        return Helpers::collect($this->tags)
             ->reject(function (string $tag) {
                 return $this->tagIsExcluded($tag);
             })
@@ -87,10 +87,7 @@ class Tags
     {
         $tag = $this->makeEdgeTag($models = $this->getTags());
 
-        if (
-            EdgeFlush::cacheControl()->isCachable($response) &&
-            EdgeFlush::storeTagsServiceIsEnabled()
-        ) {
+        if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
             StoreTags::dispatch(
                 $models,
                 [
@@ -107,16 +104,14 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $format = Helpers::toString(
-            config('edge-flush.tags.format', 'app-%environment%-%sha1%'),
-        );
+        $format = Helpers::toString(config('edge-flush.tags.format', 'app-%environment%-%sha1%'));
 
         return str_replace(
             ['%environment%', '%sha1%'],
             [
                 app()->environment(),
                 sha1(
-                    collect($models)
+                    Helpers::collect($models)
                         ->sort()
                         ->join(', '),
                 ),
@@ -125,31 +120,24 @@ class Tags
         );
     }
 
-    protected function tagIsExcluded(string $tag): bool
+    public function tagIsExcluded(string $tag): bool
     {
         /**
          * @param callable(string $pattern): boolean $pattern
          */
-        return collect(
-            config('edge-flush.tags.excluded-model-classes'),
-        )->contains(fn(string $pattern) => EdgeFlush::match($pattern, $tag));
+        return Helpers::collect(config('edge-flush.tags.excluded-model-classes'))->contains(
+            fn(string $pattern) => EdgeFlush::match($pattern, $tag),
+        );
     }
 
-    protected function tagIsNotExcluded(string $tag): bool
+    public function tagIsNotExcluded(string $tag): bool
     {
         return !$this->tagIsExcluded($tag);
     }
 
-    public function storeCacheTags(
-        Collection $models,
-        array $tags,
-        string $url
-    ): void {
-        if (
-            !EdgeFlush::enabled() ||
-            !EdgeFlush::storeTagsServiceIsEnabled() ||
-            !$this->domainAllowed($url)
-        ) {
+    public function storeCacheTags(Collection $models, array $tags, string $url): void
+    {
+        if ($this->cannotStoreCacheTags($url)) {
             return;
         }
 
@@ -162,77 +150,85 @@ class Tags
                 ]),
         );
 
-        $indexes = collect();
+        $indexes = Helpers::collect();
 
         DB::transaction(function () use ($models, $tags, $url, &$indexes) {
             $url = $this->createUrl($url);
 
             $now = (string) now();
 
-            $indexes = collect($models)
+            $indexes = Helpers::collect($models)
                 ->filter()
                 ->map(function (mixed $model) use ($tags, $url, $now) {
                     $model = Helpers::toString($model);
 
                     $index = $this->makeTagIndex($url, $tags, $model);
 
-                    $this->dbStatement("
-                        insert into edge_flush_tags (index_hash, url_id, tag, model, created_at, updated_at)
-                        select '{$index}', {$url->id}, '{$tags['cdn']}', '{$model}', '{$now}', '{$now}'
-                        where not exists (
-                            select 1
-                            from edge_flush_tags
-                            where index_hash = '{$index}'
-                        )
-                        ");
+                    $this->dbStatement($this->getStoreCacheTagsInsertSql($index, $url, $tags['cdn'], $model, $now));
 
                     return $index;
                 });
         }, 5);
 
         if ($indexes->isNotEmpty()) {
-            $indexes = $indexes
-                ->map(fn(mixed $item) => "'" . Helpers::toString($item) . "'")
-                ->join(',');
+            $indexes = $indexes->map(fn(mixed $item) => "'" . Helpers::toString($item) . "'")->join(',');
 
-            $this->dbStatement("
-                        update edge_flush_urls
-                        set was_purged_at = null,
-                            invalidation_id = null
-                        where is_valid = true
-                          and was_purged_at is not null
-                          and id in (
-                            select url_id
-                            from edge_flush_tags
-                            where index_hash in ({$indexes})
-                              and is_valid = true
-                              and obsolete = true
-                          )
-                        ");
-
-            $this->dbStatement("
-                        update edge_flush_tags
-                        set obsolete = false
-                        where index_hash in ({$indexes})
-                          and is_valid = true
-                          and obsolete = true
-                        ");
+            $this->dbStatement($this->getStoreCacheTagsUpdateSql($indexes));
         }
     }
 
-    public function dispatchInvalidationsForModel(Collection|string|Model $models): void {
+    protected function getStoreCacheTagsInsertSql(
+        string $index,
+        Url $url,
+        string $cdn,
+        string $model,
+        string $now
+    ): string {
+        return "
+            insert into edge_flush_tags (index_hash, url_id, tag, model, created_at, updated_at)
+            select '{$index}', {$url->id}, '{$cdn}', '{$model}', '{$now}', '{$now}'
+            where not exists (
+                select 1
+                from edge_flush_tags
+                where index_hash = '{$index}'
+            );
+        ";
+    }
+
+    protected function getStoreCacheTagsUpdateSql(string $indexes): string
+    {
+        // TODO: review this because there's no more obsolete on Tags
+
+        return "
+            update edge_flush_urls
+            set obsolete = false,
+                was_purged_at = null,
+                invalidation_id = null
+            where is_valid = true
+              and was_purged_at is not null
+              and id in (
+                select url_id
+                from edge_flush_tags
+                where index_hash in ({$indexes})
+                  and is_valid = true
+              );
+        ";
+    }
+
+    public function dispatchInvalidationsForModel(Collection|string|Model $models): void
+    {
         if (blank($models)) {
             return;
         }
 
         if (is_string($models)) {
-            $this->dispatchInvalidationsForUpdatedModel(collect([$models]));
+            $this->dispatchInvalidationsForUpdatedModel(Helpers::collect([$models]));
 
             return;
         }
 
         if ($models instanceof Model) {
-            $models = collect([$models]);
+            $models = Helpers::collect([$models]);
         }
 
         $models = $this->onlyValidModels($models);
@@ -242,12 +238,6 @@ class Tags
         if ($models->isEmpty()) {
             return;
         }
-
-        Helpers::debug([
-            'dispatchInvalidationsForModel - models: ',
-            /** @phpstan-ignore-next-line */
-            $models->map(fn(Model $model) => get_class($model)." ({$model->id})")->implode(', ')
-        ]);
 
         /**
          * @var Model $model
@@ -259,7 +249,8 @@ class Tags
             : $this->dispatchInvalidationsForUpdatedModel($models);
     }
 
-    public function dispatchInvalidationsForCreatedModel(Collection $models): void {
+    public function dispatchInvalidationsForCreatedModel(Collection $models): void
+    {
         /**
          * @var string $strategy
          */
@@ -274,7 +265,8 @@ class Tags
         throw new \Exception("Strategy '{$strategy}' Not implemented");
     }
 
-    public function dispatchInvalidationsForUpdatedModel(Collection $models): void {
+    public function dispatchInvalidationsForUpdatedModel(Collection $models): void
+    {
         /**
          * @var string $strategy
          */
@@ -290,19 +282,33 @@ class Tags
             throw new \Exception("Strategy '{$strategy}' Not implemented");
         }
 
-        Helpers::debug(
-            'INVALIDATING tags for models: ' .
-            $models
-                ->map(
-                    /** @phpstan-ignore-next-line */
-                    fn(Model|string $model) => $model instanceof Model
-                        ? $this->makeModelName($model)
-                        : $model,
-                )
-                ->join(', '),
-        );
+        $modelNames = $this->getModelNamesFromModels($models);
 
-        dispatch(new InvalidateTags((new Invalidation())->setModels($models)));
+        Helpers::debug('INVALIDATING tags for models: ' . $modelNames->join(', '));
+
+        dispatch(new InvalidateTags((new Invalidation())->setModels($modelNames)));
+    }
+
+    protected function getModelNamesFromModels(Collection $models): Collection
+    {
+        $modelNames = Helpers::collect();
+
+        /**
+         * @var Model $model
+         */
+        foreach ($models as $model) {
+            foreach ($model->getAttributes() as $key => $updated) {
+                if ($updated !== $model->getOriginal($key) && $this->granularPropertyIsAllowed($key, $model)) {
+                    $modelName = $this->makeModelName($model, $key);
+
+                    if (filled($modelName)) {
+                        $modelNames->push($modelName);
+                    }
+                }
+            }
+        }
+
+        return $modelNames;
     }
 
     public function invalidateTags(Invalidation $invalidation): void
@@ -332,14 +338,13 @@ class Tags
          * Filter purged urls from obsolete tags.
          * Making sure we invalidate the most busy pages first.
          */
-        $rows = collect(
+        $rows = Helpers::collect(
             DB::select(
                 "
             select distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url
             from edge_flush_urls
-                     inner join edge_flush_tags on edge_flush_tags.url_id = edge_flush_urls.id
             where edge_flush_urls.was_purged_at is null
-              and edge_flush_tags.obsolete = true
+              and edge_flush_urls.obsolete = true
               and edge_flush_urls.is_valid = true
             order by edge_flush_urls.hits desc
             ",
@@ -369,45 +374,65 @@ class Tags
         $type = $invalidation->type();
 
         $list = $invalidation->queryItemsList();
-        
-        if ($list === "''") {
+
+        if ($list === "''" || is_null($type) || blank($type)) {
             return;
         }
 
         $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
     }
 
-    protected function markTagsAsObsoleteSql(string $type, string $list)
+    protected function markTagsAsObsoleteSql(string $type, string $list): string
     {
         if ($this->isMySQL()) {
             return "
                 select id
-                from edge_flush_tags
+                from edge_flush_urls
                 where is_valid = true
                   and obsolete = false
-                  and {$type} in ({$list})
+                  and was_purged_at is null
+                  and id in (
+                        select url_id
+                        from edge_flush_tags
+                        where is_valid = true
+                        and {$type} in ({$list})
+                    )
                 order by id
                 for update;
 
-                update edge_flush_tags eft
+                update edge_flush_urls efu
                 set obsolete = true
-                where {$type} in ({$list});
+                 where is_valid = true
+                   and obsolete = false
+                   and was_purged_at is null
+                   and id in (
+                         select url_id
+                         from edge_flush_tags
+                         where is_valid = true
+                         and {$type} in ({$list})
+                     );
             ";
         }
 
         return "
-            update edge_flush_tags eft
+            update edge_flush_urls efu
             set obsolete = true
-            from (
-                    select id
-                    from edge_flush_tags
-                    where is_valid = true
-                      and obsolete = false
-                      and {$type} in ({$list})
-                    order by id
-                    for update
-                ) tags
-            where eft.id = tags.id
+                from (
+                         select id
+                         from edge_flush_urls
+                         where is_valid = true
+                           and obsolete = false
+                           and was_purged_at is null
+                           and id in (
+                                 select url_id
+                                 from edge_flush_tags
+                                 where is_valid = true
+                                 and {$type} in ({$list})
+                             )
+                         order by id
+                             for update
+                     ) urls
+                        where efu.id = urls.id
         ";
     }
 
@@ -433,12 +458,10 @@ class Tags
 
         Helpers::debug('INVALIDATING: entire cache...');
 
-        $invalidation->setInvalidateAll(true);
+        $invalidation->setMustInvalidateAll(true);
 
         EdgeFlush::cdn()->invalidate(
-            $invalidation->setPaths(
-                collect(config('edge-flush.invalidations.batch.roots')),
-            ),
+            $invalidation->setPaths(Helpers::collect(config('edge-flush.invalidations.batch.roots'))),
         );
 
         $this->markUrlsAsPurged($invalidation);
@@ -457,10 +480,7 @@ class Tags
 
         $key = $model->getTable() . '-' . $id;
 
-        if (
-            filled($this->processedTags[$key] ?? null) &&
-            (bool) $this->processedTags[$key]
-        ) {
+        if (filled($this->processedTags[$key] ?? null) && (bool) $this->processedTags[$key]) {
             return false;
         }
 
@@ -478,7 +498,7 @@ class Tags
         $count = 0;
 
         do {
-            Helpers::debug('Invalidating all tags... -> '.$count);
+            Helpers::debug('Invalidating all tags... -> ' . $count);
 
             if ($count++ > 0) {
                 sleep(2);
@@ -500,6 +520,9 @@ class Tags
 
     public function getCurrentUrl(Request $request): string
     {
+        /**
+         * @var string|array|null $result
+         */
         $result = $request->header('X-Edge-Flush-Warmed-Url') ?? url()->full();
 
         if (is_array($result)) {
@@ -511,42 +534,10 @@ class Tags
 
     protected function deleteAllTags(): void
     {
-        $this->dbStatement($this->purgeAllTagsSql());
-
         $this->dbStatement($this->purgeAllUrlsSql());
     }
 
-    protected function purgeAllTagsSql()
-    {
-        if ($this->isMySQL()) {
-            return "
-                select id
-                from edge_flush_tags
-                where obsolete = false
-                order by id
-                for update;
-
-                update edge_flush_tags eft
-                set obsolete = true
-                where obsolete = false;
-            ";
-        }
-
-        return "
-                update edge_flush_tags eft
-                set obsolete = true
-                from (
-                        select id
-                        from edge_flush_tags
-                        where obsolete = false
-                        order by id
-                        for update
-                    ) tags
-                where eft.id = tags.id
-            ";
-    }
-
-    protected function purgeAllUrlsSql()
+    protected function purgeAllUrlsSql(): string
     {
         $now = (string) now();
 
@@ -554,22 +545,25 @@ class Tags
             return "
                 select id
                 from edge_flush_urls
-                where is_valid = true
+                where obsolete = false
+                order by id
                 for update;
 
                 update edge_flush_urls efu
-                set was_purged_at = '$now'
-                where is_valid = true;
+                set obsolete = true,
+                    set was_purged_at = '$now'
+                    where obsolete = false;
             ";
         }
 
         return "
             update edge_flush_urls efu
-            set was_purged_at = '$now'
+            set obsolete = true,
+                set was_purged_at = '$now'
             from (
                     select id
                     from edge_flush_urls
-                    where is_valid = true
+                    where obsolete = false
                     order by id
                     for update
                 ) urls
@@ -583,9 +577,9 @@ class Tags
             return false;
         }
 
-        $allowed = collect(config('edge-flush.domains.allowed'))->filter();
+        $allowed = Helpers::collect(config('edge-flush.domains.allowed'))->filter();
 
-        $blocked = collect(config('edge-flush.domains.blocked'))->filter();
+        $blocked = Helpers::collect(config('edge-flush.domains.blocked'))->filter();
 
         if ($allowed->isEmpty() && $blocked->isEmpty()) {
             return true;
@@ -598,12 +592,7 @@ class Tags
 
     public function getMaxInvalidations(): int
     {
-        return Helpers::toInt(
-            min(
-                EdgeFlush::cdn()->maxUrls(),
-                config('edge-flush.invalidations.batch.size'),
-            ),
-        );
+        return Helpers::toInt(min(EdgeFlush::cdn()->maxUrls(), config('edge-flush.invalidations.batch.size')));
     }
 
     public function dbStatement(string $sql): bool
@@ -615,7 +604,7 @@ class Tags
                 continue;
             }
 
-            $result = DB::statement((string) $statement);
+            $result = DB::statement($statement);
 
             dump($statement);
 
@@ -629,8 +618,7 @@ class Tags
 
     public function enabled(): bool
     {
-        return EdgeFlush::invalidationServiceIsEnabled() &&
-            EdgeFlush::cdn()->enabled();
+        return EdgeFlush::invalidationServiceIsEnabled() && EdgeFlush::cdn()->enabled();
     }
 
     /**
@@ -650,11 +638,8 @@ class Tags
         );
     }
 
-    public function makeTagIndex(
-        Url|string $url,
-        array $tags,
-        string $model
-    ): string {
+    public function makeTagIndex(Url|string $url, array $tags, string $model): string
+    {
         if (is_string($url)) {
             $url = $this->createUrl($url);
         }
@@ -676,18 +661,22 @@ class Tags
 
         $invalidationId = $invalidation->id();
 
-        if ($invalidation->invalidateAll()) {
-            $sql = $this->invaliadateAllUrlsSql($time, $invalidationId);
-        } elseif ($invalidation->type() === 'tag') {
-            $sql = $this->invalidateUrlsForTagsSql($time, $invalidationId, $list);
+        if (is_null($invalidationId)) {
+            return;
+        }
+
+        if ($invalidation->mustInvalidateAll()) {
+            $sql = $this->invaliadateAllSql($time, $invalidationId);
+        } elseif ($invalidation->type() === 'url') {
+            $sql = $this->invalidateAllUrlsSql($list, $time, $invalidationId);
         } else {
-            $sql = $this->invalidateAllUrlsForListSql($time, $invalidationId, $list);
+            throw new \Exception('Invalidating ' . $invalidation->type() . ' is not supported yet.');
         }
 
         $this->dbStatement($sql);
     }
 
-    protected function invaliadateAllUrlsSql($time, $invalidationId)
+    protected function invaliadateAllSql(string $time, string $invalidationId): string
     {
         if ($this->isMySQL()) {
             return "
@@ -695,6 +684,7 @@ class Tags
                 from edge_flush_urls efu
                 where efu.is_valid = true
                   and was_purged_at is null
+                   or obsolete = false
                 order by efu.id
                 for update;
 
@@ -702,7 +692,8 @@ class Tags
                 set was_purged_at = '{$time}',
                     invalidation_id = '{$invalidationId}'
                 where efu.is_valid = true
-                  and was_purged_at is null;
+                  and was_purged_at is null
+                   or obsolete = false;
             ";
         }
 
@@ -715,6 +706,7 @@ class Tags
                         from edge_flush_urls efu
                         where efu.is_valid = true
                           and was_purged_at is null
+                           or obsolete = false
                         order by efu.id
                         for update
                     ) urls
@@ -722,44 +714,7 @@ class Tags
             ";
     }
 
-    protected function invalidateUrlsForTagsSql($time, $invalidationId, $list)
-    {
-        if ($this->isMySQL()) {
-            return "
-                select efu.id
-                from edge_flush_urls efu
-                join edge_flush_tags eft on eft.url_id = efu.id
-                where efu.is_valid = true
-                  and eft.url in ({$list})
-                order by efu.id
-                for update;
-
-                update edge_flush_urls efu
-                set was_purged_at = '{$time}',
-                    invalidation_id = '{$invalidationId}'
-                where efu.is_valid = true
-                  and eft.url in ({$list});
-            ";
-        }
-
-        return "
-                update edge_flush_urls efu
-                set was_purged_at = '{$time}',
-                    invalidation_id = '{$invalidationId}'
-                from (
-                        select efu.id
-                        from edge_flush_urls efu
-                        join edge_flush_tags eft on eft.url_id = efu.id
-                        where efu.is_valid = true
-                          and eft.url in ({$list})
-                        order by efu.id
-                        for update
-                    ) urls
-                where efu.id = urls.id
-            ";
-    }
-
-    protected function invalidateAllUrlsForListSql()
+    protected function invalidateAllUrlsSql(string $list, string $time, string $invalidationId): string
     {
         if ($this->isMySQL()) {
             return "
@@ -805,48 +760,10 @@ class Tags
             return;
         }
 
-        $this->dbStatement($this->markTagsAsWarmedSql($list));
-
         $this->dbStatement($this->markUrlsAsWarmedSql($list));
     }
 
-    protected function markTagsAsWarmedSql($list)
-    {
-        if ($this->isMySQL()) {
-            return "
-                select id
-                from edge_flush_tags
-                where is_valid = true
-                  and obsolete = true
-                  and url_id in ({$list})
-                order by id
-                for update;
-
-                update edge_flush_tags eft
-                set obsolete = false
-                where is_valid = true
-                  and obsolete = true
-                  and url_id in ({$list});
-            ";
-        }
-
-        return "
-            update edge_flush_tags eft
-            set obsolete = false
-            from (
-                    select id
-                    from edge_flush_tags
-                    where is_valid = true
-                      and obsolete = true
-                      and url_id in ({$list})
-                    order by id
-                    for update
-                ) tags
-            where eft.id = tags.id
-        ";
-    }
-
-    protected function markUrlsAsWarmedSql($list)
+    protected function markUrlsAsWarmedSql(string $list): string
     {
         if ($this->isMySQL()) {
             return "
@@ -858,7 +775,8 @@ class Tags
                 for update;
 
                 update edge_flush_urls efu
-                set was_purged_at = null,
+                set obsolete = false,
+                    was_purged_at = null,
                     invalidation_id = null
                 where efu.is_valid = true
                   and efu.id in ({$list});
@@ -867,7 +785,8 @@ class Tags
 
         return "
             update edge_flush_urls efu
-            set was_purged_at = null,
+            set obsolete = false,
+                was_purged_at = null,
                 invalidation_id = null
             from (
                     select efu.id
@@ -883,33 +802,43 @@ class Tags
 
     public function onlyValidModels(Collection $models): Collection
     {
-        return $models->filter(
-            fn($model) => $this->tagIsNotExcluded(
-                $model instanceof Model ? get_class($model) : $model,
-            ),
-        );
+        return $models->filter(function ($model) {
+            if ($model instanceof Model) {
+                $model = get_class($model);
+            }
+
+            if (!is_string($model)) {
+                return false;
+            }
+
+            return $this->tagIsNotExcluded($model);
+        });
     }
 
     public function notYetDispatched(Collection $models): Collection
     {
-        $tags = $models->mapWithKeys(
-            function ($model) {
-                $tag = $this->makeModelName(
-                    $model
-                );
+        $tags = $models->mapWithKeys(function ($model) {
+            $tag = $this->makeModelName($model);
 
-                return [$tag => $tag];
-            }
-        );
+            return [$tag => $tag];
+        });
 
         $missing = $tags->diff($this->invalidationDispatched);
 
-        $this->invalidationDispatched = $this->invalidationDispatched->merge(
-            $missing
-        );
+        $this->invalidationDispatched = $this->invalidationDispatched->merge($missing);
 
-        return $models->filter(fn($model) => $missing->contains(
-            $this->makeModelName($model)
-        ));
+        return $models->filter(fn($model) => $missing->contains($this->makeModelName($model)));
+    }
+
+    public function granularPropertyIsAllowed(string $name, Model $model): bool
+    {
+        $ignored = Helpers::collect(Helpers::configArray('edge-flush.invalidations.properties.ignored'));
+
+        return !$ignored->contains($name) && !$ignored->contains(get_class($model) . "@$name");
+    }
+
+    public function cannotStoreCacheTags(string $url): bool
+    {
+        return !EdgeFlush::enabled() || !EdgeFlush::storeTagsServiceIsEnabled() || !$this->domainAllowed($url);
     }
 }

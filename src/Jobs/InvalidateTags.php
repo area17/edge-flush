@@ -31,8 +31,6 @@ class InvalidateTags implements ShouldQueue
      */
     public function handle()
     {
-        EdgeFlush::tags()->invalidateTags(
-            $this->invalidation ?? new Invalidation(),
-        );
+        EdgeFlush::tags()->invalidateTags($this->invalidation ?? new Invalidation());
     }
 }

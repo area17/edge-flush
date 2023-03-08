@@ -27,11 +27,8 @@ trait CachedOnCDN
             : '';
     }
 
-    public function cacheModelOnCDN(
-        Model $model,
-        string $key = null,
-        array $allowedKeys = []
-    ): void {
+    public function cacheModelOnCDN(Model $model, string $key = null, array $allowedKeys = []): void
+    {
         EdgeFlush::tags()->addTag($model, $key, $allowedKeys);
     }
 
