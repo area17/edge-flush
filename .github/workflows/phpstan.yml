@@ -1,5 +1,14 @@
 name: phpstan
 
+on:
+  push:
+    paths:
+      - '**.php'
+      - 'phpstan.neon'
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
 jobs:
   php-tests:
     runs-on: ubuntu-latest
