@@ -197,8 +197,6 @@ class Tags
 
     protected function getStoreCacheTagsUpdateSql(string $indexes): string
     {
-        // TODO: review this because there's no more obsolete on Tags
-
         return "
             update edge_flush_urls
             set obsolete = false,
