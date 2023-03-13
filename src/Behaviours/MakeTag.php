@@ -20,15 +20,15 @@ trait MakeTag
             return $model === false ? null : sha1($model);
         }
 
-        //try {
+        try {
             return method_exists($model, 'getCDNCacheTag') && $this->keyIsAllowed($key, $allowedKeys)
                 ? $model->getCDNCacheTag($key)
                 : $this->getCDNCacheTagFromModel($model, $key);
-        //} catch (\Exception $exception) {
-//            Helpers::debug("Exception on makeModelName: ".$exception->getMessage());
-//
-//            return null;
-        //}
+        } catch (\Exception $exception) {
+            Helpers::debug("Exception on makeModelName: ".$exception->getMessage());
+
+            return null;
+        }
     }
 
     public function keyIsAllowed(string $key = null, array $allowedKeys = []): bool

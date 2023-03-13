@@ -4,6 +4,7 @@ namespace A17\EdgeFlush\Jobs;
 
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Bus\Queueable;
+use A17\EdgeFlush\Services\Entity;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\InteractsWithQueue;
@@ -14,20 +15,14 @@ class InvalidateModel implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public Model|null $model = null;
-
-    public string|null $type = null;
+    public Entity|null $entity = null;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Model $model, string|null $type = null)
+    public function __construct(Entity $entity)
     {
-        $this->model = $model->withoutRelations();
-
-        $this->model = EdgeFlush::getInternalModel($this->model);
-
-        $this->type = $type;
+        $this->entity = $entity;
     }
 
     /**
@@ -37,6 +32,6 @@ class InvalidateModel implements ShouldQueue
      */
     public function handle()
     {
-        EdgeFlush::tags()->dispatchInvalidationsForModel($this->model, $this->type);
+        EdgeFlush::tags()->dispatchInvalidationsForModel($this->entity);
     }
 }

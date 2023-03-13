@@ -35,6 +35,10 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function boot(): void
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $this->bootConfig();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
@@ -48,7 +52,9 @@ class ServiceProvider extends IlluminateServiceProvider
     {
         $this->registerConfig();
 
-        $this->configureContainer();
+        if ($this->enabled) {
+            $this->configureContainer();
+        }
     }
 
     public function bootConfig(): void
@@ -67,7 +73,7 @@ class ServiceProvider extends IlluminateServiceProvider
 
         $this->registerConfigSections();
 
-        $this->enabled = (bool) config('twill-firewall.enabled');
+        $this->enabled = (bool) config('edge-flush.enabled.package');
     }
 
     public function configureContainer(): void

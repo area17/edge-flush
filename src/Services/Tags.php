@@ -199,45 +199,22 @@ class Tags
         ";
     }
 
-    public function dispatchInvalidationsForModel(Collection|string|Model $models, string|null $type = null): void
+    public function dispatchInvalidationsForModel(Entity $entity): void
     {
-        if (blank($models)) {
+        if (!$entity->isValid || $this->alreadyDispatched($entity)) {
             return;
         }
 
-        if (is_string($models)) {
-            $this->dispatchInvalidationsForUpdatedModel(Helpers::collect([$models]));
+        Helpers::debug('DISPATCHING for model: ' . $entity->modelName);
 
-            return;
-        }
-
-        if ($models instanceof Model) {
-            $models = Helpers::collect([$models]);
-        }
-
-        $models = $this->onlyValidModels($models);
-
-        $models = $this->notYetDispatched($models);
-
-        if ($models->isEmpty()) {
-            return;
-        }
-
-        Helpers::debug('DISPATCHING for models: ' . json_encode($models->map(fn(Model $model) => $this->makeModelName($model))));
-
-        /**
-         * @var Model $model
-         */
-        $model = $models->first();
-
-        match ($type) {
-            'created' => $this->dispatchInvalidationsForCreatedModel($models),
-            'updated' => $this->dispatchInvalidationsForUpdatedModel($models),
-            'deleted' => $this->dispatchInvalidationsForUpdatedModel($models),
+        match ($entity->event) {
+            'created' => $this->dispatchInvalidationsForCreatedModel($entity),
+            'updated' => $this->dispatchInvalidationsForUpdatedModel($entity),
+            'deleted' => $this->dispatchInvalidationsForUpdatedModel($entity),
         };
     }
 
-    public function dispatchInvalidationsForCreatedModel(Collection $models): void
+    public function dispatchInvalidationsForCreatedModel(): void
     {
         /**
          * @var string $strategy
@@ -253,7 +230,7 @@ class Tags
         throw new \Exception("Strategy '{$strategy}' Not implemented");
     }
 
-    public function dispatchInvalidationsForUpdatedModel(Collection $models): void
+    public function dispatchInvalidationsForUpdatedModel(Entity $entity): void
     {
         /**
          * @var string $strategy
@@ -270,42 +247,13 @@ class Tags
             throw new \Exception("Strategy '{$strategy}' Not implemented");
         }
 
-        $modelNames = $this->getModelNamesFromModels($models);
+        Helpers::debug('INVALIDATING tags for model: ' . $entity->modelName);
 
-        if (blank($modelNames)) {
-            return;
-        }
+        $invalidation = new Invalidation();
 
-        Helpers::debug('INVALIDATING tags for models: ' . $modelNames->join(', '));
+        $invalidation->setModels($entity->getDirtyModelNames());
 
-        //dispatch(new InvalidateTags((new Invalidation())->setModels($modelNames)));
-    }
-
-    protected function getModelNamesFromModels(Collection $models): Collection
-    {
-        $modelNames = Helpers::collect();
-
-        /**
-         * @var Model $model
-         */
-        foreach ($models as $model) {
-            foreach ($model->getAttributes() as $key => $value) {
-                $updated = $this->encodeValueForComparison($value);
-                $original = $this->encodeValueForComparison($model->getRawOriginal($key), gettype($value));
-
-                if ($updated !== $original && $this->granularPropertyIsAllowed($key, $model)) {
-                    $modelName = $this->makeModelName($model, $key);
-
-                    Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
-
-                    if (filled($modelName)) {
-                        $modelNames->push($modelName);
-                    }
-                }
-            }
-        }
-
-        return $modelNames;
+        $this->invalidateTags($invalidation);
     }
 
     public function invalidateTags(Invalidation $invalidation): void
@@ -795,34 +743,13 @@ class Tags
         ";
     }
 
-    public function onlyValidModels(Collection $models): Collection
+    public function alreadyDispatched(Entity $entity): bool
     {
-        return $models->filter(function ($model) {
-            if ($model instanceof Model) {
-                $model = get_class($model);
-            }
+        $dispatched = $this->invalidationDispatched[$entity->modelName] ?? false;
 
-            if (!is_string($model)) {
-                return false;
-            }
+        $this->invalidationDispatched[$entity->modelName] = true;
 
-            return $this->tagIsNotExcluded($model);
-        });
-    }
-
-    public function notYetDispatched(Collection $models): Collection
-    {
-        $tags = $models->mapWithKeys(function ($model) {
-            $tag = $this->makeModelName($model);
-
-            return [$tag => $tag];
-        });
-
-        $missing = $tags->diff($this->invalidationDispatched);
-
-        $this->invalidationDispatched = $this->invalidationDispatched->merge($missing);
-
-        return $models->filter(fn($model) => $missing->contains($this->makeModelName($model)));
+        return $dispatched;
     }
 
     public function cannotStoreCacheTags(string $url): bool
