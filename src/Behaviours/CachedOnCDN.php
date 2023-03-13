@@ -5,24 +5,25 @@ namespace A17\EdgeFlush\Behaviours;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Database\Eloquent\Model;
+use A17\EdgeFlush\Jobs\InvalidateModel;
 
 trait CachedOnCDN
 {
-    public function invalidateCDNCache(Model $model): void
+    public function invalidateCDNCache(Model $model, string|null $type = null): void
     {
         if ($this->edgeFlushIsEnabled()) {
-            EdgeFlush::tags()->dispatchInvalidationsForModel($model);
+            dispatch(new InvalidateModel($model, $type));
         }
     }
 
     public function getCDNCacheTag(string $key = null): string
     {
         /** @phpstan-ignore-next-line */
-        return $this->attributes['id'] ?? false
+        return $this->attributes[$this->getKeyName()] ?? false
             ? static::class .
                     '-' .
                     /** @phpstan-ignore-next-line */
-                    $this->attributes['id'] .
+                    $this->getAttributes()[$this->getKeyName()] .
                     (filled($key) ? "[{$key}]" : '')
             : '';
     }

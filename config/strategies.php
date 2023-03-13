@@ -158,17 +158,20 @@ return [
     'tags' => [
         'excluded-model-classes' => [
             // Twill modules
-            '\Models\Translations*',
             '\Models\Slugs*',
             '\Models\Revisions*',
 
             // Twill capsules
-            '*\Models\*Translation',
             '*\Models\*Slug',
             '*\Models\*Revision',
 
             // Other classes
             'Spatie\Activitylog\Models\Activity',
+        ],
+
+        'external-models' => [
+//            \A17\Twill\Models\Block::class => \App\Models\EdgeFlush\Block::class,
+//            \A17\Twill\Models\RelatedItem::class => \App\Models\EdgeFlush\RelatedItem::class,
         ],
 
         'format' => 'app-%environment%-%sha1%',

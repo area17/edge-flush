@@ -11,10 +11,11 @@ use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Behaviours\MakeTag;
 use Illuminate\Database\Eloquent\Model;
+use A17\EdgeFlush\Behaviours\CastObject;
 
 class Invalidation
 {
-    use MakeTag;
+    use MakeTag, CastObject;
 
     protected string|null $id = null;
 
@@ -367,7 +368,6 @@ class Invalidation
             'status',
             'success',
             'type',
-            'invalidateAll',
             'models',
             'mustInvalidateAll',
             'modelNames',

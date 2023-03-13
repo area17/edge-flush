@@ -18,6 +18,7 @@ use Illuminate\Database\Query\Builder;
 use A17\EdgeFlush\Jobs\InvalidateTags;
 use A17\EdgeFlush\Behaviours\Database;
 use Illuminate\Database\Eloquent\Model;
+use A17\EdgeFlush\Behaviours\CastObject;
 use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Behaviours\ControlsInvalidations;
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class Tags
 {
-    use ControlsInvalidations, MakeTag, Database;
+    use ControlsInvalidations, MakeTag, Database, CastObject;
 
     protected Collection $tags;
 
@@ -120,21 +121,6 @@ class Tags
         );
     }
 
-    public function tagIsExcluded(string $tag): bool
-    {
-        /**
-         * @param callable(string $pattern): boolean $pattern
-         */
-        return Helpers::collect(config('edge-flush.tags.excluded-model-classes'))->contains(
-            fn(string $pattern) => EdgeFlush::match($pattern, $tag),
-        );
-    }
-
-    public function tagIsNotExcluded(string $tag): bool
-    {
-        return !$this->tagIsExcluded($tag);
-    }
-
     public function storeCacheTags(Collection $models, array $tags, string $url): void
     {
         if ($this->cannotStoreCacheTags($url)) {
@@ -213,7 +199,7 @@ class Tags
         ";
     }
 
-    public function dispatchInvalidationsForModel(Collection|string|Model $models): void
+    public function dispatchInvalidationsForModel(Collection|string|Model $models, string|null $type = null): void
     {
         if (blank($models)) {
             return;
@@ -237,14 +223,18 @@ class Tags
             return;
         }
 
+        Helpers::debug('DISPATCHING for models: ' . json_encode($models->map(fn(Model $model) => $this->makeModelName($model))));
+
         /**
          * @var Model $model
          */
         $model = $models->first();
 
-        $model->wasRecentlyCreated
-            ? $this->dispatchInvalidationsForCreatedModel($models)
-            : $this->dispatchInvalidationsForUpdatedModel($models);
+        match ($type) {
+            'created' => $this->dispatchInvalidationsForCreatedModel($models),
+            'updated' => $this->dispatchInvalidationsForUpdatedModel($models),
+            'deleted' => $this->dispatchInvalidationsForUpdatedModel($models),
+        };
     }
 
     public function dispatchInvalidationsForCreatedModel(Collection $models): void
@@ -282,9 +272,13 @@ class Tags
 
         $modelNames = $this->getModelNamesFromModels($models);
 
+        if (blank($modelNames)) {
+            return;
+        }
+
         Helpers::debug('INVALIDATING tags for models: ' . $modelNames->join(', '));
 
-        dispatch(new InvalidateTags((new Invalidation())->setModels($modelNames)));
+        //dispatch(new InvalidateTags((new Invalidation())->setModels($modelNames)));
     }
 
     protected function getModelNamesFromModels(Collection $models): Collection
@@ -295,9 +289,14 @@ class Tags
          * @var Model $model
          */
         foreach ($models as $model) {
-            foreach ($model->getAttributes() as $key => $updated) {
-                if ($updated !== $model->getOriginal($key) && $this->granularPropertyIsAllowed($key, $model)) {
+            foreach ($model->getAttributes() as $key => $value) {
+                $updated = $this->encodeValueForComparison($value);
+                $original = $this->encodeValueForComparison($model->getRawOriginal($key), gettype($value));
+
+                if ($updated !== $original && $this->granularPropertyIsAllowed($key, $model)) {
                     $modelName = $this->makeModelName($model, $key);
+
+                    Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
 
                     if (filled($modelName)) {
                         $modelNames->push($modelName);
@@ -604,8 +603,6 @@ class Tags
 
             $result = DB::statement($statement);
 
-            dump($statement);
-
             if (!$result) {
                 return false;
             }
@@ -826,13 +823,6 @@ class Tags
         $this->invalidationDispatched = $this->invalidationDispatched->merge($missing);
 
         return $models->filter(fn($model) => $missing->contains($this->makeModelName($model)));
-    }
-
-    public function granularPropertyIsAllowed(string $name, Model $model): bool
-    {
-        $ignored = Helpers::collect(Helpers::configArray('edge-flush.invalidations.properties.ignored'));
-
-        return !$ignored->contains($name) && !$ignored->contains(get_class($model) . "@$name");
     }
 
     public function cannotStoreCacheTags(string $url): bool

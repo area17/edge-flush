@@ -287,8 +287,9 @@ class Helpers
 
         if (is_null($var)) {
             return collect();
-        }
 
+        }
         return collect([$var]);
     }
 }
+

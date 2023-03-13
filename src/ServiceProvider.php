@@ -2,10 +2,11 @@
 
 namespace A17\EdgeFlush;
 
+use A17\EdgeFlush\Services\DispatchedEvents;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
 use Illuminate\Support\Facades\Event;
-use A17\EdgeFlush\Listeners\EloquentSaved;
+use A17\EdgeFlush\Listeners\EloquentBooted;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Console\Commands\InvalidateAll;
 use A17\EdgeFlush\Console\Commands\ConfigListSections;
@@ -106,7 +107,9 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function bootEventListeners(): void
     {
-        Event::listen('eloquent.saved: *', EloquentSaved::class);
+        Event::listen('eloquent.booted: *', EloquentBooted::class);
+
+        app()->singleton('a17.edgeflush.dispatchedEvents', fn() => new DispatchedEvents());
     }
 
     public function registerMainConfig(): void

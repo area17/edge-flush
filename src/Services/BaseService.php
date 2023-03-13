@@ -7,13 +7,14 @@ use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
+use A17\EdgeFlush\Behaviours\CastObject;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Behaviours\ControlsInvalidations;
 use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
 abstract class BaseService implements ServiceContract
 {
-    use ControlsInvalidations;
+    use ControlsInvalidations, CastObject;
 
     protected bool|null $enabled = null;
 

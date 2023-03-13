@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EdgeFlush extends BaseService
 {
+
     public string|null $cdnClass = null;
 
     public CDNService|null $cdn = null;
