@@ -34,59 +34,65 @@ return [
         ],
 
         'crud-strategy' => [
-            'update' => [
-                'strategy' => 'invalidate-dependents', // invalidate-dependents, invalidate-all
+            'updated' => [
+                /**
+                 * Default behaviour if model not specified
+                 *
+                 * invalidate-dependents: invalidate paths that depends of this model and attribute
+                 * invalidate-all: invalidate all paths
+                 * invalidate-none: don't do anything
+                 */
+                'default' => 'invalidate-dependents', // invalidate-dependents, invalidate-all, invalidate-none
+
+                /**
+                 * We can setup specific behaviour for each model, depending on how their attributes changes
+                 *
+                 * Let's say you have a listing on your site that shows all the posts on a page when you publish them.
+                 * If you create a new post unpublished, your pages should not be invalidated because this new post
+                 * would not appear on a page. But if you publish it, your pages should be invalidated.
+                 */
+                'when-models' => [
+                    [
+                        /**
+                         * List of models
+                         */
+                        'models' => [
+                            'App\Models\Artwork',
+                            'App\Models\Event',
+                        ],
+
+                        /**
+                         * When a particular attribute changes
+                         */
+                        'on-change' => [
+                            'published' => true,
+                        ],
+
+                        /**
+                         * Apply this strategy
+                         */
+                        'strategy' => 'invalidate-all',
+                    ]
+                ]
             ],
 
-            'create' => [
-                'strategy' => 'invalidate-all',
-            ]
-        ],
-    ],
+            'created' => [
+                'default' => 'invalidate-none',
 
-    /**
-     * Services configuration
-     */
-    'services' => [
-        'akamai' => [
-            'host' => env('EDGE_FLUSH_AKAMAI_HOST'),
-            'access_token' => env('EDGE_FLUSH_AKAMAI_ACCESS_TOKEN'),
-            'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN'),
-            'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET'),
-            'invalidate_all_paths' => ['*'],
-            'max_urls' => 500, // Akamai is limited to 500 cache tags per minute
-        ],
+                'when-models' => [
+                    [
+                        'models' => [
+                            'App\Models\Artwork',
+                        ],
 
-        'cloud_front' => [
-            'enabled' => env('EDGE_FLUSH_CLOUD_FRONT_ENABLED', true),
+                        'strategy' => 'invalidate-all',
+                    ]
+                ]
+            ],
 
-            'sdk_version' => env(
-                'EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION',
-                '2016-01-13',
-            ),
-
-            'region' => env(
-                'EDGE_FLUSH_AWS_DEFAULT_REGION',
-                env('AWS_DEFAULT_REGION', 'us-east-1'),
-            ),
-
-            'distribution_id' => env(
-                'EDGE_FLUSH_AWS_CLOUDFRONT_DISTRIBUTION_ID',
-            ),
-
-            'key' => env(
-                'EDGE_FLUSH_AWS_CLOUDFRONT_KEY',
-                env('AWS_ACCESS_KEY_ID'),
-            ),
-
-            'secret' => env(
-                'EDGE_FLUSH_AWS_CLOUDFRONT_SECRET',
-                env('AWS_SECRET_ACCESS_KEY'),
-            ),
-
-            'invalidate_all_paths' => ['/*'],
-
-            'max_urls' => 3000, // CloudFront has this limit
+            'deleted' => [
+                'default' => 'invalidate-all',
+            ],
         ],
     ],
 ];

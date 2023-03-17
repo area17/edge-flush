@@ -207,22 +207,33 @@ class Tags
 
         Helpers::debug('DISPATCHING for model: ' . $entity->modelName);
 
-        match ($entity->event) {
-            'created' => $this->dispatchInvalidationsForCreatedModel($entity),
-            'updated' => $this->dispatchInvalidationsForUpdatedModel($entity),
-            'deleted' => $this->dispatchInvalidationsForUpdatedModel($entity),
-        };
+        $strategy = $this->dispatchInvalidationsForCrud($entity);
     }
 
-    public function dispatchInvalidationsForCreatedModel(): void
+    public function dispatchInvalidationsForCrud(Entity $entity): void
     {
-        /**
-         * @var string $strategy
-         */
-        $strategy = config('edge-flush.crud-strategy.update.strategy', 'invalidate-all');
+        $strategy = $this->getCrudStrategy($entity);
+
+        if ($strategy === 'invalidate-none') {
+            return;
+        }
 
         if ($strategy === 'invalidate-all') {
+            Helpers::debug('INVALIDATING ALL tags');
+
             $this->invalidateAll(true);
+
+            return;
+        }
+
+        if ($strategy === 'invalidate-dependents') {
+            Helpers::debug('INVALIDATING tags for model: ' . $entity->modelName);
+
+            $invalidation = new Invalidation();
+
+            $invalidation->setModels($entity->getDirtyModelNames());
+
+            $this->invalidateTags($invalidation);
 
             return;
         }
@@ -230,30 +241,40 @@ class Tags
         throw new \Exception("Strategy '{$strategy}' Not implemented");
     }
 
-    public function dispatchInvalidationsForUpdatedModel(Entity $entity): void
+    public function getCrudStrategy(Entity $entity): string
     {
-        /**
-         * @var string $strategy
-         */
-        $strategy = config('edge-flush.crud-strategy.update.strategy', 'invalidate-dependents');
+        $strategy = config("edge-flush.invalidations.crud-strategy.{$entity->event}");
 
-        if ($strategy === 'invalidate-all') {
-            $this->invalidateAll(true);
+        $defaultStrategy = $strategy['default'] ?? 'invalidate-dependents';
 
-            return;
+        if (blank($strategy)) {
+            return $defaultStrategy;
         }
 
-        if ($strategy !== 'invalidate-dependents') {
-            throw new \Exception("Strategy '{$strategy}' Not implemented");
+        foreach ($strategy['when-models'] ?? [] as $modelStrategy) {
+            // Model is not in the list of models
+            if (!in_array($entity->modelClass, $modelStrategy['models'])) {
+                continue;
+            }
+
+            // There's no on-change condition
+            if (blank($modelStrategy['on-change'] ?? null)) {
+                return $modelStrategy['strategy'];
+            }
+
+            // Let's check if the attribute has changed to the expected value
+            foreach ($modelStrategy['on-change'] as $key => $value) {
+                // Did it change?
+                // Is the expected value the same as the current value?
+                // If key == value, then we're checking if the attribute was just changed
+                if ($entity->isDirty($key) && ($key === $value || $entity->attributeEquals($key, $value))) {
+                    return $modelStrategy['strategy'];
+                }
+            }
         }
 
-        Helpers::debug('INVALIDATING tags for model: ' . $entity->modelName);
-
-        $invalidation = new Invalidation();
-
-        $invalidation->setModels($entity->getDirtyModelNames());
-
-        $this->invalidateTags($invalidation);
+        // No strategy found, let's use the default
+        return $defaultStrategy;
     }
 
     public function invalidateTags(Invalidation $invalidation): void

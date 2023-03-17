@@ -28,6 +28,7 @@ class ServiceProvider extends IlluminateServiceProvider
         'classes',
         'routes',
         'invalidations',
+        'services',
         'warmer',
         'responses',
         'frontend-checker',

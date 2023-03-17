@@ -52,19 +52,29 @@ class Entity
         }
     }
 
-    public function isDirty()
+    public function isDirty(string|null $targetKey = null): bool
     {
+        $dirty = false;
+
         foreach ($this->attributes as $key => $value) {
+            $keyIsDirty = false;
+
             $updated = $this->encodeValueForComparison($value);
 
             $original = $this->encodeValueForComparison($this->original[$key], gettype($value));
 
             if ($updated !== $original && $this->granularPropertyIsAllowed($key, $this->modelClass)) {
-                $dirty = true;
+                $keyIsDirty = true;
             }
+
+            if ($targetKey === $key) {
+                return $keyIsDirty;
+            }
+
+            $dirty = $dirty || $keyIsDirty;
         }
 
-        return $dirty ?? false;
+        return $dirty;
     }
 
     public function mustInvalidate(): bool
@@ -109,5 +119,26 @@ class Entity
         }
 
         return $modelNames;
+    }
+
+    public function getOriginal(string $key): mixed
+    {
+        return $this->original[$key] ?? null;
+    }
+
+    public function getNew(string $key): mixed
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    public function attributeEquals(string $key, mixed $value): bool
+    {
+        Helpers::debug("ATTRIBUTE EQUALS: {$key} = {$value}");
+
+        $attribute = $this->encodeValueForComparison($this->attributes[$key] ?? null);
+
+        $original = $this->encodeValueForComparison($value, gettype($attribute));
+
+        return $attribute === $original;
     }
 }
