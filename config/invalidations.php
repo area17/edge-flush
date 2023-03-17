@@ -79,6 +79,9 @@ return [
             ],
 
             'created' => [
+                /**
+                 * If when-model condition is not met, we don't do anything
+                 */
                 'default' => 'invalidate-none',
 
                 'when-models' => [
@@ -87,12 +90,22 @@ return [
                             'App\Models\Person',
                         ],
 
+                        /**
+                         * If we are creating a new person, already published, we should invalidate the whole site
+                         */
+                        'on-change' => [
+                            'published' => true, // attribute changed to "true"
+                        ],
+
                         'strategy' => 'invalidate-all',
                     ]
                 ]
             ],
 
             'deleted' => [
+                /**
+                 * Anything deleted on the website invalidates the whole site
+                 */
                 'default' => 'invalidate-all',
             ],
         ],
