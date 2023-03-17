@@ -84,7 +84,7 @@ return [
                 'when-models' => [
                     [
                         'models' => [
-                            'App\Models\Artwork',
+                            'App\Models\Person',
                         ],
 
                         'strategy' => 'invalidate-all',
