@@ -65,11 +65,13 @@ return [
                          * When a particular attribute changes
                          */
                         'on-change' => [
-                            'published' => true,
+                            'published' => true, // attribute changed to "true"
                         ],
 
                         /**
-                         * Apply this strategy
+                         * Invalidate the whole site
+                         *
+                         * TODO: should we tell which pages to invalidate here?
                          */
                         'strategy' => 'invalidate-all',
                     ]
