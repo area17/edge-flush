@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use A17\EdgeFlush\Behaviours\CachedOnCDN;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Tag extends Model
 {
+    use CachedOnCDN;
+
     protected $table = 'edge_flush_tags';
 
     protected $fillable = ['index_hash', 'model', 'tag', 'url_id'];

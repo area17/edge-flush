@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use A17\EdgeFlush\Behaviours\CachedOnCDN;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Url extends Model
 {
+    use CachedOnCDN;
+
     protected $table = 'edge_flush_urls';
 
     protected $fillable = ['url', 'url_hash', 'hits', 'was_purged_at', 'invalidation_id', 'is_valid'];

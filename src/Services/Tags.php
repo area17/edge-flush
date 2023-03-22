@@ -46,18 +46,25 @@ class Tags
 
     public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
     {
-        if (!$this->wasNotProcessed($model)) {
+        if (!EdgeFlush::enabled() || !$this->wasNotProcessed($model)) {
             return;
         }
 
-        if (!EdgeFlush::enabled() || blank($model->getAttributes()[$key] ?? null)) {
+        if ($this->attributeMustBeIgnored($model, $key) || blank($model->getAttributes()[$key] ?? null)) {
             return;
         }
 
         $tags = [
-            $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys),
             $this->makeModelName($model, $key, $allowedKeys),
         ];
+
+        // $tags[] = $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys), // TODO: do we need the ANY_TAG?
+
+        foreach ($this->getAlwaysAddAttributes($model) as $attrribute) {
+            if ($model->hasAttribute($attrribute)) {
+                $tags[] = $this->makeModelName($model, $attrribute, $allowedKeys);
+            }
+        }
 
         foreach ($tags as $tag) {
             if (blank($this->tags[$tag] ?? null)) {
@@ -215,6 +222,8 @@ class Tags
         $strategy = $this->getCrudStrategy($entity);
 
         if ($strategy === 'invalidate-none') {
+            Helpers::debug('NO INVALIDATION needed for model ' . $entity->modelClass);
+
             return;
         }
 
@@ -227,7 +236,7 @@ class Tags
         }
 
         if ($strategy === 'invalidate-dependents') {
-            Helpers::debug('INVALIDATING tags for model: ' . $entity->modelName);
+            Helpers::debug('INVALIDATING tags for model ' . $entity->modelName);
 
             $invalidation = new Invalidation();
 
@@ -776,5 +785,21 @@ class Tags
     public function cannotStoreCacheTags(string $url): bool
     {
         return !EdgeFlush::enabled() || !EdgeFlush::storeTagsServiceIsEnabled() || !$this->domainAllowed($url);
+    }
+
+    protected function attributeMustBeIgnored(Model $model, $attribute): bool
+    {
+        $attributes = config("edge-flush.invalidations.attributes.ignore", []);
+
+        $ignore = ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
+
+        return in_array($attribute, $ignore);
+    }
+
+    protected function getAlwaysAddAttributes(Model $model): array
+    {
+        $attributes = config("edge-flush.invalidations.attributes.always-add", []);
+
+        return ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
     }
 }

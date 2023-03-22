@@ -33,6 +33,18 @@ return [
             'roots' => ['/*'],
         ],
 
+        /**
+         * Ignore certain attributes when invalidating or creating tags
+         */
+        'attributes' => [
+            'ignore' => [
+                '*' => ['id']
+            ],
+            'always-add' => [
+                '*' => ['published']
+            ],
+        ],
+
         'crud-strategy' => [
             'updated' => [
                 /**
@@ -74,6 +86,14 @@ return [
                          * TODO: should we tell which pages to invalidate here?
                          */
                         'strategy' => 'invalidate-all',
+                    ],
+                    [
+                        'models' => [
+                            A17\EdgeFlush\Models\URL::class,
+                            A17\EdgeFlush\Models\Tag::class,
+                        ],
+
+                        'strategy' => 'invalidate-none',
                     ]
                 ]
             ],
@@ -98,8 +118,16 @@ return [
                         ],
 
                         'strategy' => 'invalidate-all',
+                    ],
+                    [
+                        'models' => [
+                            A17\EdgeFlush\Models\Url::class,
+                            A17\EdgeFlush\Models\Tag::class,
+                        ],
+
+                        'strategy' => 'invalidate-none',
                     ]
-                ]
+                ],
             ],
 
             'deleted' => [
@@ -107,6 +135,17 @@ return [
                  * Anything deleted on the website invalidates the whole site
                  */
                 'default' => 'invalidate-all',
+
+                'when-models' => [
+                    [
+                        'models' => [
+                            A17\EdgeFlush\Models\Url::class,
+                            A17\EdgeFlush\Models\Tag::class,
+                        ],
+
+                        'strategy' => 'invalidate-none',
+                    ],
+                ],
             ],
         ],
     ],
