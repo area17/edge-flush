@@ -38,7 +38,7 @@ return [
          */
         'attributes' => [
             'ignore' => [
-                '*' => ['id']
+                '*' => ['id', 'locale']
             ],
             'always-add' => [
                 '*' => ['published']

@@ -46,7 +46,7 @@ class Tags
 
     public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
     {
-        if (!EdgeFlush::enabled() || !$this->wasNotProcessed($model)) {
+        if (!EdgeFlush::enabled()) {
             return;
         }
 
@@ -54,9 +54,13 @@ class Tags
             return;
         }
 
-        $tags = [
-            $this->makeModelName($model, $key, $allowedKeys),
-        ];
+        $tag = $this->makeModelName($model, $key, $allowedKeys);
+
+        if (blank($tag) || $this->alreadyProcessed($tag)) {
+            return;
+        }
+
+        $tags = [$tag];
 
         // $tags[] = $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys), // TODO: do we need the ANY_TAG?
 
@@ -70,6 +74,10 @@ class Tags
             if (blank($this->tags[$tag] ?? null)) {
                 $this->tags[$tag] = $tag;
             }
+        }
+
+        if ($key === 'intro_text') {
+            info('intro_text 5 - attributeMustBeIgnored');
         }
     }
 
@@ -354,6 +362,8 @@ class Tags
             return;
         }
 
+        Helpers::debug($this->markTagsAsObsoleteSql($type, $list));
+
         $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
     }
 
@@ -445,23 +455,15 @@ class Tags
     /*
      * Optimized for speed, 2000 calls to EdgeFlush::tags()->addTag($model) are now only 8ms
      */
-    protected function wasNotProcessed(Model $model): bool
+    protected function alreadyProcessed(string $tag): bool
     {
-        $id = $model->getAttributes()[$model->getKeyName()] ?? null;
-
-        if ($id === null) {
-            return false; /// don't process models with no ID yet
+        if (($this->processedTags[$tag] ?? null) === true) {
+            return true;
         }
 
-        $key = $model->getTable() . '-' . $id;
+        $this->processedTags[$tag] = true;
 
-        if (filled($this->processedTags[$key] ?? null) && (bool) $this->processedTags[$key]) {
-            return false;
-        }
-
-        $this->processedTags[$key] = true;
-
-        return true;
+        return false;
     }
 
     public function invalidateAll(bool $force = false): Invalidation
