@@ -154,7 +154,14 @@ class Tags
         $indexes = Helpers::collect();
 
         DB::transaction(function () use ($models, $tags, $url, &$indexes) {
-            $url = $this->createUrl($url);
+            Helpers::debug('CREATE MISSING URL: '.$url);
+
+            $url = $this->createMissingUrl($url);
+
+            /**
+             * Origin is being hit on this URL, so we can mark it as not obsolete too
+             */
+            $this->markUrlAsHit($url);
 
             $now = (string) now();
 
@@ -361,8 +368,6 @@ class Tags
         if ($list === "''" || is_null($type) || blank($type)) {
             return;
         }
-
-        Helpers::debug($this->markTagsAsObsoleteSql($type, $list));
 
         $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
     }
@@ -600,7 +605,7 @@ class Tags
      * @param string $url
      * @return Url
      */
-    function createUrl(string $url): Url
+    function createMissingUrl(string $url): Url
     {
         $url = Helpers::sanitizeUrl($url);
 
@@ -616,7 +621,7 @@ class Tags
     public function makeTagIndex(Url|string $url, array $tags, string $model): string
     {
         if (is_string($url)) {
-            $url = $this->createUrl($url);
+            $url = $this->createMissingUrl($url);
         }
 
         $index = "{$url->id}-{$tags['cdn']}-{$model}";
@@ -803,5 +808,22 @@ class Tags
         $attributes = config("edge-flush.invalidations.attributes.always-add", []);
 
         return ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
+    }
+
+    protected function markUrlAsHit(Model $url)
+    {
+        $url->hits++;
+
+        $url->obsolete = false;
+
+        $url->obsolete = false;
+
+        $url->was_purged_at = null;
+
+        $url->invalidation_id = null;
+
+        $url->save();
+
+        Helpers::debug([$url->toArray(), 'markUrlAsHit']);
     }
 }
