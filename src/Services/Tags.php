@@ -75,10 +75,6 @@ class Tags
                 $this->tags[$tag] = $tag;
             }
         }
-
-        if ($key === 'intro_text') {
-            info('intro_text 5 - attributeMustBeIgnored');
-        }
     }
 
     protected function getAllTagsForModel(string|null $modelString): Collection|null
@@ -286,7 +282,7 @@ class Tags
                 return $modelStrategy['strategy'];
             }
 
-            // Let's check if the attribute has changed to the expected value
+            // Check if the attribute has changed to the expected value
             foreach ($modelStrategy['on-change'] as $key => $value) {
                 // Did it change?
                 // Is the expected value the same as the current value?
