@@ -65,9 +65,9 @@ class Tags
 
         // $tags[] = $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys), // TODO: do we need the ANY_TAG?
 
-        foreach ($this->getAlwaysAddAttributes($model) as $attrribute) {
-            if ($model->hasAttribute($attrribute)) {
-                $tags[] = $this->makeModelName($model, $attrribute, $allowedKeys);
+        foreach ($this->getAlwaysAddAttributes($model) as $attribute) {
+            if ($model->hasAttribute($attribute)) {
+                $tags[] = $this->makeModelName($model, $attribute, $allowedKeys);
             }
         }
 
@@ -373,6 +373,8 @@ class Tags
         if ($list === "''" || is_null($type) || blank($type)) {
             return;
         }
+
+        Helpers::debug("Marking tags as obsolete: {$type} in ({$list})");
 
         $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
     }

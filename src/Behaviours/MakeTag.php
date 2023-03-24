@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Behaviours;
 
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
@@ -21,10 +22,12 @@ trait MakeTag
             return $model === false ? null : sha1($model);
         }
 
+        $type = blank($key) ? null : ($this->isRelation($model, $key) ? 'relation' : 'attribute');
+
         try {
             return method_exists($model, 'getCDNCacheTag') && $this->keyIsAllowed($key, $allowedKeys)
-                ? $model->getCDNCacheTag($key)
-                : $this->getCDNCacheTagFromModel($model, $key);
+                ? $model->getCDNCacheTag($key, $type)
+                : $this->getCDNCacheTagFromModel($model, $key, $type);
         } catch (\Exception $exception) {
             Helpers::debug("Exception on makeModelName: ".$exception->getMessage());
 
@@ -41,7 +44,7 @@ trait MakeTag
         return Helpers::collect($allowedKeys)->contains($key);
     }
 
-    public function getCDNCacheTagFromModel(mixed $model, string $key = null): string|null
+    public function getCDNCacheTagFromModel(mixed $model, string $key = null, string|null $type = null): string|null
     {
         $model = $this->getInternalModel($model);
 
@@ -49,7 +52,7 @@ trait MakeTag
             return null;
         }
 
-        return $model->getCDNCacheTag($key);
+        return $model->getCDNCacheTag($key, $type);
     }
 
     public function tagIsExcluded(string $tag): bool

@@ -26,11 +26,13 @@ trait CachedOnCDN
         EdgeFlush::tags()->dispatchInvalidationsForModel($object);
     }
 
-    public function getCDNCacheTag(string $key = null): string
+    public function getCDNCacheTag(string $key = null, string|null $type = null): string
     {
         if (!$this->edgeFlushIsEnabled()) {
             return '';
         }
+
+        $type ??= 'attribute';
 
         /** @phpstan-ignore-next-line */
         return $this->attributes[$this->getKeyName()] ?? false
@@ -39,7 +41,7 @@ trait CachedOnCDN
                     /** @phpstan-ignore-next-line */
                     $this->getKey() .
                     ']' .
-                    (filled($key) ? "[{$key}]" : '')
+                    (filled($key) ? "[{$type}:{$key}]" : '')
             : '';
     }
 
