@@ -17,6 +17,10 @@ class Middleware
     {
         $response = $next($request);
 
-        return EdgeFlush::setRequest($request)->makeResponse($response);
+        if (config('edge-flush.enabled.package')) {
+            return EdgeFlush::setRequest($request)->makeResponse($response);
+        }
+
+        return $response;
     }
 }
