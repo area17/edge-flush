@@ -4,6 +4,7 @@ namespace A17\EdgeFlush\Behaviours;
 
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Support\Helpers;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use A17\EdgeFlush\Services\Invalidation;
@@ -94,5 +95,31 @@ trait MakeTag
         $model = $model instanceof Model ? get_class($model) : $model;
 
         return !$ignored->contains($name) && !$ignored->contains("$model@$name");
+    }
+
+    public function attributeExists(Model $model, string $attribute): bool
+    {
+        $attributes = $model->getAttributes();
+
+        if (isset($attributes[$attribute])) {
+            return true;
+        }
+
+        return $this->isRelation($model, $attribute);
+    }
+
+    public function isRelation(Model $model, string $attribute): bool
+    {
+        if (!method_exists($model, $attribute)) {
+            return false;
+        }
+
+        try {
+            $relation = $model->$attribute();
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return $relation instanceof Relation;
     }
 }

@@ -47,7 +47,12 @@ class EloquentObserver
         $this->invalidate($model, 'deleted');
     }
 
-    public function invalidate(Model $model, string $event): void
+    public function pivotSynced($observed, $model, $relationName, $changes)
+    {
+        $this->invalidate($model, 'pivot-synced', ['name' => $relationName, 'changes' => $changes]);
+    }
+
+    public function invalidate(Model $model, string $event, array $relation = []): void
     {
         if ($this->tagIsExcluded(get_class($model))) {
             return;
@@ -57,9 +62,14 @@ class EloquentObserver
             return;
         }
 
-        Helpers::debug("MODEL EVENT: {$event} on model ".get_class($model));
-
         $entity = new Entity($model, $event);
+
+        $entity->setRelation($relation);
+
+        Helpers::debug(
+            "MODEL EVENT: {$event} on model ".$entity->modelName.
+            (($relation['name'] ?? null) ? " on relation {$relation['name']}" : '')
+        );
 
         if ($entity->mustInvalidate()) {
             $this->invalidateCDNCache($entity);

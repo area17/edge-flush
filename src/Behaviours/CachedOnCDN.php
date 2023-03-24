@@ -7,6 +7,7 @@ use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Database\Eloquent\Model;
 use A17\EdgeFlush\Jobs\InvalidateModel;
+use GeneaLabs\LaravelPivotEvents\Traits\PivotEventTrait;
 
 trait CachedOnCDN
 {

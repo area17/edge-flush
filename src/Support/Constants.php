@@ -45,4 +45,12 @@ class Constants
     const INVALIDATION_TYPE_TAG = 'tag';
 
     const INVALIDATION_TYPE_PATH = 'path';
+    
+    // -------- invalidation strategies
+
+    const INVALIDATION_STRATEGY_ALL = 'invalidate-all';
+
+    const INVALIDATION_STRATEGY_DEPENDENTS = 'invalidate-dependents';
+
+    const INVALIDATION_STRATEGY_NONE = 'invalidate-none';
 }

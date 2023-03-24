@@ -147,6 +147,13 @@ return [
                     ],
                 ],
             ],
+
+            'pivot-synced' => [
+                /**
+                 * Anything deleted on the website invalidates the whole site
+                 */
+                'default' => 'invalidate-dependents',
+            ],
         ],
     ],
 ];

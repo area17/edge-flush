@@ -2,11 +2,11 @@
 
 namespace A17\EdgeFlush\Services;
 
+use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Behaviours\MakeTag;
 use Illuminate\Database\Eloquent\Model;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
-use Illuminate\Support\Collection;
 
 class Entity
 {
@@ -25,6 +25,8 @@ class Entity
     public array $original = [];
 
     public bool $isValid = false;
+
+    public array $relations = [];
 
     public function __construct(Model $model, string|null $event = null)
     {
@@ -54,6 +56,11 @@ class Entity
 
     public function isDirty(string|null $targetKey = null): bool
     {
+        return $this->attributesAreDirty($targetKey) || $this->relationsAreDirty($targetKey);
+    }
+
+    public function attributesAreDirty(string|null $targetKey = null): bool
+    {
         $dirty = false;
 
         foreach ($this->attributes as $key => $value) {
@@ -75,6 +82,23 @@ class Entity
         }
 
         return $dirty;
+    }
+
+    public function relationsAreDirty(string|null $targetKey = null): bool
+    {
+        $relations = $this->relations;
+
+        if (filled($targetKey)) {
+            $relations = [$targetKey => $this->relations[$targetKey] ?? null];
+        }
+
+        foreach ($relations as $relationName => $_) {
+            if ($this->isRelationDirty($relationName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function mustInvalidate(): bool
@@ -108,11 +132,23 @@ class Entity
             $original = $this->encodeValueForComparison($this->original[$key], gettype($value));
 
             if ($updated !== $original && $this->granularPropertyIsAllowed($key, $this->modelName)) {
-                $modelName = "{$this->modelName}[{$key}]";
+                if (filled($this->modelName)) {
+                    $modelName = "{$this->modelName}[attribute:{$key}]";
 
-                Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
+                    Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
 
-                if (filled($modelName)) {
+                    $modelNames->push($modelName);
+                }
+            }
+        }
+
+        foreach ($this->relations as $name => $changed) {
+            if ($this->isRelationDirty($name) && $this->granularPropertyIsAllowed($name, $this->modelName)) {
+                if (filled($this->modelName)) {
+                    $modelName = "{$this->modelName}[relation:{$name}]";
+
+                    Helpers::debug("RELATION CHANGED: {$modelName}");
+
                     $modelNames->push($modelName);
                 }
             }
@@ -133,12 +169,34 @@ class Entity
 
     public function attributeEquals(string $key, mixed $value): bool
     {
-        Helpers::debug("ATTRIBUTE EQUALS: {$key} = {$value}");
-
         $attribute = $this->encodeValueForComparison($this->attributes[$key] ?? null);
 
         $original = $this->encodeValueForComparison($value, gettype($attribute));
 
         return $attribute === $original;
+    }
+
+    public function setRelation(array $relation): void
+    {
+        if (blank($name = $relation['name'] ?? null)) {
+            return;
+        }
+
+        $this->relations[$name] = $relation;
+    }
+
+    public function isRelationDirty(string|null $key): bool
+    {
+        if (empty($key)) {
+            return false;
+        }
+
+        foreach ($this->relations[$key] ?? [] as $value) {
+            if (filled($value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

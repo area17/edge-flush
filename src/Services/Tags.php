@@ -22,6 +22,7 @@ use A17\EdgeFlush\Behaviours\CastObject;
 use Illuminate\Database\Events\QueryExecuted;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Behaviours\ControlsInvalidations;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
@@ -50,7 +51,7 @@ class Tags
             return;
         }
 
-        if ($this->attributeMustBeIgnored($model, $key) || blank($model->getAttributes()[$key] ?? null)) {
+        if ($this->attributeMustBeIgnored($model, $key) || !$this->attributeExists($model, $key)) {
             return;
         }
 
@@ -232,21 +233,23 @@ class Tags
     {
         $strategy = $this->getCrudStrategy($entity);
 
-        if ($strategy === 'invalidate-none') {
-            Helpers::debug('NO INVALIDATION needed for model ' . $entity->modelClass);
+        if ($strategy === Constants::INVALIDATION_STRATEGY_NONE) {
+            Helpers::debug('NO INVALIDATION needed for model ' . $entity->modelName);
 
             return;
         }
 
-        if ($strategy === 'invalidate-all') {
+        if ($strategy === Constants::INVALIDATION_STRATEGY_ALL) {
             Helpers::debug('INVALIDATING ALL tags');
+
+            $this->markAsDispatched($entity);
 
             $this->invalidateAll(true);
 
             return;
         }
 
-        if ($strategy === 'invalidate-dependents') {
+        if ($strategy === Constants::INVALIDATION_STRATEGY_DEPENDENTS) {
             Helpers::debug('INVALIDATING tags for model ' . $entity->modelName);
 
             $invalidation = new Invalidation();
@@ -254,6 +257,8 @@ class Tags
             $invalidation->setModels($entity->getDirtyModelNames());
 
             $this->invalidateTags($invalidation);
+
+            $this->markAsDispatched($entity);
 
             return;
         }
@@ -263,9 +268,13 @@ class Tags
 
     public function getCrudStrategy(Entity $entity): string
     {
+        if (!$entity->isDirty()) {
+            return Constants::INVALIDATION_STRATEGY_NONE;
+        }
+
         $strategy = config("edge-flush.invalidations.crud-strategy.{$entity->event}");
 
-        $defaultStrategy = $strategy['default'] ?? 'invalidate-dependents';
+        $defaultStrategy = $strategy['default'] ?? Constants::INVALIDATION_STRATEGY_DEPENDENTS;
 
         if (blank($strategy)) {
             return $defaultStrategy;
@@ -778,11 +787,13 @@ class Tags
 
     public function alreadyDispatched(Entity $entity): bool
     {
-        $dispatched = $this->invalidationDispatched[$entity->modelName] ?? false;
+        foreach ($entity->getDirtyModelNames() as $modelName) {
+            if (!($this->invalidationDispatched[$modelName] ?? false)) {
+                return false;
+            }
+        }
 
-        $this->invalidationDispatched[$entity->modelName] = true;
-
-        return $dispatched;
+        return true;
     }
 
     public function cannotStoreCacheTags(string $url): bool
@@ -821,5 +832,12 @@ class Tags
         $url->save();
 
         Helpers::debug([$url->toArray(), 'markUrlAsHit']);
+    }
+
+    protected function markAsDispatched(Entity $entity): void
+    {
+        foreach ($entity->getDirtyModelNames() as $modelName) {
+            $this->invalidationDispatched[$modelName] = true;
+        }
     }
 }
