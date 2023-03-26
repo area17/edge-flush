@@ -214,4 +214,9 @@ class Warmer
 
         return $config;
     }
+
+    public function boot(): self
+    {
+        return $this;
+    }
 }

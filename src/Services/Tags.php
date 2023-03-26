@@ -36,13 +36,21 @@ class Tags
 
     public Collection $processedTags;
 
-    public function __construct()
+    protected Url|null $url = null;
+
+    protected bool $booted = false;
+
+    protected Request|null $request = null;
+
+    public function __construct(Request|null $request = null)
     {
-        $this->tags = Helpers::collect();
+        $this->request = $request ?? request();
 
-        $this->processedTags = Helpers::collect();
+        $this->processedTags = collect();
 
-        $this->invalidationDispatched = Helpers::collect();
+        $this->tags = collect();
+
+        $this->invalidationDispatched = collect();
     }
 
     public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
@@ -98,19 +106,15 @@ class Tags
 
     public function getTagsHash(Response $response, Request $request): string
     {
-        $tag = $this->makeEdgeTag($models = $this->getTags());
+        $url = $this->getCurrentUrl($request);
 
         if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
-            StoreTags::dispatch(
-                $models,
-                [
-                    'cdn' => $tag,
-                ],
-                $this->getCurrentUrl($request),
-            );
+            Helpers::debug('DISPATCH STORE-TAGS: '.$url);
+
+            StoreTags::dispatch($this->getTags(), $url);
         }
 
-        return $tag;
+        return $this->makeUrl($url)->getEdgeCacheTag();
     }
 
     public function makeEdgeTag(Collection|null $models = null): string
@@ -133,9 +137,9 @@ class Tags
         );
     }
 
-    public function storeCacheTags(Collection $models, array $tags, string $url): void
+    public function storeCacheTags(Collection $models, string $url): void
     {
-        if ($this->cannotStoreCacheTags($url)) {
+        if (!$this->canStoreCacheTags($url)) {
             return;
         }
 
@@ -143,33 +147,29 @@ class Tags
             'STORE-TAGS: ' .
                 json_encode([
                     'models' => $models,
-                    'tags' => $tags,
                     'url' => $url,
                 ]),
         );
 
         $indexes = Helpers::collect();
 
-        DB::transaction(function () use ($models, $tags, $url, &$indexes) {
+        DB::transaction(function () use ($models, $url, &$indexes) {
             Helpers::debug('CREATE MISSING URL: '.$url);
 
-            $url = $this->createMissingUrl($url);
+            $this->url = $this->makeUrl($url);
 
-            /**
-             * Origin is being hit on this URL, so we can mark it as not obsolete too
-             */
-            $this->markUrlAsHit($url);
+            $this->markUrlAsHit($this->url);
 
             $now = (string) now();
 
             $indexes = Helpers::collect($models)
                 ->filter()
-                ->map(function (mixed $model) use ($tags, $url, $now) {
+                ->map(function (mixed $model) use ($now) {
                     $model = Helpers::toString($model);
 
-                    $index = $this->makeTagIndex($url, $tags, $model);
+                    $index = $this->makeTagIndex($this->url, $model);
 
-                    $this->dbStatement($this->getStoreCacheTagsInsertSql($index, $url, $tags['cdn'], $model, $now));
+                    $this->dbStatement($this->getStoreCacheTagsInsertSql($index, $this->url, $model, $now));
 
                     return $index;
                 });
@@ -185,13 +185,12 @@ class Tags
     protected function getStoreCacheTagsInsertSql(
         string $index,
         Url $url,
-        string $cdn,
         string $model,
         string $now
     ): string {
         return "
-            insert into edge_flush_tags (index_hash, url_id, tag, model, created_at, updated_at)
-            select '{$index}', {$url->id}, '{$cdn}', '{$model}', '{$now}', '{$now}'
+            insert into edge_flush_tags (index_hash, url_id, model, created_at, updated_at)
+            select '{$index}', {$url->id}, '{$model}', '{$now}', '{$now}'
             where not exists (
                 select 1
                 from edge_flush_tags
@@ -612,28 +611,43 @@ class Tags
      * @param string $url
      * @return Url
      */
-    function createMissingUrl(string $url): Url
+    function makeUrl(string $url): Url
     {
         $url = Helpers::sanitizeUrl($url);
 
-        return Url::firstOrCreate(
-            ['url_hash' => sha1($url)],
-            [
-                'url' => Str::limit($url, 255),
-                'hits' => 1,
-            ],
-        );
-    }
-
-    public function makeTagIndex(Url|string $url, array $tags, string $model): string
-    {
-        if (is_string($url)) {
-            $url = $this->createMissingUrl($url);
+        if (filled($this->url) && $this->url->url === $url) {
+            return $this->url;
         }
 
-        $index = "{$url->id}-{$tags['cdn']}-{$model}";
+        $hash = sha1($url);
 
-        return sha1($index);
+        $id = ['url_hash' => $hash];
+
+        $attributes = ['url' => $url];
+
+        // If we cannot store cache tags, we will not store the URL either.
+        if (!$this->canStoreCacheTags($url)) {
+            $model = new Url($id + $attributes);
+
+            $model->canBeSaved = false;
+
+            return $model;
+        }
+
+        $this->url = Url::firstOrCreate($id, $attributes);
+
+        $this->url->canBeSaved = true;
+
+        return $this->url;
+    }
+
+    public function makeTagIndex(Url|string $url, string $model): string
+    {
+        if (is_string($url)) {
+            $this->url = $this->makeUrl($url);
+        }
+
+        return sha1("{$this->url->url}:{$model}");
     }
 
     public function markUrlsAsPurged(Invalidation $invalidation): void
@@ -798,9 +812,12 @@ class Tags
         return true;
     }
 
-    public function cannotStoreCacheTags(string $url): bool
+    public function canStoreCacheTags(string $url): bool
     {
-        return !EdgeFlush::enabled() || !EdgeFlush::storeTagsServiceIsEnabled() || !$this->domainAllowed($url);
+        return EdgeFlush::enabled() &&
+            EdgeFlush::storeTagsServiceIsEnabled() &&
+            $this->domainAllowed($url) &&
+            EdgeFlush::cacheControl()->routeIsCachable();
     }
 
     protected function attributeMustBeIgnored(Model $model, $attribute): bool
@@ -819,21 +836,23 @@ class Tags
         return ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
     }
 
-    protected function markUrlAsHit(Model $url)
+    protected function markUrlAsHit(Url $url)
     {
-        $url->hits++;
+        if ($url->canBeSaved ?? true) {
+            $this->dbStatement($this->getUrlHitSql($url->id));
+        }
+    }
 
-        $url->obsolete = false;
-
-        $url->obsolete = false;
-
-        $url->was_purged_at = null;
-
-        $url->invalidation_id = null;
-
-        $url->save();
-
-        Helpers::debug([$url->toArray(), 'markUrlAsHit']);
+    protected function getUrlHitSql(int $id): string
+    {
+        return "
+            update edge_flush_urls
+            set hits = hits + 1,
+                obsolete = false,
+                was_purged_at = null,
+                invalidation_id = null
+            where id = {$id};
+        ";
     }
 
     protected function markAsDispatched(Entity $entity): void
@@ -841,5 +860,54 @@ class Tags
         foreach ($entity->getDirtyModelNames() as $modelName) {
             $this->invalidationDispatched[$modelName] = true;
         }
+    }
+
+    public function getEdgeCacheTag()
+    {
+        if (blank($this->url)) {
+            $this->url = $this->makeUrl($this->getCurrentUrl(request()));
+        }
+
+        return $this->url->getEdgeCacheTag();
+    }
+
+    /**
+     * Origin is being hit on this URL, so we can mark it as not obsolete too
+     */
+    public function bootIfNotBooted(Request|null $request = null): void
+    {
+        if ($this->booted) {
+            return;
+        }
+
+        if (app()->runningInConsole()) {
+            Helpers::debug('EdgeFlush: Requested from console, ignoring');
+
+            return;
+        }
+
+        Helpers::debug('EdgeFlush: request being processed normally');
+
+        $this->instantiate();
+
+        $this->makeUrl($this->getCurrentUrl($request ?? request()));
+
+        $this->booted = true;
+    }
+
+    public function instantiate(): void
+    {
+        $this->tags = Helpers::collect();
+
+        $this->processedTags = Helpers::collect();
+
+        $this->invalidationDispatched = Helpers::collect();
+    }
+
+    public function boot(): self
+    {
+        $this->bootIfNotBooted();
+
+        return $this;
     }
 }

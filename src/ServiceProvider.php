@@ -92,9 +92,9 @@ class ServiceProvider extends IlluminateServiceProvider
 
             return new EdgeFlush(
                 $service,
-                $app->make(config('edge-flush.classes.cache-control')),
-                $app->make(config('edge-flush.classes.tags')),
-                $app->make(config('edge-flush.classes.warmer')),
+                $app->make(config('edge-flush.classes.cache-control'), ['request' => request()]),
+                $app->make(config('edge-flush.classes.tags'), ['request' => request()]),
+                $app->make(config('edge-flush.classes.warmer'), ['request' => request()]),
             );
         });
 

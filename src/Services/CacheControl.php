@@ -466,4 +466,9 @@ class CacheControl extends BaseService implements ServiceContract
             return 0;
         }
     }
+
+    public function boot(): self
+    {
+        return $this;
+    }
 }

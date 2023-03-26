@@ -29,6 +29,10 @@ class EdgeFlush extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return 'a17.edge-flush.service';
+        $accessor = 'a17.edge-flush.service';
+
+        static::$app->afterResolving($accessor, fn() => app($accessor)->boot());
+
+        return $accessor;
     }
 }

@@ -167,6 +167,10 @@ return [
 
             // Other classes
             'Spatie\Activitylog\Models\Activity',
+
+            // EdgeFlush own models
+            \A17\EdgeFlush\Models\Url::class,
+            \A17\EdgeFlush\Models\Tag::class,
         ],
 
         'external-models' => [

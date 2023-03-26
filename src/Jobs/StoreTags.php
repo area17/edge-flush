@@ -23,11 +23,9 @@ class StoreTags implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(Collection $models, array $tags, string $url)
+    public function __construct(Collection $models, string $url)
     {
         $this->models = $models;
-
-        $this->tags = $tags;
 
         $this->url = $url;
     }
@@ -39,6 +37,6 @@ class StoreTags implements ShouldQueue
      */
     public function handle(): void
     {
-        EdgeFlush::tags()->storeCacheTags($this->models, $this->tags, $this->url);
+        EdgeFlush::tags()->storeCacheTags($this->models, $this->url);
     }
 }

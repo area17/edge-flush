@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EdgeFlush extends BaseService
 {
-
     public string|null $cdnClass = null;
 
     public CDNService|null $cdn = null;
@@ -20,7 +19,7 @@ class EdgeFlush extends BaseService
 
     public Warmer $warmer;
 
-    public Request $request;
+    public Request|null $request = null;
 
     public function __construct(string $cdnClass, CacheControl $cacheControl, Tags $tags, Warmer $warmer)
     {
@@ -86,7 +85,7 @@ class EdgeFlush extends BaseService
 
     public function getRequest(): Request
     {
-        return $this->request;
+        return $this->request ?? request();
     }
 
     public function storeTagsServiceIsEnabled(): bool
@@ -107,5 +106,14 @@ class EdgeFlush extends BaseService
     public function packageName(): string
     {
         return Helpers::configString('edge-flush.package.name') ?? 'edge-flush';
+    }
+
+    public function boot()
+    {
+        $this->tags->boot();
+
+        $this->warmer->boot();
+
+        $this->cacheControl->boot();
     }
 }

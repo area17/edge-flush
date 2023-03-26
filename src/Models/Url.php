@@ -32,4 +32,9 @@ class Url extends Model
     {
         return $this->hasMany(Tag::class);
     }
+
+    public function getEdgeCacheTag(): string
+    {
+        return $this->url_hash;
+    }
 }
