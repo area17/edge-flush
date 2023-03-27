@@ -45,12 +45,12 @@ class Entity
 
         $this->modelName = $this->makeModelName($model);
 
-        $this->attributes = $model->getAttributes();
+        $this->attributes = $this->absorbAttributes($model->getAttributes());
 
         $this->isValid = $this->tagIsNotExcluded($this->modelClass);
 
         foreach ($this->attributes as $key => $value) {
-            $this->original[$key] = $model->getRawOriginal($key);
+            $this->original[$key] = $this->absorbAttributes($model->getRawOriginal($key));
         }
     }
 
@@ -198,5 +198,26 @@ class Entity
         }
 
         return false;
+    }
+
+    public function absorbAttributes(array $attributes): array
+    {
+        $absorbed = [];
+
+        foreach ($attributes as $key => $value) {
+            $absorbed[$key] = $this->absorbAttributeValue($value);
+        }
+
+        return $absorbed;
+    }
+
+    protected function absorbAttributeValue(mixed $value): mixed
+    {
+        // Too long strings are hashed to avoid hitting SQS limits
+        if (is_string($value) && strlen($value) > 512) {
+            return sha1($value);
+        }
+
+        return $value;
     }
 }
