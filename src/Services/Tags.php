@@ -30,11 +30,11 @@ class Tags
 {
     use ControlsInvalidations, MakeTag, Database, CastObject;
 
-    protected Collection $tags;
+    protected Collection|null $tags = null;
 
     protected Collection $invalidationDispatched;
 
-    public Collection $processedTags;
+    public Collection|null $processedTags = null;
 
     protected Url|null $url = null;
 
@@ -45,12 +45,6 @@ class Tags
     public function __construct(Request|null $request = null)
     {
         $this->request = $request ?? request();
-
-        $this->processedTags = collect();
-
-        $this->tags = collect();
-
-        $this->invalidationDispatched = collect();
     }
 
     public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
@@ -109,7 +103,7 @@ class Tags
         $url = $this->getCurrentUrl($request);
 
         if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
-            Helpers::debug('DISPATCH STORE-TAGS: '.$url);
+            Helpers::debug('DISPATCH STORE-TAGS: for '.$url.' having '.$this->getTags()->count().' tags');
 
             StoreTags::dispatch($this->getTags(), $url);
         }
@@ -154,7 +148,7 @@ class Tags
         $indexes = Helpers::collect();
 
         DB::transaction(function () use ($models, $url, &$indexes) {
-            Helpers::debug('CREATE MISSING URL: '.$url);
+            Helpers::debug('CREATE MISSING URL: '.$url.' for '.$models->count().' models');
 
             $this->url = $this->makeUrl($url);
 
@@ -468,6 +462,8 @@ class Tags
      */
     protected function alreadyProcessed(string $tag): bool
     {
+        $this->boot();
+
         if (($this->processedTags[$tag] ?? null) === true) {
             return true;
         }
@@ -880,23 +876,22 @@ class Tags
             return;
         }
 
-        if (app()->runningInConsole()) {
-            Helpers::debug('EdgeFlush: Requested from console, ignoring');
-
-            return;
-        }
-
-        Helpers::debug('EdgeFlush: request being processed normally');
+        $this->booted = true;
 
         $this->instantiate();
 
+        if (app()->runningInConsole()) {
+            return;
+        }
+
         $this->makeUrl($this->getCurrentUrl($request ?? request()));
 
-        $this->booted = true;
     }
 
     public function instantiate(): void
     {
+        Helpers::debug('Instantiating EdgeFlush - tags: ' . ($this->tags ? $this->tags->count() : 'null'));
+
         $this->tags = Helpers::collect();
 
         $this->processedTags = Helpers::collect();
