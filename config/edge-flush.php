@@ -16,6 +16,8 @@ return [
 
             'store-tags' => env('EDGE_FLUSH_STORE_TAGS_SERVICE_ENABLED', false),
         ],
+
+        'granular_invalidation' => env('EDGE_FLUSH_GRANULAR_INVALIDATION_ENABLED', true),
     ],
 
     /**

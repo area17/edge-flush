@@ -34,14 +34,17 @@ trait CachedOnCDN
 
         $type ??= 'attribute';
 
+        $granular = filled($key) && Helpers::configBool('edge-flush.enabled.granular_invalidation')
+                    ? "[{$type}:{$key}]"
+                    : '';
+
         /** @phpstan-ignore-next-line */
         return $this->attributes[$this->getKeyName()] ?? false
             ? static::class .
                     '[' .
-                    /** @phpstan-ignore-next-line */
-                    $this->getKey() .
-                    ']' .
-                    (filled($key) ? "[{$type}:{$key}]" : '')
+                        /** @phpstan-ignore-next-line */
+                        $this->getKey() .
+                    ']' . $granular
             : '';
     }
 
