@@ -131,11 +131,15 @@ class Entity
 
             if ($updated !== $original && $this->granularPropertyIsAllowed($key, $this->modelName)) {
                 if (filled($this->modelName)) {
-                    $modelName = "{$this->modelName}[attribute:{$key}]";
+                    $modelName = "{$this->modelName}";
+
+                    if (Helpers::configBool('edge-flush.enabled.granular_invalidation')) {
+                        $modelName .= "[attribute:{$key}]";
+                    }
 
                     Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
 
-                    $modelNames->push($modelName);
+                    $modelNames[$modelName] = $modelName;
                 }
             }
         }
@@ -143,11 +147,15 @@ class Entity
         foreach ($this->relations as $name => $changed) {
             if ($this->isRelationDirty($name) && $this->granularPropertyIsAllowed($name, $this->modelName)) {
                 if (filled($this->modelName)) {
-                    $modelName = "{$this->modelName}[relation:{$name}]";
+                    $modelName = "{$this->modelName}";
+
+                    if (Helpers::configBool('edge-flush.enabled.granular_invalidation')) {
+                        $modelName .= "[relation:{$name}]";
+                    }
 
                     Helpers::debug("RELATION CHANGED: {$modelName}");
 
-                    $modelNames->push($modelName);
+                    $modelNames[$modelName] = $modelName;
                 }
             }
         }

@@ -200,7 +200,7 @@ class Invalidation
             return $this;
         }
 
-        if (is_string($models[0])) {
+        if (is_string($models->first())) {
             $this->modelNames = $models;
         } else {
             $this->models = $models;
