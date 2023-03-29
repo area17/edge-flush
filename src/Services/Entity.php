@@ -49,9 +49,7 @@ class Entity
 
         $this->isValid = $this->tagIsNotExcluded($this->modelClass);
 
-        foreach ($this->attributes as $key => $value) {
-            $this->original[$key] = $this->absorbAttributes($model->getRawOriginal($key));
-        }
+        $this->original = $this->absorbOriginal($model);
     }
 
     public function isDirty(string|null $targetKey = null): bool
@@ -205,13 +203,13 @@ class Entity
         $absorbed = [];
 
         foreach ($attributes as $key => $value) {
-            $absorbed[$key] = $this->absorbAttributeValue($value);
+            $absorbed[$key] = $this->sanitizeAttributeValue($value);
         }
 
         return $absorbed;
     }
 
-    protected function absorbAttributeValue(mixed $value): mixed
+    protected function sanitizeAttributeValue(mixed $value): mixed
     {
         // Too long strings are hashed to avoid hitting SQS limits
         if (is_string($value) && strlen($value) > 512) {
@@ -219,5 +217,16 @@ class Entity
         }
 
         return $value;
+    }
+
+    public function absorbOriginal(Model $model): array
+    {
+        $original = [];
+
+        foreach ($this->attributes as $key => $value) {
+            $original[$key] = $this->sanitizeAttributeValue($model->getOriginal($key));
+        }
+
+        return $original;
     }
 }
