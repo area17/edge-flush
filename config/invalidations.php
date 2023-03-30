@@ -38,7 +38,9 @@ return [
          */
         'attributes' => [
             'ignore' => [
-                '*' => ['id', 'locale']
+                '*' => ['id', 'locale', 'localMacros', 'without'],
+
+                'App\Models\Translations\EventTranslation' => ['event_id']
             ],
             'always-add' => [
                 '*' => ['published']

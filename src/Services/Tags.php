@@ -115,7 +115,7 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $format = Helpers::toString(config('edge-flush.tags.format', 'app-%environment%-%sha1%'));
+        $format = Helpers::toString(Helpers::configString('edge-flush.tags.format', 'app-%environment%-%sha1%'));
 
         return str_replace(
             ['%environment%', '%sha1%'],
@@ -265,7 +265,7 @@ class Tags
             return Constants::INVALIDATION_STRATEGY_NONE;
         }
 
-        $strategy = config("edge-flush.invalidations.crud-strategy.{$entity->event}");
+        $strategy = Helpers::configArray("edge-flush.invalidations.crud-strategy.{$entity->event}");
 
         $defaultStrategy = $strategy['default'] ?? Constants::INVALIDATION_STRATEGY_DEPENDENTS;
 
@@ -311,7 +311,7 @@ class Tags
             return;
         }
 
-        config('edge-flush.invalidations.type') === 'batch'
+        Helpers::configString('edge-flush.invalidations.type') === 'batch'
             ? $this->markTagsAsObsolete($invalidation)
             : $this->dispatchInvalidations($invalidation);
     }
@@ -451,7 +451,7 @@ class Tags
         $invalidation->setMustInvalidateAll(true);
 
         EdgeFlush::cdn()->invalidate(
-            $invalidation->setPaths(Helpers::collect(config('edge-flush.invalidations.batch.roots'))),
+            $invalidation->setPaths(Helpers::collect(Helpers::configArray('edge-flush.invalidations.batch.roots'))),
         );
 
         $this->markUrlsAsPurged($invalidation);
@@ -561,9 +561,9 @@ class Tags
             return false;
         }
 
-        $allowed = Helpers::collect(config('edge-flush.domains.allowed'))->filter();
+        $allowed = Helpers::collect(Helpers::configArray('edge-flush.domains.allowed'))->filter();
 
-        $blocked = Helpers::collect(config('edge-flush.domains.blocked'))->filter();
+        $blocked = Helpers::collect(Helpers::configArray('edge-flush.domains.blocked'))->filter();
 
         if ($allowed->isEmpty() && $blocked->isEmpty()) {
             return true;
@@ -576,7 +576,7 @@ class Tags
 
     public function getMaxInvalidations(): int
     {
-        return Helpers::toInt(min(EdgeFlush::cdn()->maxUrls(), config('edge-flush.invalidations.batch.size')));
+        return Helpers::toInt(min(EdgeFlush::cdn()->maxUrls(), Helpers::configInt('edge-flush.invalidations.batch.size')));
     }
 
     public function dbStatement(string $sql): bool
@@ -818,16 +818,16 @@ class Tags
 
     protected function attributeMustBeIgnored(Model $model, $attribute): bool
     {
-        $attributes = config("edge-flush.invalidations.attributes.ignore", []);
+        $attributes = Helpers::configArray("edge-flush.invalidations.attributes.ignore", []);
 
-        $ignore = ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
+        $ignore = array_merge($attributes[get_class($model)] ?? [], ($attributes['*'] ?? []));
 
         return in_array($attribute, $ignore);
     }
 
     protected function getAlwaysAddAttributes(Model $model): array
     {
-        $attributes = config("edge-flush.invalidations.attributes.always-add", []);
+        $attributes = Helpers::configArray("edge-flush.invalidations.attributes.always-add", []);
 
         return ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
     }

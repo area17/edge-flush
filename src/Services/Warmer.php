@@ -27,7 +27,7 @@ class Warmer
 
     public function warm(Collection $urls): void
     {
-        $count = config('edge-flush.warmer.concurrent_requests', 10);
+        $count = Helpers::configInt('edge-flush.warmer.concurrent_requests', 10);
 
         $count = !is_numeric($count) ? 10 : $count;
 
@@ -47,7 +47,7 @@ class Warmer
 
     public function getColdUrls(): Collection
     {
-        $max = config('edge-flush.warmer.max_urls', 100);
+        $max = Helpers::configInt('edge-flush.warmer.max_urls', 100);
 
         $max = !is_numeric($max) ? 100 : (int) $max;
 
@@ -62,7 +62,7 @@ class Warmer
 
     protected function dispatchWarmRequests(Collection $urls): void
     {
-        foreach ((array) config('edge-flush.warmer.types', []) as $type) {
+        foreach ((array) Helpers::configArray('edge-flush.warmer.types', []) as $type) {
             if ($type === 'internal') {
                 $this->dispatchInternalWarmRequests($urls);
             }
@@ -158,7 +158,7 @@ class Warmer
                 'X-Edge-Flush-Warmed-Url' => $url,
 
                 'X-Edge-Flush-Warmed-At' => (string) now(),
-            ] + config('edge-flush.warmer.headers', []);
+            ] + Helpers::configArray('edge-flush.warmer.headers', []);
 
         if (blank($headers['PHP_AUTH_USER'])) {
             unset($headers['PHP_AUTH_USER'], $headers['PHP_AUTH_PW']);
@@ -189,11 +189,11 @@ class Warmer
     {
         $config =
             [
-                'timeout' => config('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+                'timeout' => Helpers::configInt('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
 
-                'connect_timeout' => config('edge-flush.warmer.connection_timeout'),
+                'connect_timeout' => Helpers::configInt('edge-flush.warmer.connection_timeout', 1000),
 
-                'verify' => config('edge-flush.warmer.check_ssl_certificate'),
+                'verify' => Helpers::configBool('edge-flush.warmer.check_ssl_certificate'),
 
                 'curl' =>
                     [
@@ -205,8 +205,8 @@ class Warmer
                     ] + (array) Helpers::configArray('edge-flush.warmer.curl.extra_options', []),
             ] + (array) Helpers::configArray('edge-flush.warmer.extra_options');
 
-        $username = config('edge-flush.warmer.basic_authentication.username');
-        $password = config('edge-flush.warmer.basic_authentication.password');
+        $username = Helpers::configString('edge-flush.warmer.basic_authentication.username');
+        $password = Helpers::configString('edge-flush.warmer.basic_authentication.password');
 
         if (filled($username) and filled($password)) {
             $config['auth'] = [$username, $password];

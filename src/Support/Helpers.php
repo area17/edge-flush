@@ -291,5 +291,10 @@ class Helpers
         }
         return collect([$var]);
     }
+
+    public static function configMixed(string $key, mixed $default = null): mixed
+    {
+        return config($key, $default);
+    }
 }
 
