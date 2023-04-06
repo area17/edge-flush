@@ -13,7 +13,7 @@ trait CachedOnCDN
 {
     public function invalidateCDNCache(Model $model): void
     {
-        if ($this->edgeFlushIsEnabled()) {
+        if ($this->edgeFlushIsEnabled() && $this->invalidationsAreEnabled()) {
             EdgeFlush::tags()->dispatchInvalidationsForModel($model);
         }
     }
@@ -33,5 +33,10 @@ trait CachedOnCDN
     public function edgeFlushIsEnabled(): bool
     {
         return Helpers::configBool('edge-flush.enabled', false);
+    }
+
+    public function invalidationsAreEnabled()
+    {
+        return Helpers::configBool('edge-flush.enabled-services.invalidation', false);
     }
 }

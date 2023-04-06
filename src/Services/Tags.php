@@ -211,8 +211,9 @@ class Tags
         }
     }
 
-    public function dispatchInvalidationsForModel(Collection|string|Model $models): void {
-        if (blank($models)) {
+    public function dispatchInvalidationsForModel(Collection|string|Model $models): void
+    {
+        if (!EdgeFlush::invalidationServiceIsEnabled() || blank($models)) {
             return;
         }
 
@@ -250,7 +251,12 @@ class Tags
             : $this->dispatchInvalidationsForUpdatedModel($models);
     }
 
-    public function dispatchInvalidationsForCreatedModel(Collection $models): void {
+    public function dispatchInvalidationsForCreatedModel(Collection $models): void
+    {
+        if (!EdgeFlush::invalidationServiceIsEnabled()) {
+            return;
+        }
+
         /**
          * @var string $strategy
          */
@@ -265,7 +271,12 @@ class Tags
         throw new \Exception("Strategy '{$strategy}' Not implemented");
     }
 
-    public function dispatchInvalidationsForUpdatedModel(Collection $models): void {
+    public function dispatchInvalidationsForUpdatedModel(Collection $models): void
+    {
+        if (!EdgeFlush::invalidationServiceIsEnabled()) {
+            return;
+        }
+
         /**
          * @var string $strategy
          */
