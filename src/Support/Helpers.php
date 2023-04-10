@@ -155,7 +155,7 @@ class Helpers
         ];
     }
 
-    public static function debug(array|string $data): bool
+    public static function log(array|string $data, string $type = 'log'): bool
     {
         $debugIsOn = (bool) config('edge-flush.debug', false);
 
@@ -173,9 +173,19 @@ class Helpers
             $data = $data === false ? '' : $data;
         }
 
-        Log::debug('[EDGE-FLUSH] ' . $data);
+        Log::$type('[EDGE-FLUSH] ' . $data);
 
         return true;
+    }
+
+    public static function debug(array|string $data): bool
+    {
+        return static::log($data, 'debug');
+    }
+
+    public static function error(array|string $data): bool
+    {
+        return static::log($data, 'error');
     }
 
     public static function toString(mixed $string): string
