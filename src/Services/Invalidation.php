@@ -35,6 +35,8 @@ class Invalidation
 
     protected Collection $urlNames;
 
+    protected Collection $urlHashes;
+
     protected Collection $paths;
 
     protected Collection $tagNames;
@@ -42,6 +44,8 @@ class Invalidation
     protected Collection $models;
 
     protected Collection $modelNames;
+
+    protected array|null $invalidationResponse = null;
 
     public function __construct()
     {
@@ -187,7 +191,8 @@ class Invalidation
                 $this->models()->isEmpty() &&
                 $this->modelNames()->isEmpty() &&
                 $this->urls()->isEmpty() &&
-                $this->urlNames()->isEmpty());
+                $this->urlNames()->isEmpty() &&
+                $this->urlHashes()->isEmpty());
     }
 
     public function setModels(Collection $models): self
@@ -293,6 +298,10 @@ class Invalidation
             return $this->urlNames();
         }
 
+        if ((blank($type) && $this->type === 'url_hash') || $type === 'url_hash') {
+            return $this->urlHashes();
+        }
+
         return new Collection();
     }
 
@@ -349,6 +358,15 @@ class Invalidation
         return $this->urlNames = $this->urls()->map->url;
     }
 
+    public function urlHashes(): Collection
+    {
+        if (!$this->urlHashes->isEmpty()) {
+            return $this->urlHashes;
+        }
+
+        return $this->urlHashes = $this->urls()->map->url_hash;
+    }
+
     public function setMustInvalidateAll(bool $value = true): self
     {
         $this->mustInvalidateAll = $value;
@@ -373,6 +391,7 @@ class Invalidation
             'modelNames',
             'tagNames',
             'urlNames',
+            'urlHashes',
         ];
     }
 
@@ -391,10 +410,17 @@ class Invalidation
 
         $this->urlNames ??= new Collection();
 
+        $this->urlHashes ??= new Collection();
+
         $this->models ??= new Collection();
 
         $this->modelNames ??= new Collection();
 
         $this->paths ??= new Collection();
+    }
+
+    public function setInvalidationResponse(array|null $invalidationResponse): void
+    {
+        $this->invalidationResponse = $invalidationResponse;
     }
 }
