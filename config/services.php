@@ -6,12 +6,17 @@ return [
      */
     'services' => [
         'akamai' => [
-            'host' => env('EDGE_FLUSH_AKAMAI_HOST'),
-            'access_token' => env('EDGE_FLUSH_AKAMAI_ACCESS_TOKEN'),
-            'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN'),
-            'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET'),
-            'invalidate_all_paths' => ['*'],
-            'max_urls' => 500, // Akamai is limited to 500 cache tags per minute
+            'host' => env('EDGE_FLUSH_AKAMAI_HOST', env('AKAMAI_HOST')),
+
+            'access_token' => env('EDGE_FLUSH_AKAMAI_ACCESS_TOKEN', env('AKAMAI_ACCESS_TOKEN')),
+
+            'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN', env('AKAMAI_CLIENT_TOKEN')),
+
+            'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET', env('AKAMAI_CLIENT_SECRET')),
+
+            'invalidate_all_paths' => null, // there's no invalidate all on Akamai
+
+            'max_urls' => 499, // Akamai is limited to 500 cache tags per minute
         ],
 
         'cloud_front' => [
