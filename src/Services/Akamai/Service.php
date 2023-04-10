@@ -3,26 +3,33 @@
 namespace A17\EdgeFlush\Services\Akamai;
 
 use A17\EdgeFlush\Models\Tag;
-use A17\EdgeFlush\Support\Helpers;
+use A17\EdgeFlush\Models\Url;
 use Illuminate\Support\Collection;
+use A17\EdgeFlush\Support\Helpers;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Aws\CloudFront\CloudFrontClient;
 use A17\EdgeFlush\Services\BaseService;
 use A17\EdgeFlush\Contracts\CDNService;
 use A17\EdgeFlush\Services\Invalidation;
+use A17\EdgeFlush\Services\CdnBaseService;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
-class Service extends BaseService implements CDNService
+class Service extends CdnBaseService
 {
+    protected static string $serviceName = 'akamai';
+
     protected array $tags = [];
+
+    protected function instantiate(): void
+    {
+    }
 
     protected function getApiPath(): string
     {
         return '/ccu/v3/invalidate/tag/production';
     }
 
-    /**
-     * @return string|null
-     */
     protected function getHost(): string|null
     {
         return Helpers::configString('edge-flush.services.akamai.host');
@@ -33,47 +40,7 @@ class Service extends BaseService implements CDNService
         return 'https://' . $this->getHost() . $this->getApiPath();
     }
 
-    public function invalidate(Invalidation $invalidation): Invalidation
-    {
-        // TODO: must be redone
-        //        if (!$this->enabled()) {
-        //            return $this->unsuccessfulInvalidation();
-        //        }
-        //
-        //        $body = [
-        //            'objects' => (new Collection($invalidation->tags()))
-        //                ->map(function ($item) {
-        //                    return $item instanceof Tag ? $item->tag : $item;
-        //                })
-        //                ->unique()
-        //                ->toArray(),
-        //        ];
-        //
-        //        Http::withHeaders([
-        //            'Authorization' => $this->getAuthHeaders($body),
-        //        ])->post($this->getInvalidationURL(), $body);
-        //
-        //        return $this->successfulInvalidation();
-
-        return $invalidation;
-    }
-
-    public function invalidateAll(): Invalidation
-    {
-        if (!$this->enabled()) {
-            return $this->unsuccessfulInvalidation();
-        }
-
-        return $this->invalidate(
-            $this->createInvalidation(Helpers::configArray('edge-flush.services.akamai.invalidate_all_paths')),
-        );
-    }
-
-    /**
-     * @param mixed $body
-     * @return string
-     */
-    public function getAuthHeaders($body): string
+    public function getAuthHeaders(mixed $body): string
     {
         $auth = new AkamaiAuthentication();
 
@@ -86,9 +53,9 @@ class Service extends BaseService implements CDNService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            Helpers::configString('edge-flush.services.akamai.client_token') ?? '',
-            Helpers::configString('edge-flush.services.akamai.client_secret') ?? '',
-            Helpers::configString('edge-flush.services.akamai.access_token') ?? '',
+            $this->getClientToken(),
+            $this->getClientSecret(),
+            $this->getAccessToken(),
         );
 
         $auth->setPath($this->getApiPath());
@@ -103,6 +70,76 @@ class Service extends BaseService implements CDNService
 
     public function invalidationIsCompleted(string $invalidationId): bool
     {
-        return false;
+        /**
+         * Fast purge is supposed to be completed in seconds, so no need to do a request
+         * to check if it's completed.
+         */
+        $url = Url::where('invalidation_id', $invalidationId)->take(1)->get()->first();
+
+        if (empty($url)) {
+            return true;
+        }
+
+        return $url->was_purged_at->diffInSeconds(now()) > 30;
+    }
+
+    public function createInvalidationRequest(Invalidation|array $invalidation = null): Invalidation
+    {
+        $urls = $invalidation->urls()
+            ->map(function ($item) {
+                return $item instanceof Url ? $item->url_hash : $item;
+            })
+            ->filter()
+            ->unique();
+
+        if ($urls->isEmpty()) {
+            return $invalidation;
+        }
+
+        $body = [
+            'objects' => $urls->toArray(),
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => $this->getAuthHeaders($body),
+        ])->post($this->getInvalidationURL(), $body);
+
+        if ($response->failed()) {
+            Helpers::error('Error invalidating akamai tags: ' . $response->getBody());
+
+            $invalidation->setSuccess(false);
+
+            return $invalidation;
+        }
+
+        $invalidation->setSuccess(true);
+
+        $invalidation->setId($response->json('purgeId'));
+
+        $invalidation->setInvalidationResponse($response->json());
+
+        return $invalidation;
+    }
+
+    public function isProperlyConfigured(): bool
+    {
+        return filled($this->getClientToken())
+            && filled($this->getClientSecret())
+            && filled($this->getAccessToken());
+    }
+
+    public function getClientToken(): string|null
+    {
+        return Helpers::configString('edge-flush.services.akamai.client_token') ?? null;
+    }
+
+    public function getClientSecret(): string|null
+    {
+        return Helpers::configString('edge-flush.services.akamai.client_secret') ?? null;
+    }
+
+    public function getAccessToken(): string|null
+    {
+        return Helpers::configString('edge-flush.services.akamai.access_token') ?? null;
     }
 }

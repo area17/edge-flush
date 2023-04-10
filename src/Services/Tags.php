@@ -322,21 +322,40 @@ class Tags
             return;
         }
 
+        $maxUrls = EdgeFlush::cdn()->getMaxUrls();
+
+        $query = "
+            from edge_flush_urls
+                where edge_flush_urls.was_purged_at is null
+                  and edge_flush_urls.obsolete = true
+                  and edge_flush_urls.is_valid = true
+                order by edge_flush_urls.hits desc
+        ";
+
+        /**
+         * Get a count
+         */
+        $total = DB::select("
+            select count(distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url, edge_flush_urls.url_hash) as total
+            {$query}
+        ");
+
+        $total = empty($total[0] ?? null) ? 0 : $total[0]->total;
+
+        if ($total === 0) {
+            return;
+        }
+
         /**
          * Filter purged urls from obsolete tags.
          * Making sure we invalidate the most busy pages first.
          */
         $rows = Helpers::collect(
-            DB::select(
-                "
-            select distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url
-            from edge_flush_urls
-            where edge_flush_urls.was_purged_at is null
-              and edge_flush_urls.obsolete = true
-              and edge_flush_urls.is_valid = true
-            order by edge_flush_urls.hits desc
-            ",
-            ),
+            DB::select("
+                select distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url, edge_flush_urls.url_hash
+                {$query}
+                limit {$maxUrls}
+            "),
         )->map(fn($row) => new Url((array) $row));
 
         $invalidation = (new Invalidation())->setUrls($rows);
@@ -345,7 +364,7 @@ class Tags
          * Let's first calculate the number of URLs we are invalidating.
          * If it's above max, just flush the whole website.
          */
-        if ($rows->count() >= EdgeFlush::cdn()->maxUrls()) {
+        if ($total >= $maxUrls && $this->canInvalidateAll()) {
             $this->invalidateEntireCache($invalidation);
 
             return;
@@ -648,7 +667,7 @@ class Tags
 
     public function markUrlsAsPurged(Invalidation $invalidation): void
     {
-        $list = $invalidation->queryItemsList('url');
+        $list = $invalidation->queryItemsList('url_hash');
 
         if ($list === "''") {
             return;
@@ -711,14 +730,14 @@ class Tags
             ";
     }
 
-    protected function invalidateAllUrlsSql(string $list, string $time, string $invalidationId): string
+    protected function invalidateAllUrlsSql(string $urlHashes, string $time, string $invalidationId): string
     {
         if ($this->isMySQL()) {
             return "
                 select efu.id
                 from edge_flush_urls efu
                 where efu.is_valid = true
-                  and efu.url in ({$list})
+                  and efu.url_hash in ({$urlHashes})
                 order by efu.id
                 for update;
 
@@ -726,7 +745,7 @@ class Tags
                 set was_purged_at = '{$time}',
                     invalidation_id = '{$invalidationId}'
                 where efu.is_valid = true
-                  and efu.url in ({$list});
+                  and efu.url_hash in ({$urlHashes});
             ";
         }
 
