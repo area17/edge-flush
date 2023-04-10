@@ -126,7 +126,7 @@ class ConfigMergeSection extends Command
             $this->throw('The current config file has an error.');
         }
 
-        $newSection = $this->extractArray(file_get_contents($this->sectionFile));
+        $newSection = $this->extractInternalArray(file_get_contents($this->sectionFile));
 
         if (strpos($publishedConfigContents, $endOfArray = "];\n") === false) {
             $this->throw("The published config file array doesn't end properly with '];'.");
@@ -134,7 +134,13 @@ class ConfigMergeSection extends Command
 
         $publishedConfigContents = str_replace(
             $endOfArray,
-            "    '{$section}' => {$newSection},\n];\n",
+            "    {$newSection},\n];\n",
+            $publishedConfigContents,
+        );
+
+        $publishedConfigContents = str_replace(
+            ',,',
+            ',',
             $publishedConfigContents,
         );
 
@@ -157,7 +163,7 @@ class ConfigMergeSection extends Command
         unlink($updatedFile);
     }
 
-    public function extractArray(string|false|null $content): string|null
+    public function extractInternalArray(string|false|null $content): string|null
     {
         if ($content === false || blank($content)) {
             $this->throw('The section file is empty.');
@@ -167,23 +173,37 @@ class ConfigMergeSection extends Command
 
         $lines = is_string($content) ? explode("\n", $content) : [];
 
-        foreach ($lines as $key => $line) {
-            if (blank($line)) {
-                continue;
-            }
+        $result = [];
 
+        $beforeReturn = true;
+
+        foreach ($lines as $key => $line) {
             $line = str_replace('<?php', '', $line);
 
-            $line = str_replace('return', '', $line);
+            $beforeReturn = $beforeReturn && !str_contains($line, 'return');
+
+            $line = str_replace('return ', '', $line);
 
             $line = str_replace(';', '', $line);
 
-            $lines[$key] = '    ' . $line;
+            if ($beforeReturn) {
+                if (blank(trim($line))) {
+                    continue;
+                }
+            }
+
+            $result[] = $line;
         }
 
-        $content = is_string($content) ? trim($content) : '';
+        if (trim($result[0]) === '[') {
+            unset($result[0]);
+        }
 
-        return trim(implode("\n", $lines));
+        if (trim($result[$pos = count($result) - 1]) === ']') {
+            unset($result[$pos]);
+        }
+
+        return trim(implode("\n", $result));
     }
 
     public function getSection(): string
