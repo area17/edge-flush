@@ -8,62 +8,47 @@ use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
 use A17\EdgeFlush\Support\Helpers;
-use A17\EdgeFlush\Services\BaseService;
-use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Aws\CloudFront\CloudFrontClient;
 use Illuminate\Support\Facades\Http;
+use A17\EdgeFlush\Services\BaseService;
+use A17\EdgeFlush\Contracts\CDNService;
 use Illuminate\Database\Eloquent\Model;
 use A17\EdgeFlush\Services\Invalidation;
+use A17\EdgeFlush\Services\CdnBaseService;
 use Symfony\Component\HttpFoundation\Response;
 
-class Service extends BaseService implements CDNService
+class Service extends CdnBaseService
 {
+    protected static string $serviceName = 'cloud_front';
+    
     protected CloudFrontClient $client;
 
-    public function __construct()
+    protected function instantiate(): void
     {
-        if ($this->enabled()) {
-            $this->instantiate();
+        $client = static::getClient();
+
+        if ($client instanceof CloudFrontClient) {
+            $this->client = $client;
         }
-    }
-
-    public function invalidate(Invalidation $invalidation): Invalidation
-    {
-        if (!$this->enabled()) {
-            return $invalidation;
-        }
-
-        return $this->mustInvalidateAll($invalidation) ? $this->invalidateAll() : $this->invalidatePaths($invalidation);
-    }
-
-    public function invalidateAll(): Invalidation
-    {
-        if (!$this->enabled()) {
-            return $this->unsuccessfulInvalidation();
-        }
-
-        return $this->createInvalidationRequest(
-            Helpers::configArray('edge-flush.services.cloud_front.invalidate_all_paths'),
-        );
     }
 
     protected function getDistributionId(): string|null
     {
-        return Helpers::configString('edge-flush.services.cloud_front.distribution_id');
+        return Helpers::configString('edge-flush.services.'.$this->serviceId.'.distribution_id');
     }
 
     public function getClient(): CloudFrontClient|null
     {
         $config = [
-            'region' => Helpers::configString('edge-flush.services.cloud_front.region'),
+            'region' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.region'),
 
-            'version' => Helpers::configString('edge-flush.services.cloud_front.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.cloud_front.key'),
-                'secret' => Helpers::configString('edge-flush.services.cloud_front.secret'),
+                'key' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.key'),
+                'secret' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.secret'),
             ],
         ];
 
@@ -72,13 +57,13 @@ class Service extends BaseService implements CDNService
         }
 
         return new CloudFrontClient([
-            'region' => Helpers::configString('edge-flush.services.cloud_front.region'),
+            'region' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.region'),
 
-            'version' => Helpers::configString('edge-flush.services.cloud_front.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.cloud_front.key'),
-                'secret' => Helpers::configString('edge-flush.services.cloud_front.secret'),
+                'key' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.key'),
+                'secret' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.secret'),
             ],
         ]);
     }
@@ -110,10 +95,10 @@ class Service extends BaseService implements CDNService
 
         Helpers::debug(
             '[CLOUD FRONT]: Invalidating ' .
-                count($paths) .
-                ' path(s): (' .
-                (new Collection($paths))->take(20)->implode(', ') .
-                ')...',
+            count($paths) .
+            ' path(s): (' .
+            (new Collection($paths))->take(20)->implode(', ') .
+            ')...',
         );
 
         if (!$this->isProperlyConfigured()) {
@@ -136,95 +121,15 @@ class Service extends BaseService implements CDNService
         } catch (\Exception $e) {
             Log::error(
                 '[EDGE-FLUSH] [CLOUD FRONT] Invalidation request failed: ' .
-                    $e->getMessage() .
-                    ' - PATHS: ' .
-                    json_encode($paths),
+                $e->getMessage() .
+                ' - PATHS: ' .
+                json_encode($paths),
             );
 
             return $invalidation;
         }
 
         return $invalidation->absorb($response);
-    }
-
-    protected function instantiate(): void
-    {
-        $client = static::getClient();
-
-        if ($client instanceof CloudFrontClient) {
-            $this->client = $client;
-        }
-    }
-
-    protected function getInvalidationPath(mixed $item): string|null
-    {
-        if (is_string($item)) {
-            return $item;
-        }
-
-        $url = Helpers::getUrl($item);
-
-        if ($url === null) {
-            return null;
-        }
-
-        return Helpers::parseUrl($url)['path'] ?? '/*';
-    }
-
-    public function getInvalidationPathsForTags(Invalidation $invalidation): Collection
-    {
-        if ($invalidation->paths()->isEmpty()) {
-            $paths = (new Collection($invalidation->tags()))
-                ->mapWithKeys(fn($tag) => [$this->getInvalidationPath($tag) => $tag])
-                ->keys()
-                ->unique()
-                ->take($this->maxUrls());
-
-            $invalidation->setPaths($paths);
-        }
-
-        return $invalidation->paths();
-    }
-
-    public function mustInvalidateAll(Invalidation $invalidation): bool
-    {
-        return $this->getInvalidationPathsForTags($invalidation)->count() >= $this->maxUrls();
-    }
-
-    public function invalidatePaths(Invalidation $invalidation): Invalidation
-    {
-        return $this->createInvalidationRequest($invalidation);
-    }
-
-    public function maxUrls(): int
-    {
-        return Helpers::configInt('edge-flush.services.cloud_front.max_urls') ?? 300;
-    }
-
-    public function enabled(): bool
-    {
-        return parent::enabled() &&
-            Helpers::configBool('edge-flush.services.cloud_front.enabled', true) &&
-            filled($this->getClient());
-    }
-
-    public function invalidationIsCompleted(string $invalidationId): bool
-    {
-        $response = $this->getInvalidation($invalidationId);
-
-        if (blank($response)) {
-            return false;
-        }
-
-        return Invalidation::factory($response)->isCompleted();
-    }
-
-    public function getInvalidation(string $invalidationId): AwsResult
-    {
-        return $this->client->getInvalidation([
-            'DistributionId' => $this->getDistributionId(),
-            'Id' => $invalidationId,
-        ]);
     }
 
     public function isProperlyConfigured(): bool
