@@ -59,10 +59,12 @@ class ConfigMergeSection extends Command
     {
         $section = $this->getSection();
 
-        $file = realpath(config('edge-flush.package.path') . "/config/{$section}.php");
+        $file = realpath(config('edge-flush.package.path') . "{$section}.php");
 
-        if (is_string($file)) {
+        if (is_string($file) && file_exists($file)) {
             $this->sectionFile = $file;
+
+            return;
         }
 
         $this->throw($message = "The section file '{$this->sectionFile}' does not exist.");

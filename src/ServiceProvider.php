@@ -121,7 +121,11 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function registerMainConfig(): void
     {
-        $this->mainConfigPath = __DIR__ . "/../config/{$this->packageName}.php";
+        $packagePath = __DIR__ . "/../config/";
+
+        config(["{$this->packageName}.package.path" => $packagePath]);
+
+        $this->mainConfigPath = "{$packagePath}/{$this->packageName}.php";
 
         $this->mergeConfigFrom($this->mainConfigPath, $this->packageName);
     }
