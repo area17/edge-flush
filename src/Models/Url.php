@@ -21,6 +21,8 @@ class Url extends Model
 
     protected $fillable = ['url', 'url_hash', 'hits', 'was_purged_at', 'invalidation_id', 'is_valid'];
 
+    protected $casts = ['was_purged_at' => 'datetime'];
+
     public function incrementHits(): void
     {
         $this->hits++;
