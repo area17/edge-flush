@@ -909,8 +909,6 @@ class Tags
 
     public function instantiate(): void
     {
-        Helpers::debug('Instantiating EdgeFlush - tags: ' . ($this->tags ? $this->tags->count() : 'null'));
-
         $this->tags = Helpers::collect();
 
         $this->processedTags = Helpers::collect();
