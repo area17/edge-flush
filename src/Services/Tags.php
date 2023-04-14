@@ -205,7 +205,7 @@ class Tags
 
     public function dispatchInvalidationsForModel(Entity $entity): void
     {
-        if (!$entity->isValid || $this->alreadyDispatched($entity)) {
+        if (!EdgeFlush::invalidationServiceIsEnabled() || !$entity->isValid || $this->alreadyDispatched($entity)) {
             return;
         }
 
@@ -214,8 +214,12 @@ class Tags
         $strategy = $this->dispatchInvalidationsForCrud($entity);
     }
 
-    public function dispatchInvalidationsForCrud(Entity $entity): void
+    protected function dispatchInvalidationsForCrud(Entity $entity): void
     {
+        if (!EdgeFlush::invalidationServiceIsEnabled()) {
+            return;
+        }
+
         $strategy = $this->getCrudStrategy($entity);
 
         if ($strategy === Constants::INVALIDATION_STRATEGY_NONE) {
