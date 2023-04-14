@@ -69,6 +69,10 @@ abstract class CdnBaseService extends BaseService implements CDNService
 
     public function mustInvalidateAll(Invalidation $invalidation): bool
     {
+        if (!$this->canInvalidateAll()) {
+            return false;
+        }
+
         return $this->getInvalidationPathsForTags($invalidation)->count() >= $this->maxUrls();
     }
 
@@ -116,5 +120,12 @@ abstract class CdnBaseService extends BaseService implements CDNService
     public function getMaxUrls(): int
     {
         return Helpers::configInt('edge-flush.services.'.static::$serviceName.'.max_urls', 300);
+    }
+
+    public function canInvalidateAll(): bool
+    {
+        return collect(
+            Helpers::configString('edge-flush.services.'.static::$serviceName.'.invalidate_all_paths') ?? []
+        )->filter()->isNotEmpty();
     }
 }

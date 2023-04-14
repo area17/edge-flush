@@ -364,7 +364,7 @@ class Tags
          * Let's first calculate the number of URLs we are invalidating.
          * If it's above max, just flush the whole website.
          */
-        if ($total >= $maxUrls && $this->canInvalidateAll()) {
+        if ($total >= $maxUrls && EdgeFlush::cdn()->canInvalidateAll()) {
             $this->invalidateEntireCache($invalidation);
 
             return;
