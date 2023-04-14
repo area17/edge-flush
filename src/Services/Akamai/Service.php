@@ -100,6 +100,8 @@ class Service extends CdnBaseService
             'objects' => $urls->toArray(),
         ];
 
+        Helpers::debug('[AKAMAI] dispatchin invalidations for ' . $urls->count() . ' urls');
+
         $response = Http::withHeaders([
             'Authorization' => $this->getAuthHeaders($body),
         ])->post($this->getInvalidationURL(), $body);

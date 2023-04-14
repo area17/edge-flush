@@ -137,19 +137,11 @@ class Tags
             return;
         }
 
-        Helpers::debug(
-            'STORE-TAGS: ' .
-                json_encode([
-                    'models' => $models,
-                    'url' => $url,
-                ]),
-        );
+        Helpers::debug("[STORE-TAGS] Creating URL and storing {$models->count()} models for $url");
 
         $indexes = Helpers::collect();
 
         DB::transaction(function () use ($models, $url, &$indexes) {
-            Helpers::debug('CREATE MISSING URL: '.$url.' for '.$models->count().' models');
-
             $this->url = $this->makeUrl($url);
 
             $this->markUrlAsHit($this->url);

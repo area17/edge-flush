@@ -31,6 +31,8 @@ class Warmer
 
         $count = !is_numeric($count) ? 10 : $count;
 
+        Helpers::debug('[WARMER] Warming up ' . $urls->count() . ' URLs using ' . $count . ' concurrent requests');
+
         while ($urls->count() > 0) {
             $chunk = $urls->splice(0, (int) $count);
 
