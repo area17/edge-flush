@@ -31,6 +31,12 @@ class Warmer
 
         $count = !is_numeric($count) ? 10 : $count;
 
+        if ($urls->count() === 0) {
+            Helpers::debug('[WARMER] No urls to warm up');
+
+            return;
+        }
+
         Helpers::debug('[WARMER] Warming up ' . $urls->count() . ' URLs using ' . $count . ' concurrent requests');
 
         while ($urls->count() > 0) {
