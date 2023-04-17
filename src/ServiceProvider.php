@@ -2,11 +2,11 @@
 
 namespace A17\EdgeFlush;
 
-use A17\EdgeFlush\Services\DispatchedEvents;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
 use Illuminate\Support\Facades\Event;
 use A17\EdgeFlush\Listeners\EloquentBooted;
+use A17\EdgeFlush\Services\DispatchedEvents;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Console\Commands\InvalidateAll;
 use A17\EdgeFlush\Console\Commands\ConfigListSections;
@@ -53,9 +53,7 @@ class ServiceProvider extends IlluminateServiceProvider
     {
         $this->registerConfig();
 
-        if ($this->enabled) {
-            $this->configureContainer();
-        }
+        $this->configureContainer();
     }
 
     public function bootConfig(): void
@@ -100,6 +98,13 @@ class ServiceProvider extends IlluminateServiceProvider
 
         $this->app->singleton('a17.edge-flush.cache-control', function () {
             return EdgeFlushFacade::cacheControl();
+        });
+    }
+
+    public function configureDisabledContainer(): void
+    {
+        $this->app->singleton('a17.edge-flush.service', function ($app) {
+            return new EdgeFlushDisabled();
         });
     }
 
