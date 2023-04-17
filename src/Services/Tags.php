@@ -837,7 +837,10 @@ class Tags
     public function alreadyDispatched(Entity $entity): bool
     {
         foreach ($entity->getDirtyModelNames() as $modelName) {
-            if (!($this->invalidationDispatched[$modelName] ?? false)) {
+            /** @var bool $value */
+            $value = $this->invalidationDispatched[$modelName] ?? false;
+
+            if (!$value) {
                 return false;
             }
         }
