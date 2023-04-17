@@ -102,7 +102,7 @@ class Akamai extends Base
             'objects' => $urls->toArray(),
         ];
 
-        Helpers::debug('[AKAMAI] dispatchin invalidations for ' . $urls->count() . ' urls');
+        Helpers::debug('[AKAMAI] dispatching invalidations for ' . $urls->count() . ' urls');
 
         $response = Http::withHeaders([
             'Authorization' => $this->getAuthHeaders($body),
