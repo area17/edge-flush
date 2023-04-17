@@ -80,7 +80,7 @@ class Tags
                 continue;
             }
 
-            if (!is_null($this->tags->get($newTag))) {
+            if (is_null($this->tags->get($newTag))) {
                 $this->tags->put($newTag, $newTag);
             }
         }
@@ -929,7 +929,6 @@ class Tags
         }
 
         $this->makeUrl($this->getCurrentUrl($request ?? request()));
-
     }
 
     public function instantiate(): void
