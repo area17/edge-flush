@@ -218,6 +218,8 @@ class Tags
 
     public function dispatchInvalidationsForModel(Entity $entity): void
     {
+        info(['what? -----------------', !EdgeFlush::invalidationServiceIsEnabled() , !$entity->isValid , $this->alreadyDispatched($entity)]);
+
         if (!EdgeFlush::invalidationServiceIsEnabled() || !$entity->isValid || $this->alreadyDispatched($entity)) {
             return;
         }
@@ -837,9 +839,7 @@ class Tags
     public function alreadyDispatched(Entity $entity): bool
     {
         foreach ($entity->getDirtyModelNames() as $modelName) {
-            $modelDispatched = ($this->invalidationDispatched[$modelName] ?? false) !== true;
-
-            if (!$modelDispatched) {
+            if (!($this->invalidationDispatched[$modelName] ?? false)) {
                 return false;
             }
         }
