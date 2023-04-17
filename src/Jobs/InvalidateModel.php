@@ -32,6 +32,10 @@ class InvalidateModel implements ShouldQueue
      */
     public function handle()
     {
+        if (blank($this->entity)) {
+            return;
+        }
+
         EdgeFlush::tags()->dispatchInvalidationsForModel($this->entity);
     }
 }

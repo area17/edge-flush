@@ -30,11 +30,11 @@ class Tags
 {
     use ControlsInvalidations, MakeTag, Database, CastObject;
 
-    protected Collection|null $tags = null;
+    protected Collection $tags;
 
     protected Collection $invalidationDispatched;
 
-    public Collection|null $processedTags = null;
+    public Collection $processedTags;
 
     protected Url|null $url = null;
 
@@ -45,9 +45,11 @@ class Tags
     public function __construct(Request|null $request = null)
     {
         $this->request = $request ?? request();
+
+        $this->instantiate();
     }
 
-    public function addTag(Model $model, string $key = null, array $allowedKeys = []): void
+    public function addTag(Model $model, string $key, array $allowedKeys = []): void
     {
         if (!EdgeFlush::enabled()) {
             return;
@@ -68,14 +70,18 @@ class Tags
         // $tags[] = $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys), // TODO: do we need the ANY_TAG?
 
         foreach ($this->getAlwaysAddAttributes($model) as $attribute) {
-            if ($model->hasAttribute($attribute)) {
+            if (filled($model->getAttributes()[$attribute])) {
                 $tags[] = $this->makeModelName($model, $attribute, $allowedKeys);
             }
         }
 
-        foreach ($tags as $tag) {
-            if (blank($this->tags[$tag] ?? null)) {
-                $this->tags[$tag] = $tag;
+        foreach ($tags as $newTag) {
+            if (blank($newTag)) {
+                continue;
+            }
+
+            if (!is_null($this->tags->get($newTag))) {
+                $this->tags->put($newTag, $newTag);
             }
         }
     }
@@ -98,7 +104,7 @@ class Tags
             ->values();
     }
 
-    public function getTagsHash(Response $response, Request $request): string
+    public function getTagsHash(Response $response, Request $request): string|null
     {
         $url = $this->getCurrentUrl($request);
 
@@ -153,9 +159,16 @@ class Tags
                 ->map(function (mixed $model) use ($now) {
                     $model = Helpers::toString($model);
 
+                    if (!$this->url instanceof Url) {
+                        return null;
+                    }
+
                     $index = $this->makeTagIndex($this->url, $model);
 
-                    $this->dbStatement($this->getStoreCacheTagsInsertSql($index, $this->url, $model, $now));
+                    /** @phpstan-ignore-next-line --- looks like a bug in PHPStan */
+                    if ($this->url instanceof Url) {
+                        $this->dbStatement($this->getStoreCacheTagsInsertSql($index, $this->url, $model, $now));
+                    }
 
                     return $index;
                 });
@@ -211,7 +224,7 @@ class Tags
 
         Helpers::debug('DISPATCHING for model: ' . $entity->modelName);
 
-        $strategy = $this->dispatchInvalidationsForCrud($entity);
+        $this->dispatchInvalidationsForCrud($entity);
     }
 
     protected function dispatchInvalidationsForCrud(Entity $entity): void
@@ -276,7 +289,7 @@ class Tags
             }
 
             // There's no on-change condition
-            if (blank($modelStrategy['on-change'] ?? null)) {
+            if (!is_array($modelStrategy['on-change'] ?? null)) {
                 return $modelStrategy['strategy'];
             }
 
@@ -318,7 +331,7 @@ class Tags
             return;
         }
 
-        $maxUrls = EdgeFlush::cdn()->getMaxUrls();
+        $maxUrls = EdgeFlush::cdn()->maxUrls();
 
         $query = "
             from edge_flush_urls
@@ -336,7 +349,12 @@ class Tags
             {$query}
         ");
 
-        $total = empty($total[0] ?? null) ? 0 : $total[0]->total;
+        /** @var \stdClass $total */
+        $total = $total[0];
+
+        if ($total instanceof \stdClass) {
+            $total = $total->total;
+        }
 
         if ($total === 0) {
             return;
@@ -483,7 +501,7 @@ class Tags
             return true;
         }
 
-        $this->processedTags[$tag] = true;
+        $this->processedTags->put($tag, true);
 
         return false;
     }
@@ -626,7 +644,7 @@ class Tags
     {
         $url = Helpers::sanitizeUrl($url);
 
-        if (filled($this->url) && $this->url->url === $url) {
+        if (is_object($this->url) && $this->url->url === $url) {
             return $this->url;
         }
 
@@ -656,6 +674,10 @@ class Tags
     {
         if (is_string($url)) {
             $this->url = $this->makeUrl($url);
+        }
+
+        if (!$this->url instanceof Url) {
+            return '----URL not found----';
         }
 
         return sha1("{$this->url->url}:{$model}");
@@ -753,7 +775,7 @@ class Tags
                     select efu.id
                     from edge_flush_urls efu
                     where efu.is_valid = true
-                      and efu.url in ({$list})
+                      and efu.url in ({$urlHashes})
                     order by efu.id
                     for update
                 ) urls
@@ -815,7 +837,9 @@ class Tags
     public function alreadyDispatched(Entity $entity): bool
     {
         foreach ($entity->getDirtyModelNames() as $modelName) {
-            if (!($this->invalidationDispatched[$modelName] ?? false)) {
+            $modelDispatched = ($this->invalidationDispatched[$modelName] ?? false) !== true;
+
+            if (!$modelDispatched) {
                 return false;
             }
         }
@@ -831,7 +855,7 @@ class Tags
             EdgeFlush::cacheControl()->routeIsCachable();
     }
 
-    protected function attributeMustBeIgnored(Model $model, $attribute): bool
+    protected function attributeMustBeIgnored(Model $model, string $attribute): bool
     {
         $attributes = Helpers::configArray("edge-flush.invalidations.attributes.ignore", []);
 
@@ -847,7 +871,7 @@ class Tags
         return ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
     }
 
-    protected function markUrlAsHit(Url $url)
+    protected function markUrlAsHit(Url $url): void
     {
         if ($url->canBeSaved ?? true) {
             $this->dbStatement($this->getUrlHitSql($url->id));
@@ -869,14 +893,20 @@ class Tags
     protected function markAsDispatched(Entity $entity): void
     {
         foreach ($entity->getDirtyModelNames() as $modelName) {
-            $this->invalidationDispatched[$modelName] = true;
+            if (is_string($modelName)) {
+                $this->invalidationDispatched[$modelName] = true;
+            }
         }
     }
 
-    public function getEdgeCacheTag()
+    public function getEdgeCacheTag(): string|null
     {
         if (blank($this->url)) {
             $this->url = $this->makeUrl($this->getCurrentUrl(request()));
+
+            if (blank($this->url)) {
+                return null;
+            }
         }
 
         return $this->url->getEdgeCacheTag();
@@ -892,8 +922,6 @@ class Tags
         }
 
         $this->booted = true;
-
-        $this->instantiate();
 
         if (app()->runningInConsole()) {
             return;

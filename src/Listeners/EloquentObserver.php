@@ -47,14 +47,14 @@ class EloquentObserver
         $this->invalidate($model, 'deleted');
     }
 
-    public function pivotSynced($observed, $model, $relationName, $changes)
+    public function pivotSynced(string $observed, Model $model, string $relationName, array $changes): void
     {
         $this->invalidate($model, 'pivot-synced', ['name' => $relationName, 'changes' => $changes]);
     }
 
     public function invalidate(Model $model, string $event, array $relation = []): void
     {
-        if ($this->tagIsExcluded(get_class($model))) {
+        if ($this->tagIsExcluded(get_class($model)) || blank($this->dispatchedEvents)) {
             return;
         }
 
@@ -76,7 +76,7 @@ class EloquentObserver
         }
     }
 
-    public function boot()
+    public function boot(): void
     {
         $this->dispatchedEvents = app('a17.edgeflush.dispatchedEvents');
     }

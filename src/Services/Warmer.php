@@ -34,7 +34,7 @@ class Warmer
         Helpers::debug('[WARMER] Warming up ' . $urls->count() . ' URLs using ' . $count . ' concurrent requests');
 
         while ($urls->count() > 0) {
-            $chunk = $urls->splice(0, (int) $count);
+            $chunk = $urls->splice(0, $count);
 
             $this->dispatchWarmRequests($chunk);
 
@@ -51,7 +51,7 @@ class Warmer
     {
         $max = Helpers::configInt('edge-flush.warmer.max_urls', 100);
 
-        $max = !is_numeric($max) ? 100 : (int) $max;
+        $max = !is_numeric($max) ? 100 : $max;
 
         return Url::whereNotNull('was_purged_at')
             ->take($max)
@@ -191,7 +191,7 @@ class Warmer
     {
         $config =
             [
-                'timeout' => Helpers::configInt('edge-flush.warmer.connection_timeout') / 1000, // Guzzle expects seconds
+                'timeout' => (Helpers::configInt('edge-flush.warmer.connection_timeout') ?? 1000) / 1000, // Guzzle expects seconds
 
                 'connect_timeout' => Helpers::configInt('edge-flush.warmer.connection_timeout', 1000),
 

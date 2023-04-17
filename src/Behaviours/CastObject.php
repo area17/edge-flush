@@ -9,7 +9,7 @@ trait CastObject
 {
     public function getInternalModel(Model $model): Model
     {
-        $internal = config('edge-flush.tags.external-models.'.get_class($model));
+        $internal = Helpers::configString('edge-flush.tags.external-models.'.get_class($model));
 
         if (blank($internal)) {
             return $model;

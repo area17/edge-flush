@@ -10,9 +10,8 @@ use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Behaviours\CastObject;
 use Symfony\Component\HttpFoundation\Response;
 use A17\EdgeFlush\Behaviours\ControlsInvalidations;
-use A17\EdgeFlush\Contracts\Service as ServiceContract;
 
-abstract class BaseService implements ServiceContract
+abstract class BaseService
 {
     use ControlsInvalidations, CastObject;
 
@@ -42,7 +41,7 @@ abstract class BaseService implements ServiceContract
         return $this->addHeadersToResponse(
             $response,
             'tags',
-            EdgeFlush::tags()->getTagsHash($response, EdgeFlush::getRequest()),
+            (string) EdgeFlush::tags()->getTagsHash($response, EdgeFlush::getRequest()),
         );
     }
 
@@ -109,30 +108,5 @@ abstract class BaseService implements ServiceContract
         (new Collection(Helpers::configArray("edge-flush.headers.$service")))->each(
             fn(string $header) => $response->headers->set($header, (new Collection([$value]))->join(', ')),
         );
-    }
-
-    public function createInvalidation(Invalidation|array $invalidation = null): Invalidation
-    {
-        $invalidation ??= new Invalidation();
-
-        if (is_array($invalidation)) {
-            $paths = [];
-            $tags = [];
-
-            foreach ($invalidation as $value) {
-                if ($value instanceof Tag) {
-                    $tags[] = $value;
-                } else {
-                    $paths[] = $value;
-                }
-            }
-
-            $invalidation = new Invalidation();
-
-            $invalidation->setPaths(new Collection($paths));
-            $invalidation->setTags(new Collection($tags));
-        }
-
-        return $invalidation;
     }
 }

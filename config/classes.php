@@ -8,7 +8,7 @@ return [
      *
      */
     'classes' => [
-        'cdn' => A17\EdgeFlush\Services\CloudFront\Service::class,
+        'cdn' => A17\EdgeFlush\Services\Cdn\CloudFront::class,
 
         'cache-control' => A17\EdgeFlush\Services\CacheControl::class,
 

@@ -5,10 +5,10 @@ namespace A17\EdgeFlush\Behaviours;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use A17\EdgeFlush\Services\Invalidation;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 trait MakeTag
 {
@@ -46,6 +46,7 @@ trait MakeTag
 
     public function getCDNCacheTagFromModel(mixed $model, string $key = null, string|null $type = null): string|null
     {
+        /** @var \A17\EdgeFlush\Models\Model $model */
         $model = $this->getInternalModel($model);
 
         if ($this->tagIsExcluded(get_class($model))) {
@@ -77,22 +78,34 @@ trait MakeTag
         }
 
         if ($type === 'boolean' || is_bool($value)) {
-            return !!$value ? 'true' : 'false';
+            return ($value === true || $value === "1" || $value === 1 || filled($value)) ? 'true' : 'false';
         }
 
-        if ($type === 'string' || is_string($value)) {
-            return "'$value'";
+        if ($type === 'string' || is_string($value) || is_numeric($value)) {
+            if (is_string($value) || is_numeric($value)) {
+                $value = (string) $value;
+
+                return "'$value'";
+            }
+
+            return '--cannot-encode-value--';
         }
 
-        if ($type === 'array' || is_array($value)) {
-            return json_encode($value);
+        if ($type === 'array' || $type === 'object' || is_array($value) || is_object($value)) {
+            if (($value = json_encode($value)) !== false) {
+                return $value;
+            }
         }
 
-        return (string) $value;
+        return '---cannot-encode-value---';
     }
 
-    public function granularPropertyIsAllowed(string $name, Model|string $model): bool
+    public function granularPropertyIsAllowed(string $name, Model|string|null $model): bool
     {
+        if (blank($model)) {
+            return false;
+        }
+
         $ignored = Helpers::collect(Helpers::configArray('edge-flush.invalidations.properties.ignored'));
 
         $model = $model instanceof Model ? get_class($model) : $model;

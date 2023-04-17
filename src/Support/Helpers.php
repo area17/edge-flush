@@ -94,29 +94,29 @@ class Helpers
     {
         $url = ($components['scheme'] ?? 'https') . '://';
 
-        if (filled($components['username'] ?? null) && filled($components['password'] ?? null)) {
+        if (is_string($components['username'] ?? null) && is_string($components['password'] ?? null)) {
             $url .= $components['username'] . ':' . $components['password'] . '@';
         }
 
         $url .= $components['host'] ?? 'localhost';
 
         if (
-            filled($components['port'] ?? null) &&
+            is_numeric($components['port'] ?? null) &&
             (($components['scheme'] === 'http' && $components['port'] !== 80) ||
                 ($components['scheme'] === 'https' && $components['port'] !== 443))
         ) {
             $url .= ':' . $components['port'];
         }
 
-        if (filled($components['path'] ?? null)) {
+        if (is_string($components['path'] ?? null)) {
             $url .= $components['path'];
         }
 
-        if (filled($components['fragment'] ?? null)) {
+        if (is_string($components['fragment'] ?? null)) {
             $url .= '#' . $components['fragment'];
         }
 
-        if (filled($components['query'] ?? null)) {
+        if (is_array($components['query'] ?? null) || is_object($components['query'] ?? null)) {
             $url .= '?' . http_build_query($components['query']);
         }
 
@@ -126,13 +126,6 @@ class Helpers
     public static function parseUrl(string|null $url): array
     {
         if (blank($url)) {
-            $url = '';
-        }
-
-        try {
-            /** @throws Throwable */
-            $url = (string) $url;
-        } catch (Throwable) {
             $url = '';
         }
 

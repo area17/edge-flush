@@ -36,3 +36,5 @@ parameters:
 
   stubFiles:
       - tests/Static/phpstan/stubs/laravel-helpers.php
+
+  treatPhpDocTypesAsCertain: false

@@ -171,7 +171,7 @@ class ConfigMergeSection extends Command
             return null;
         }
 
-        $lines = is_string($content) ? explode("\n", $content) : [];
+        $lines = explode("\n", $content);
 
         $result = [];
 

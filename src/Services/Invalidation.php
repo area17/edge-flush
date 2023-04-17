@@ -45,7 +45,7 @@ class Invalidation
 
     protected Collection $modelNames;
 
-    protected array|null $invalidationResponse = null;
+    protected mixed $invalidationResponse = null;
 
     public function __construct()
     {
@@ -112,6 +112,7 @@ class Invalidation
 
         $invalidation = Helpers::toArray($invalidation['Invalidation']);
 
+        /** @var Carbon|string|null $time */
         $time = $invalidation['CreateTime'] ?? null;
 
         $time = filled($time) ? Carbon::parse($time) : null;
@@ -136,7 +137,7 @@ class Invalidation
         return $this;
     }
 
-    public static function factory(AwsResult $object): self
+    public static function factory(AwsResult|null $object = null): self
     {
         $self = new self();
 
@@ -419,7 +420,7 @@ class Invalidation
         $this->paths ??= new Collection();
     }
 
-    public function setInvalidationResponse(array|null $invalidationResponse): void
+    public function setInvalidationResponse(mixed $invalidationResponse): void
     {
         $this->invalidationResponse = $invalidationResponse;
     }

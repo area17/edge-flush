@@ -11,11 +11,10 @@ use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Support\Constants;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
-use A17\EdgeFlush\Contracts\Service as ServiceContract;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use A17\EdgeFlush\Exceptions\FrontendChecker as FrontendCheckerException;
 
-class CacheControl extends BaseService implements ServiceContract
+class CacheControl extends BaseService
 {
     protected bool|null $_isCachable = null;
 
@@ -50,7 +49,7 @@ class CacheControl extends BaseService implements ServiceContract
         }
 
         if (filled($this->_isCachable)) {
-            return (bool) $this->_isCachable;
+            return $this->_isCachable;
         }
 
         return $this->_isCachable = !$this->getCachableMatrix($response)->contains(false);
@@ -199,6 +198,7 @@ class CacheControl extends BaseService implements ServiceContract
             ? ['no-middleware']
             : $route->action['middleware'] ?? null;
 
+        /** @phpstan-ignore-next-line  */
         if (blank($middleware) || is_null($middleware)) {
             return false;
         }

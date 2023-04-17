@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @method static bool storeTagsServiceIsEnabled()
  * @method static bool warmerServiceIsEnabled()
  * @method static string packageName()
+ * @method static bool match(string $patten, string $string)
  **/
 class EdgeFlush extends Facade
 {

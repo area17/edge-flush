@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace A17\EdgeFlush\Services\Akamai;
+namespace A17\EdgeFlush\Services\Cdn;
 
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
@@ -15,13 +15,13 @@ use A17\EdgeFlush\Services\Invalidation;
 use A17\EdgeFlush\Services\CdnBaseService;
 use Akamai\Open\EdgeGrid\Authentication as AkamaiAuthentication;
 
-class Service extends CdnBaseService
+class Akamai extends Base
 {
     protected static string $serviceName = 'akamai';
 
     protected array $tags = [];
 
-    protected function instantiate(): void
+    public function instantiate(): void
     {
     }
 
@@ -53,9 +53,9 @@ class Service extends CdnBaseService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            $this->getClientToken(),
-            $this->getClientSecret(),
-            $this->getAccessToken(),
+            (string) $this->getClientToken(),
+            (string) $this->getClientSecret(),
+            (string) $this->getAccessToken(),
         );
 
         $auth->setPath($this->getApiPath());
@@ -74,17 +74,19 @@ class Service extends CdnBaseService
          * Fast purge is supposed to be completed in seconds, so no need to do a request
          * to check if it's completed.
          */
-        $url = Url::where('invalidation_id', $invalidationId)->take(1)->get()->first();
+        $url = Url::where('invalidation_id', $invalidationId)->take(1)->first();
 
-        if (empty($url)) {
+        if (blank($url)) {
             return true;
         }
 
         return $url->was_purged_at->diffInSeconds(now()) > 30;
     }
 
-    public function createInvalidationRequest(Invalidation|array $invalidation = null): Invalidation
+    public function createInvalidationRequest(Invalidation|array|null $invalidation = null): Invalidation
     {
+        $invalidation = parent::createInvalidationRequest($invalidation);
+
         $urls = $invalidation->urls()
             ->map(function ($item) {
                 return $item instanceof Url ? $item->url_hash : $item;
@@ -107,7 +109,7 @@ class Service extends CdnBaseService
         ])->post($this->getInvalidationURL(), $body);
 
         if ($response->failed()) {
-            Helpers::error('Error invalidating akamai tags: ' . $response->getBody());
+            Helpers::error('Error invalidating akamai tags: ' . $response->body());
 
             $invalidation->setSuccess(false);
 
@@ -116,7 +118,11 @@ class Service extends CdnBaseService
 
         $invalidation->setSuccess(true);
 
-        $invalidation->setId($response->json('purgeId'));
+        $invalidationId = $response->json('purgeId');
+
+        if (is_string($invalidationId) || is_numeric($invalidationId)) {
+            $invalidation->setId((string) $invalidationId);
+        }
 
         $invalidation->setInvalidationResponse($response->json());
 

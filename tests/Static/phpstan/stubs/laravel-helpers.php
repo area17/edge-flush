@@ -1,10 +1,14 @@
 <?php
 
 /**
- * @param mixed $value
- * @return bool
+ * @phpstan-assert-if-false !=null $value
  */
 function blank(mixed $value): bool{}
+
+/**
+ * @phpstan-assert-if-true !=null $value
+ */
+function filled(mixed $value): bool{}
 
 /**
  * @template TKey of array-key

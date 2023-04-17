@@ -12,9 +12,9 @@ class Entity
 {
     use MakeTag;
 
-    public string $modelClass = '';
+    public string|null $modelClass = '';
 
-    public string $modelName = '';
+    public string|null $modelName = '';
 
     public int|string|null $id = null;
 
@@ -35,10 +35,11 @@ class Entity
         $this->makeEvent($model, $event);
     }
 
-    public function absorb(Model $model)
+    public function absorb(Model $model): void
     {
         $model = EdgeFlushFacade::getInternalModel($model);
 
+        /** @phpstan-ignore-next-line */
         $this->modelClass = get_class($model);
 
         $this->id = $model->getKey();
@@ -47,6 +48,7 @@ class Entity
 
         $this->attributes = $this->absorbAttributes($model->getAttributes());
 
+        /** @phpstan-ignore-next-line */
         $this->isValid = $this->tagIsNotExcluded($this->modelClass);
 
         $this->original = $this->absorbOriginal($model);
@@ -188,12 +190,16 @@ class Entity
             return;
         }
 
+        if (!is_string($name)) {
+            return;
+        }
+
         $this->relations[$name] = $relation;
     }
 
     public function isRelationDirty(string|null $key): bool
     {
-        if (empty($key)) {
+        if (blank($key)) {
             return false;
         }
 

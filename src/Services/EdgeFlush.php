@@ -5,6 +5,7 @@ namespace A17\EdgeFlush\Services;
 use Illuminate\Http\Request;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Contracts\CDNService;
+use A17\EdgeFlush\Services\Cdn\MissingCDN;
 use Symfony\Component\HttpFoundation\Response;
 
 class EdgeFlush extends BaseService
@@ -108,7 +109,7 @@ class EdgeFlush extends BaseService
         return Helpers::configString('edge-flush.package.name') ?? 'edge-flush';
     }
 
-    public function boot()
+    public function boot(): void
     {
         $this->tags->boot();
 

@@ -4,19 +4,19 @@ namespace A17\EdgeFlush\Services;
 
 class DispatchedEvents
 {
-    protected $dispatched = [];
+    protected array $dispatched = [];
 
-    public function register($model)
+    public function register(string $model): void
     {
         $this->dispatched[$model] = true;
     }
 
-    public function alreadyDispatched($model)
+    public function alreadyDispatched(string $model): bool
     {
         $dispatched = $this->dispatched[$model] ?? false;
 
         $this->register($model);
-        
+
         return $dispatched;
     }
 }

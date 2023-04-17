@@ -48,7 +48,7 @@ trait CachedOnCDN
             : '';
     }
 
-    public function cacheModelOnCDN(Model $model, string $key = null, array $allowedKeys = []): void
+    public function cacheModelOnCDN(Model $model, string $key, array $allowedKeys = []): void
     {
         if (!$this->edgeFlushIsEnabled()) {
             return;
@@ -62,7 +62,7 @@ trait CachedOnCDN
         return Helpers::configBool('edge-flush.enabled.package', false);
     }
 
-    public function invalidationsAreEnabled()
+    public function invalidationsAreEnabled(): bool
     {
         return Helpers::configBool('edge-flush.enabled-services.invalidation', false);
     }

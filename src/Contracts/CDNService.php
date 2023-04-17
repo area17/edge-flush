@@ -18,4 +18,8 @@ interface CDNService extends Service
     public function invalidationIsCompleted(string $invalidationId): bool;
 
     public function enabled(): bool;
+
+    public function canInvalidateAll(): bool;
+
+    public function isProperlyConfigured(): bool;
 }

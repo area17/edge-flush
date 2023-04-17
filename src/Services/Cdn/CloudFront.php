@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace A17\EdgeFlush\Services\CloudFront;
+namespace A17\EdgeFlush\Services\Cdn;
 
 use Aws\AwsClient;
 use Aws\Result as AwsResult;
@@ -19,13 +19,13 @@ use A17\EdgeFlush\Services\Invalidation;
 use A17\EdgeFlush\Services\CdnBaseService;
 use Symfony\Component\HttpFoundation\Response;
 
-class Service extends CdnBaseService
+class CloudFront extends Base
 {
     protected static string $serviceName = 'cloud_front';
-    
+
     protected CloudFrontClient $client;
 
-    protected function instantiate(): void
+    public function instantiate(): void
     {
         $client = static::getClient();
 
@@ -36,19 +36,19 @@ class Service extends CdnBaseService
 
     protected function getDistributionId(): string|null
     {
-        return Helpers::configString('edge-flush.services.'.$this->serviceId.'.distribution_id');
+        return Helpers::configString('edge-flush.services.'.static::$serviceName.'.distribution_id');
     }
 
     public function getClient(): CloudFrontClient|null
     {
         $config = [
-            'region' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.region'),
+            'region' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.region'),
 
-            'version' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.key'),
-                'secret' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.secret'),
+                'key' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.key'),
+                'secret' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.secret'),
             ],
         ];
 
@@ -57,13 +57,13 @@ class Service extends CdnBaseService
         }
 
         return new CloudFrontClient([
-            'region' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.region'),
+            'region' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.region'),
 
-            'version' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.key'),
-                'secret' => Helpers::configString('edge-flush.services.'.$this->serviceId.'.secret'),
+                'key' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.key'),
+                'secret' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.secret'),
             ],
         ]);
     }
@@ -87,9 +87,9 @@ class Service extends CdnBaseService
         return false;
     }
 
-    public function createInvalidationRequest(Invalidation|array $invalidation = null): Invalidation
+    public function createInvalidationRequest(Invalidation|array|null $invalidation = null): Invalidation
     {
-        $invalidation = $this->createInvalidation($invalidation);
+        $invalidation = parent::createInvalidationRequest($invalidation);
 
         $paths = $invalidation->paths()->toArray();
 
@@ -135,5 +135,24 @@ class Service extends CdnBaseService
     public function isProperlyConfigured(): bool
     {
         return filled($this->client);
+    }
+
+    public function getInvalidation(string $invalidationId): AwsResult
+    {
+        return $this->client->getInvalidation([
+            'DistributionId' => $this->getDistributionId(),
+            'Id' => $invalidationId,
+        ]);
+    }
+
+    public function invalidationIsCompleted(string $invalidationId): bool
+    {
+        $response = $this->getInvalidation($invalidationId);
+
+        if (blank($response)) {
+            return false;
+        }
+
+        return Invalidation::factory($response)->isCompleted();
     }
 }

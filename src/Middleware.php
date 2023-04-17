@@ -17,10 +17,17 @@ class Middleware
     {
         $response = $next($request);
 
-        if (config('edge-flush.enabled.package')) {
+        if ($this->enabled()) {
             return EdgeFlush::setRequest($request)->makeResponse($response);
         }
 
         return $response;
+    }
+
+    public function enabled(): bool
+    {
+        $enabled = config('edge-flush.enabled.package');
+
+        return $enabled === true;
     }
 }

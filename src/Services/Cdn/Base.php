@@ -1,15 +1,21 @@
 <?php declare(strict_types=1);
 
-namespace A17\EdgeFlush\Services;
+namespace A17\EdgeFlush\Services\Cdn;
 
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Tag;
+use A17\EdgeFlush\Models\Url;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use A17\EdgeFlush\Contracts\CDNService;
+use A17\EdgeFlush\Services\BaseService;
+use A17\EdgeFlush\Services\Invalidation;
 
-abstract class CdnBaseService extends BaseService implements CDNService
+abstract class Base extends BaseService implements CDNService
 {
+    protected static string $serviceName = 'missing-service-name';
+
     public function __construct()
     {
         if ($this->enabled()) {
@@ -93,33 +99,9 @@ abstract class CdnBaseService extends BaseService implements CDNService
             $this->isProperlyConfigured();
     }
 
-    public function invalidationIsCompleted(string $invalidationId): bool
-    {
-        $response = $this->getInvalidation($invalidationId);
-
-        if (blank($response)) {
-            return false;
-        }
-
-        return Invalidation::factory($response)->isCompleted();
-    }
-
-    public function getInvalidation(string $invalidationId): AwsResult
-    {
-        return $this->client->getInvalidation([
-            'DistributionId' => $this->getDistributionId(),
-            'Id' => $invalidationId,
-        ]);
-    }
-
     public function serviceIsEnabled(): bool
     {
         return Helpers::configBool('edge-flush.services.'.static::$serviceName.'.enabled', true);
-    }
-
-    public function getMaxUrls(): int
-    {
-        return Helpers::configInt('edge-flush.services.'.static::$serviceName.'.max_urls', 300);
     }
 
     public function canInvalidateAll(): bool
@@ -127,5 +109,45 @@ abstract class CdnBaseService extends BaseService implements CDNService
         return collect(
             Helpers::configString('edge-flush.services.'.static::$serviceName.'.invalidate_all_paths') ?? []
         )->filter()->isNotEmpty();
+    }
+
+    public function createInvalidationRequest(Invalidation|array|null $invalidation = []): Invalidation
+    {
+        if ($invalidation instanceof Invalidation) {
+            return $invalidation;
+        }
+
+        if (is_null($invalidation)) {
+            return new Invalidation();
+        }
+
+        $urls = [];
+        $tags = [];
+        $paths = [];
+
+        foreach ($invalidation as $value) {
+            if ($value instanceof Url) {
+                $urls[] = $value;
+            } else if ($value instanceof Tag) {
+                $tags[] = $value;
+            } else {
+                $paths[] = $value;
+            }
+        }
+
+        $result = new Invalidation();
+
+        $result->setPaths(new Collection($paths));
+
+        $result->setTags(new Collection($tags));
+
+        $result->setUrls(new Collection($urls));
+
+        return $result;
+    }
+
+    public function instantiate(): void
+    {
+
     }
 }

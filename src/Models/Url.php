@@ -2,21 +2,19 @@
 
 namespace A17\EdgeFlush\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use A17\EdgeFlush\Behaviours\CachedOnCDN;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $url
  * @property string $url_hash
  * @property int $hits
- * @property bool $was_purged_at
+ * @property Carbon $was_purged_at
  * @property string $invalidation_id
+ * @property bool $canBeSaved
  */
 class Url extends Model
 {
-    use CachedOnCDN;
-
     protected $table = 'edge_flush_urls';
 
     protected $fillable = ['url', 'url_hash', 'hits', 'was_purged_at', 'invalidation_id', 'is_valid'];
