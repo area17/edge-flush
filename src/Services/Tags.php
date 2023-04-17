@@ -55,7 +55,7 @@ class Tags
             return;
         }
 
-        if ($this->attributeMustBeIgnored($model, $key) || !$this->attributeExists($model, $key)) {
+        if ($this->attributeMustBeIgnored($model, $key) || !$this->hasAttribute($model, $key)) {
             return;
         }
 
@@ -70,7 +70,7 @@ class Tags
         // $tags[] = $this->makeModelName($model, Constants::ANY_TAG, $allowedKeys), // TODO: do we need the ANY_TAG?
 
         foreach ($this->getAlwaysAddAttributes($model) as $attribute) {
-            if (filled($model->getAttributes()[$attribute])) {
+            if ($this->hasAttribute($model, $attribute)) {
                 $tags[] = $this->makeModelName($model, $attribute, $allowedKeys);
             }
         }

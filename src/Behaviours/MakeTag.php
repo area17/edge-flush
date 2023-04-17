@@ -113,7 +113,7 @@ trait MakeTag
         return !$ignored->contains($name) && !$ignored->contains("$model@$name");
     }
 
-    public function attributeExists(Model $model, string $attribute): bool
+    public function hasAttribute(Model $model, string $attribute): bool
     {
         $attributes = $model->getAttributes();
 
