@@ -101,13 +101,6 @@ class ServiceProvider extends IlluminateServiceProvider
         });
     }
 
-    public function configureDisabledContainer(): void
-    {
-        $this->app->singleton('a17.edge-flush.service', function ($app) {
-            return new EdgeFlushDisabled();
-        });
-    }
-
     public function loadCommands(): void
     {
         $this->commands([InvalidateAll::class]);
