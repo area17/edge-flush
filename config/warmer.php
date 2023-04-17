@@ -24,7 +24,7 @@ return [
      * Authorization, which, after unpacking, is translated to PHP_AUTH_USER and PHP_AUTH_PW
      */
     'warmer' => [
-        'enabled' => env('EDGE_FLUSH_WARMER_ENABLED', false),
+        'enabled' => env('EDGE_FLUSH_WARMER_ENABLED', true),
 
         'types' => ['internal', 'external'],
 

@@ -12,12 +12,12 @@ return [
         'package' => env('EDGE_FLUSH_ENABLED', false),
 
         'services' => [
-            'invalidation' => env('EDGE_FLUSH_INVALIDATION_SERVICE_ENABLED', false),
+            'invalidation' => env('EDGE_FLUSH_INVALIDATION_SERVICE_ENABLED', true),
 
-            'store-tags' => env('EDGE_FLUSH_STORE_TAGS_SERVICE_ENABLED', false),
+            'store-tags' => env('EDGE_FLUSH_STORE_TAGS_SERVICE_ENABLED', true),
         ],
 
-        'granular_invalidation' => env('EDGE_FLUSH_GRANULAR_INVALIDATION_ENABLED', true),
+        'granular_invalidation' => env('EDGE_FLUSH_GRANULAR_INVALIDATION_ENABLED', false),
     ],
 
     /**
