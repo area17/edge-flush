@@ -1,7 +1,5 @@
 <?php
 
-use A17\EdgeFlush\Support\Constants;
-
 return [
     /**
      * Purged cache can be rewarmed. Enable and configure it here.
@@ -32,9 +30,9 @@ return [
 
         'max_urls' => 100,
 
-        'max_time' => Constants::MILLISECOND * 1000,
+        'max_time' => \A17\EdgeFlush\Support\Constants::MILLISECOND * 1000,
 
-        'connection_timeout' => Constants::MILLISECOND * 500,
+        'connection_timeout' => \A17\EdgeFlush\Support\Constants::MILLISECOND * 500,
 
         'concurrent_requests' => 50,
 
