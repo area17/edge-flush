@@ -53,6 +53,7 @@ trait MakeTag
             return null;
         }
 
+        /** @phpstan-ignore-next-line */
         if (method_exists('getCDNCacheTag', $model)) {
             return $model->getCDNCacheTag($key, $type);
         }

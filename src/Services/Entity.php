@@ -16,7 +16,7 @@ class Entity
 
     public string|null $modelName = '';
 
-    public int|string|null $id = null;
+    public mixed $id = null;
 
     public string $event = '';
 
