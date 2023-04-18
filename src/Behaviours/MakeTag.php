@@ -28,7 +28,7 @@ trait MakeTag
             return method_exists($model, 'getCDNCacheTag') && $this->keyIsAllowed($key, $allowedKeys)
                 ? $model->getCDNCacheTag($key, $type)
                 : $this->getCDNCacheTagFromModel($model, $key, $type);
-        } catch (\Exception $exception) {
+        } catch (\Throwable $exception) {
             Helpers::debug("Exception on makeModelName: ".$exception->getMessage());
 
             return null;
@@ -53,7 +53,11 @@ trait MakeTag
             return null;
         }
 
-        return $model->getCDNCacheTag($key, $type);
+        if (method_exists('getCDNCacheTag', $model)) {
+            return $model->getCDNCacheTag($key, $type);
+        }
+
+        return null;
     }
 
     public function tagIsExcluded(string $tag): bool

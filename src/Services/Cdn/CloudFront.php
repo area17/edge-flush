@@ -118,7 +118,7 @@ class CloudFront extends Base
                     'CallerReference' => time(),
                 ],
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error(
                 '[EDGE-FLUSH] [CLOUD FRONT] Invalidation request failed: ' .
                 $e->getMessage() .
