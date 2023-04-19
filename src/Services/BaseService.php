@@ -36,7 +36,7 @@ abstract class BaseService
             return $response;
         }
 
-        Helpers::debug('CACHABLE-MATRIX: ' . json_encode(EdgeFlush::cacheControl()->getCachableMatrix($response)));
+        $this->logCachableMatrix($response);
 
         return $this->addHeadersToResponse(
             $response,
@@ -108,5 +108,18 @@ abstract class BaseService
         (new Collection(Helpers::configArray("edge-flush.headers.$service")))->each(
             fn(string $header) => $response->headers->set($header, (new Collection([$value]))->join(', ')),
         );
+    }
+
+    protected function logCachableMatrix(Response $response): void
+    {
+        if (!Helpers::configBool('edge-flush.debug')) {
+            return;
+        }
+
+        $matrix = json_encode(EdgeFlush::cacheControl()->getCachableMatrix($response));
+
+        Helpers::debug('CACHABLE-MATRIX: ' . $matrix);
+
+        $response->headers->set('X-EDGE-FLUSH-CACHABLE-MATRIX', $matrix);
     }
 }
