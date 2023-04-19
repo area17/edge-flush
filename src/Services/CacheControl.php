@@ -471,4 +471,9 @@ class CacheControl extends BaseService
     {
         return $this;
     }
+
+    public function cacheFor(int|string $time): void
+    {
+        $this->setSMaxAge($time);
+    }
 }
