@@ -116,7 +116,9 @@ abstract class BaseService
             return;
         }
 
-        $matrix = json_encode(EdgeFlush::cacheControl()->getCachableMatrix($response));
+        if (!$matrix = json_encode(EdgeFlush::cacheControl()->getCachableMatrix($response))) {
+            return;
+        }
 
         Helpers::debug('CACHABLE-MATRIX: ' . $matrix);
 
