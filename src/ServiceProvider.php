@@ -36,13 +36,13 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function boot(): void
     {
-        if (!$this->enabled) {
-            return;
-        }
-
         $this->bootConfig();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        if (!$this->enabled) {
+            return;
+        }
 
         $this->loadCommands();
 
