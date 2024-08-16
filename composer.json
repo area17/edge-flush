@@ -32,9 +32,9 @@
         "aws/aws-sdk-php": "^3.261",
         "brianium/paratest": "^7.1",
         "nunomaduro/collision": "^7.1",
-        "nunomaduro/larastan": "^2.5",
+        "larastan/larastan": "^2.9",
         "orchestra/testbench": "^8.0",
-        "phpstan/phpstan": "^1.9",
+        "phpstan/phpstan": "^1.11",
         "phpstan/phpstan-strict-rules": "^1.5",
         "phpunit/phpunit": "^10.0"
     },
