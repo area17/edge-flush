@@ -108,7 +108,7 @@ abstract class BaseService implements ServiceContract
         });
     }
 
-    private function addTagToHeaders(string $service, Response $response, string $value): void
+    protected function addTagToHeaders(string $service, Response $response, string $value): void
     {
         (new Collection(Helpers::configArray("edge-flush.headers.$service")))->each(
             fn(string $header) => $response->headers->set($header, (new Collection([$value]))->join(', ')),
