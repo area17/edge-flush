@@ -27,6 +27,10 @@ class Warmer
 
     public function warm(Collection $urls): void
     {
+        if ($urls->count() === 0) {
+            return;
+        }
+
         $count = Helpers::configInt('edge-flush.warmer.concurrent_requests', 10);
 
         $count = !is_numeric($count) ? 10 : $count;
