@@ -79,7 +79,7 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function configureContainer(): void
     {
-        $this->app->singleton('a17.edge-flush.service', function ($app) {
+        $this->app->singleton(EdgeFlush::class, function ($app) {
             $service = Helpers::configString('edge-flush.classes.cdn') ?? '';
 
             if (blank($service)) {
