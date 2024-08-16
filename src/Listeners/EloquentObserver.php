@@ -47,7 +47,7 @@ class EloquentObserver
         $this->invalidate($model, 'deleted');
     }
 
-    public function pivotSynced($observed, $model, $relationName, $changes)
+    public function pivotSynced(mixed $observed, Model $model, string $relationName, array $changes): void
     {
         $this->invalidate($model, 'pivot-synced', ['name' => $relationName, 'changes' => $changes]);
     }
@@ -58,7 +58,13 @@ class EloquentObserver
             return;
         }
 
-        if ($this->dispatchedEvents->alreadyDispatched($event.'-'.$this->makeModelName($model))) {
+        if (blank($this->dispatchedEvents)) {
+            return;
+        }
+
+        $dispatched = $this->dispatchedEvents->alreadyDispatched($event.'-'.$this->makeModelName($model));
+
+        if (filled($dispatched) && $dispatched !== false) {
             return;
         }
 
@@ -76,7 +82,7 @@ class EloquentObserver
         }
     }
 
-    public function boot()
+    public function boot(): void
     {
         $this->dispatchedEvents = app('a17.edgeflush.dispatchedEvents');
     }

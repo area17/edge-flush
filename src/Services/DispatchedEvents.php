@@ -2,16 +2,18 @@
 
 namespace A17\EdgeFlush\Services;
 
+use Illuminate\Database\Eloquent\Model;
+
 class DispatchedEvents
 {
-    protected $dispatched = [];
+    protected array $dispatched = [];
 
-    public function register($model)
+    public function register(string $model): void
     {
         $this->dispatched[$model] = true;
     }
 
-    public function alreadyDispatched($model)
+    public function alreadyDispatched(string $model): mixed
     {
         $dispatched = $this->dispatched[$model] ?? false;
 

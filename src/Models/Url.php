@@ -10,8 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $url
  * @property string $url_hash
  * @property int $hits
- * @property bool $was_purged_at
+ * @property \Illuminate\Support\Carbon $was_purged_at
  * @property string $invalidation_id
+ * @property bool $canBeSaved
  */
 class Url extends Model
 {

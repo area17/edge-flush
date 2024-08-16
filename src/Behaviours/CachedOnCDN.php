@@ -62,7 +62,7 @@ trait CachedOnCDN
         return Helpers::configBool('edge-flush.enabled.package', false);
     }
 
-    public function invalidationsAreEnabled()
+    public function invalidationsAreEnabled(): bool
     {
         return Helpers::configBool('edge-flush.enabled.services.invalidation', false);
     }

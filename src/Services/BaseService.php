@@ -18,6 +18,10 @@ abstract class BaseService implements ServiceContract
 
     protected bool|null $enabled = null;
 
+    protected function instantiate(): void
+    {
+    }
+
     public function addHeadersToResponse(Response $response, string $service, string $tag): Response
     {
         if (!$this->enabled()) {
@@ -134,5 +138,10 @@ abstract class BaseService implements ServiceContract
         }
 
         return $invalidation;
+    }
+
+    public function canInvalidateAll(): bool
+    {
+        return true;
     }
 }

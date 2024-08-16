@@ -10,6 +10,8 @@ use A17\EdgeFlush\Contracts\CDNService;
 
 abstract class CdnBaseService extends BaseService implements CDNService
 {
+    protected static string $serviceName = 'not-assigned';
+
     public function __construct()
     {
         if ($this->enabled()) {
@@ -80,7 +82,7 @@ abstract class CdnBaseService extends BaseService implements CDNService
     {
         return $this->createInvalidationRequest($invalidation);
     }
-
+    
     public function maxUrls(): int
     {
         return Helpers::configInt('edge-flush.services.'.static::$serviceName.'.max_urls') ?? 300;
@@ -93,33 +95,9 @@ abstract class CdnBaseService extends BaseService implements CDNService
             $this->isProperlyConfigured();
     }
 
-    public function invalidationIsCompleted(string $invalidationId): bool
-    {
-        $response = $this->getInvalidation($invalidationId);
-
-        if (blank($response)) {
-            return false;
-        }
-
-        return Invalidation::factory($response)->isCompleted();
-    }
-
-    public function getInvalidation(string $invalidationId): AwsResult
-    {
-        return $this->client->getInvalidation([
-            'DistributionId' => $this->getDistributionId(),
-            'Id' => $invalidationId,
-        ]);
-    }
-
     public function serviceIsEnabled(): bool
     {
         return Helpers::configBool('edge-flush.services.'.static::$serviceName.'.enabled', true);
-    }
-
-    public function getMaxUrls(): int
-    {
-        return Helpers::configInt('edge-flush.services.'.static::$serviceName.'.max_urls', 300);
     }
 
     public function canInvalidateAll(): bool
@@ -127,5 +105,15 @@ abstract class CdnBaseService extends BaseService implements CDNService
         return collect(
             Helpers::configString('edge-flush.services.'.static::$serviceName.'.invalidate_all_paths') ?? []
         )->filter()->isNotEmpty();
+    }
+
+    public function createInvalidationRequest(Invalidation|array $invalidation = null): Invalidation
+    {
+        return new Invalidation();
+    }
+
+    public function isProperlyConfigured(): bool
+    {
+        return true;
     }
 }

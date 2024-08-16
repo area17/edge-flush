@@ -50,7 +50,7 @@ class CacheControl extends BaseService implements ServiceContract
         }
 
         if (filled($this->_isCachable)) {
-            return (bool) $this->_isCachable;
+            return $this->_isCachable;
         }
 
         return $this->_isCachable = !$this->getCachableMatrix($response)->contains(false);
@@ -199,7 +199,7 @@ class CacheControl extends BaseService implements ServiceContract
             ? ['no-middleware']
             : $route->action['middleware'] ?? null;
 
-        if (blank($middleware) || is_null($middleware)) {
+        if (blank($middleware)) {
             return false;
         }
 
@@ -452,7 +452,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function strategyDoesntContainsNoStoreDirectives(string $strategy): bool
     {
-        return !!Helpers::collect(explode(',', $strategy))->reduce(function ($willCache, $element) {
+        return Helpers::collect(explode(',', $strategy))->reduce(function (bool $willCache, mixed $element) {
             if (!is_string($element)) {
                 return $willCache;
             }

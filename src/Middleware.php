@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush;
 
 use Closure;
+use A17\EdgeFlush\Support\Helpers;
 
 class Middleware
 {
@@ -17,7 +18,7 @@ class Middleware
     {
         $response = $next($request);
 
-        if (config('edge-flush.enabled.package')) {
+        if (Helpers::configBool('edge-flush.enabled.package')) {
             return EdgeFlush::setRequest($request)->makeResponse($response);
         }
 

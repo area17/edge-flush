@@ -15,6 +15,6 @@ class FrontendChecker
             return false;
         }
 
-        return Str::startsWith((string) $name, ['front.', 'api.']);
+        return Str::startsWith($name, ['front.', 'api.']);
     }
 }

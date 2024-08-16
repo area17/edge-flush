@@ -2,6 +2,7 @@
 
 namespace A17\EdgeFlush\Behaviours;
 
+use Illuminate\Support\Str;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
@@ -52,6 +53,7 @@ trait MakeTag
             return null;
         }
 
+        /** @phpstan-ignore-next-line */
         return $model->getCDNCacheTag($key, $type);
     }
 
@@ -77,18 +79,25 @@ trait MakeTag
         }
 
         if ($type === 'boolean' || is_bool($value)) {
-            return !!$value ? 'true' : 'false';
+            return (bool) $value ? 'true' : 'false';
         }
 
-        if ($type === 'string' || is_string($value)) {
-            return "'$value'";
+        if ($type === 'string' || $type === 'array' || $type === 'object') {
+            if (is_string($value)) {
+                return "'$value'";
+            }
+
+            if (is_array($value) || is_object($value)) {
+                $value = json_encode($value);
+
+                if (is_string($value)) {
+                    return $value;
+                }
+            }
         }
 
-        if ($type === 'array' || is_array($value)) {
-            return json_encode($value);
-        }
-
-        return (string) $value;
+        /// FIXME: we cannot cast this value to a string, so we are generating a random string that will not match anything else, fow now
+        return '--- cannot cast to string --- ' . Str::random(16);
     }
 
     public function granularPropertyIsAllowed(string $name, Model|string $model): bool

@@ -54,19 +54,14 @@ class Service extends CdnBaseService
         $auth->setHttpMethod('POST');
 
         $auth->setAuth(
-            $this->getClientToken(),
-            $this->getClientSecret(),
-            $this->getAccessToken(),
+            (string) $this->getClientToken(),
+            (string) $this->getClientSecret(),
+            (string) $this->getAccessToken(),
         );
 
         $auth->setPath($this->getApiPath());
 
         return $auth->createAuthHeader();
-    }
-
-    public function maxUrls(): int
-    {
-        return Helpers::configInt('edge-flush.services.akamai.max_urls') ?? 300;
     }
 
     public function invalidationIsCompleted(string $invalidationId): bool
@@ -75,9 +70,9 @@ class Service extends CdnBaseService
          * Fast purge is supposed to be completed in seconds, so no need to do a request
          * to check if it's completed.
          */
-        $url = Url::where('invalidation_id', $invalidationId)->take(1)->get()->first();
+        $url = Url::where('invalidation_id', $invalidationId)->first();
 
-        if (empty($url)) {
+        if (blank($url)) {
             return true;
         }
 
@@ -86,6 +81,14 @@ class Service extends CdnBaseService
 
     public function createInvalidationRequest(Invalidation|array $invalidation = null): Invalidation
     {
+        if (blank($invalidation)) {
+            return new Invalidation();
+        }
+
+        if (is_array($invalidation)) {
+            $invalidation = (new Invalidation())->setUrls($invalidation);
+        }
+
         $urls = $invalidation->urls()
             ->map(function ($item) {
                 return $item instanceof Url ? $item->url_hash : $item;
@@ -116,7 +119,7 @@ class Service extends CdnBaseService
         Helpers::debug('[AKAMAI] Invalidation completed in ' . $duration . ' seconds');
 
         if ($response->failed()) {
-            Helpers::error('Error invalidating akamai tags: ' . $response->getBody());
+            Helpers::error('Error invalidating akamai tags: ' . $response->body());
 
             $invalidation->setSuccess(false);
 
@@ -125,9 +128,15 @@ class Service extends CdnBaseService
 
         $invalidation->setSuccess(true);
 
-        $invalidation->setId($response->json('purgeId'));
+        $json = $response->json();
 
-        $invalidation->setInvalidationResponse($response->json());
+        if (!is_array($json)) {
+            $json = [];
+        }
+
+        $invalidation->setId($json['purgeId'] ?? null);
+
+        $invalidation->setInvalidationResponse($json);
 
         return $invalidation;
     }

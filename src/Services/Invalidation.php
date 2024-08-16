@@ -320,11 +320,11 @@ class Invalidation
         return EdgeFlush::cdn()->getInvalidationPathsForTags($this);
     }
 
-    public function setUrls(Collection $urls): self
+    public function setUrls(Collection|array $urls): self
     {
         $this->type = 'url';
 
-        $this->urls = $urls;
+        $this->urls = is_array($urls) ? new Collection($urls) : $urls;
 
         return $this;
     }
@@ -400,7 +400,7 @@ class Invalidation
         $this->instantiate();
     }
 
-    private function instantiate(): void
+    protected function instantiate(): void
     {
         $this->tags ??= new Collection();
 
