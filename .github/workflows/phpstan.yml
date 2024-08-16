@@ -15,28 +15,31 @@ jobs:
 
     strategy:
       matrix:
-        php: [8.2, 8.1]
+        php: [8.4, 8.3, 8.2, 8.1]
 
-    name: P${{ matrix.php }}
+    name: PHP ${{ matrix.php }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@v3
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: none
 
       - name: Cache composer dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
-      - name: Run composer install
+      - name: Install Composer dependencies
         run: composer install -n --prefer-dist
 
-      - name: Run phpstan
+      - name: Run PHPStan
         run: ./vendor/bin/phpstan analyse
