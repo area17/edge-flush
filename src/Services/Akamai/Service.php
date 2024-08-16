@@ -4,6 +4,7 @@ namespace A17\EdgeFlush\Services\Akamai;
 
 use A17\EdgeFlush\Models\Tag;
 use A17\EdgeFlush\Models\Url;
+use SebastianBergmann\Timer\Timer;
 use Illuminate\Support\Collection;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Support\Facades\Log;
@@ -100,11 +101,19 @@ class Service extends CdnBaseService
             'objects' => $urls->toArray(),
         ];
 
-        Helpers::debug('[AKAMAI] dispatchin invalidations for ' . $urls->count() . ' urls');
+        Helpers::debug('[AKAMAI] dispatching invalidations for ' . $urls->count() . ' urls');
+
+        // Create an instance of the Timer
+        $timer = new Timer();
+        $timer->start();
 
         $response = Http::withHeaders([
             'Authorization' => $this->getAuthHeaders($body),
         ])->post($this->getInvalidationURL(), $body);
+
+        $duration = $timer->stop()->asSeconds();
+
+        Helpers::debug('[AKAMAI] Invalidation completed in ' . $duration . ' seconds');
 
         if ($response->failed()) {
             Helpers::error('Error invalidating akamai tags: ' . $response->getBody());
