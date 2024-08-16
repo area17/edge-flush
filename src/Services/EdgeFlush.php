@@ -108,7 +108,7 @@ class EdgeFlush extends BaseService
         return Helpers::configString('edge-flush.package.name') ?? 'edge-flush';
     }
 
-    public function boot()
+    public function boot(): void
     {
         $this->tags->boot();
 

@@ -10,15 +10,15 @@ parameters:
   # The level 8 is the highest level
   level: max
 
-  checkMissingIterableValueType: false
-
-  checkGenericClassInNonGenericObjectType: false
-
   reportUnmatchedIgnoredErrors: false
 
   ignoreErrors:
       - '#Internal.*#'
       - '#Cannot access offset .* on array\{scheme.*#'
+      -
+        identifier: missingType.iterableValue
+      -
+        identifier: missingType.generics
 
   strictRules:
       disallowedLooseComparison: true

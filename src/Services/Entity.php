@@ -35,15 +35,19 @@ class Entity
         $this->makeEvent($model, $event);
     }
 
-    public function absorb(Model $model)
+    public function absorb(Model $model): void
     {
         $model = EdgeFlushFacade::getInternalModel($model);
 
-        $this->modelClass = get_class($model);
+        if (is_string($class = get_class($model))) {
+            $this->modelClass = $class;
+        }
 
         $this->id = $model->getKey();
 
-        $this->modelName = $this->makeModelName($model);
+        if (is_string($name = $this->makeModelName($model))) {
+            $this->modelName = $name;
+        }
 
         $this->attributes = $this->absorbAttributes($model->getAttributes());
 
@@ -193,7 +197,7 @@ class Entity
 
     public function isRelationDirty(string|null $key): bool
     {
-        if (empty($key)) {
+        if (blank($key)) {
             return false;
         }
 
