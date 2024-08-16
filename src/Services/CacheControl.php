@@ -206,6 +206,11 @@ class CacheControl extends BaseService implements ServiceContract
         return !Helpers::collect($middleware)->contains('doNotCacheResponse');
     }
 
+    public function cacheFor(int|string $maxAge): self
+    {
+        return $this->setCDNMaxAge($maxAge);
+    }
+
     public function setBrowserMaxAge(int|string $maxAge): self
     {
         return $this->setMaxAge($maxAge);
