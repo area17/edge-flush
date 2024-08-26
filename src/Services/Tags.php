@@ -47,7 +47,7 @@ class Tags
         $this->request = $request ?? request();
     }
 
-    public function addTag(Model $model, string|null $key = null, array $allowedKeys = []): void
+    public function addTag(Model $model, string $key, array $allowedKeys = []): void
     {
         if (!EdgeFlush::enabled()) {
             return;
@@ -918,7 +918,6 @@ class Tags
         }
 
         $this->makeUrl($this->getCurrentUrl($request ?? request()));
-
     }
 
     protected function instantiate(): void
