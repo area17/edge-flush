@@ -6,6 +6,7 @@ use A17\EdgeFlush\Services\DispatchedEvents;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
 use Illuminate\Support\Facades\Event;
+use A17\EdgeFlush\Console\Commands\Urls;
 use A17\EdgeFlush\Listeners\EloquentBooted;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Console\Commands\InvalidateAll;
@@ -110,6 +111,8 @@ class ServiceProvider extends IlluminateServiceProvider
         $this->commands([ConfigListSections::class]);
 
         $this->commands([ConfigMergeSection::class]);
+
+        $this->commands([Urls::class]);
     }
 
     public function bootEventListeners(): void
