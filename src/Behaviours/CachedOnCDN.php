@@ -11,6 +11,8 @@ use GeneaLabs\LaravelPivotEvents\Traits\PivotEventTrait;
 
 trait CachedOnCDN
 {
+    protected array $edgeFlushCachedAttributes = [];
+
     public function invalidateCDNCache(Entity|Model $object): void
     {
         if (!$this->edgeFlushIsEnabled() || !$this->invalidationsAreEnabled()) {
@@ -48,8 +50,12 @@ trait CachedOnCDN
             : '';
     }
 
-    public function cacheModelOnCDN(Model $model, string $key = null, array $allowedKeys = []): void
+    public function cacheModelOnCDN(Model $model, string $key, array $allowedKeys = []): void
     {
+        if (!$this->edgeFlushKeyWasAlreadyAdded($key)) {
+            return;
+        }
+
         if (!$this->edgeFlushIsEnabled()) {
             return;
         }
@@ -65,5 +71,14 @@ trait CachedOnCDN
     public function invalidationsAreEnabled(): bool
     {
         return Helpers::configBool('edge-flush.enabled.services.invalidation', false);
+    }
+
+    public function edgeFlushKeyWasAlreadyAdded(string $key): bool
+    {
+        $added = !in_array($key, $this->edgeFlushCachedAttributes);
+
+        $this->edgeFlushCachedAttributes[$key] = $key;
+
+        return $added;
     }
 }
