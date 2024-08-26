@@ -134,7 +134,7 @@ class Service extends CdnBaseService
 
     public function isProperlyConfigured(): bool
     {
-        return filled($this->client);
+        return isset($this->client) && filled($this->client);
     }
 
     public function invalidationIsCompleted(string $invalidationId): bool

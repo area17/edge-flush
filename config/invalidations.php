@@ -91,7 +91,7 @@ return [
                     ],
                     [
                         'models' => [
-                            A17\EdgeFlush\Models\URL::class,
+                            A17\EdgeFlush\Models\Url::class,
                             A17\EdgeFlush\Models\Tag::class,
                         ],
 

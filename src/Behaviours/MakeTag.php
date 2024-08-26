@@ -6,14 +6,16 @@ use Illuminate\Support\Str;
 use A17\EdgeFlush\EdgeFlush;
 use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use A17\EdgeFlush\Services\Invalidation;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 trait MakeTag
 {
     use CastObject;
+
+    protected Collection $excludedModels;
 
     public function makeModelName(mixed $model, string $key = null, array $allowedKeys = []): string|null
     {
@@ -59,10 +61,12 @@ trait MakeTag
 
     public function tagIsExcluded(string $tag): bool
     {
+        $this->excludedModels ??= Helpers::collect(config('edge-flush.tags.excluded-model-classes'));
+
         /**
          * @param callable(string $pattern): boolean $pattern
          */
-        return Helpers::collect(config('edge-flush.tags.excluded-model-classes'))->contains(
+        return $this->excludedModels->contains(
             fn(string $pattern) => EdgeFlush::match($pattern, $tag),
         );
     }

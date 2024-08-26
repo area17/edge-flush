@@ -211,7 +211,7 @@ class Tags
 
     public function dispatchInvalidationsForModel(Entity $entity): void
     {
-        if (!EdgeFlush::invalidationServiceIsEnabled() || !$entity->isValid || $this->alreadyDispatched($entity)) {
+        if (!EdgeFlush::invalidationServiceIsEnabled() || !$entity->isValid || $this->alreadyDispatched($entity) || $this->tagIsExcluded($entity->modelClass)) {
             return;
         }
 
