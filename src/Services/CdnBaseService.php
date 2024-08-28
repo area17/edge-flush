@@ -14,9 +14,7 @@ abstract class CdnBaseService extends BaseService implements CDNService
 
     public function __construct()
     {
-        if ($this->enabled()) {
-            $this->instantiate();
-        }
+        $this->instantiate();
     }
 
     public function invalidate(Invalidation $invalidation): Invalidation
@@ -90,9 +88,19 @@ abstract class CdnBaseService extends BaseService implements CDNService
 
     public function enabled(): bool
     {
-        return EdgeFlush::enabled() &&
+        if (isset($this->enabled) && $this->enabled !== null) {
+            return $this->enabled;
+        }
+
+        $enabled = EdgeFlush::enabled() &&
             $this->serviceIsEnabled() &&
             $this->isProperlyConfigured();
+
+        if (!$enabled) {
+            Helpers::debug('Service is not enabled or not properly configured: '.static::$serviceName);
+        }
+
+        return $this->enabled = $enabled;
     }
 
     public function serviceIsEnabled(): bool
