@@ -2,12 +2,13 @@
 
 namespace A17\EdgeFlush;
 
-use A17\EdgeFlush\Services\DispatchedEvents;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Services\EdgeFlush;
 use Illuminate\Support\Facades\Event;
+use A17\EdgeFlush\Console\Commands\Zap;
 use A17\EdgeFlush\Console\Commands\Urls;
 use A17\EdgeFlush\Listeners\EloquentBooted;
+use A17\EdgeFlush\Services\DispatchedEvents;
 use A17\EdgeFlush\EdgeFlush as EdgeFlushFacade;
 use A17\EdgeFlush\Console\Commands\InvalidateAll;
 use A17\EdgeFlush\Console\Commands\ConfigListSections;
@@ -106,13 +107,13 @@ class ServiceProvider extends IlluminateServiceProvider
 
     public function loadCommands(): void
     {
-        $this->commands([InvalidateAll::class]);
-
-        $this->commands([ConfigListSections::class]);
-
-        $this->commands([ConfigMergeSection::class]);
-
-        $this->commands([Urls::class]);
+        $this->commands([
+            InvalidateAll::class,
+            ConfigListSections::class,
+            ConfigMergeSection::class,
+            Urls::class,
+            Zap::class,
+        ]);
     }
 
     public function bootEventListeners(): void
