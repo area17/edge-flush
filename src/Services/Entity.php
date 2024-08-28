@@ -129,9 +129,11 @@ class Entity
         $modelNames = Helpers::collect();
 
         foreach ($this->attributes as $key => $value) {
-            $updated = $this->encodeValueForComparison($value);
+            $castType = gettype($value);
 
-            $original = $this->encodeValueForComparison($this->original[$key], gettype($value));
+            $updated = $this->encodeValueForComparison($value, $castType);
+
+            $original = $this->encodeValueForComparison($this->original[$key], $castType);
 
             if ($updated !== $original && $this->granularPropertyIsAllowed($key, $this->modelName)) {
                 if (filled($this->modelName)) {
