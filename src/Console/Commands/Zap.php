@@ -36,7 +36,7 @@ class Zap extends Command
      */
     public function handle(): int
     {
-        if (!$this->option('force')) {
+        if ($this->option('force') === false) {
             $this->error('This operation can only be executed if forced.');
 
             return 1;

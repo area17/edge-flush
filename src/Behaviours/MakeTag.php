@@ -82,16 +82,12 @@ trait MakeTag
             return 'null';
         }
 
-        if ($type === 'integer' || is_numeric($value)) {
+        if ($type === 'integer' && is_numeric($value)) {
             return (string) $value;
         }
 
         if ($type === 'boolean' || is_bool($value)) {
             return (bool) $value ? 'true' : 'false';
-        }
-
-        if ($type === 'object' || is_object($value)) {
-            return json_encode($value);
         }
 
         if ($type === 'string' || $type === 'array' || $type === 'object') {
@@ -108,14 +104,8 @@ trait MakeTag
             }
         }
 
-        try {
-            $value = (string) $value;
-
-            return $value;
-        } catch (\Throwable $e) {
-            /// FIXME: we cannot cast this value to a string, so we are generating a random string that will not match anything else, fow now
-            return '--- cannot cast to string --- ' . Str::random(16);
-        }
+        /// FIXME: we cannot cast this value to a string, so we are generating a random string that will not match anything else, fow now
+        return '--- cannot cast to string --- ' . Str::random(16);
     }
 
     public function granularPropertyIsAllowed(string $name, Model|string $model): bool

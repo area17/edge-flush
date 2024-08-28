@@ -88,7 +88,7 @@ abstract class CdnBaseService extends BaseService implements CDNService
 
     public function enabled(): bool
     {
-        if (isset($this->enabled) && $this->enabled !== null) {
+        if (isset($this->enabled)) {
             return $this->enabled;
         }
 

@@ -45,9 +45,13 @@ class Urls extends Command
         return 0;
     }
 
-    protected function replaceDomain(string $url): string
+    protected function replaceDomain(mixed $url): string
     {
         $newDomain = config('app.url');
+
+        if (!is_string($url) || !is_string($newDomain)) {
+            return '';
+        }
 
         $oldDomain = parse_url($url, PHP_URL_SCHEME) . '://'. parse_url($url, PHP_URL_HOST);
 

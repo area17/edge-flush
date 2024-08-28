@@ -70,6 +70,10 @@ class Service extends CdnBaseService
 
     protected function hasInProgressInvalidation(): bool
     {
+        if ($this->client() === null) {
+            return false;
+        }
+
         $list = $this->client()
             ->listInvalidations([
                 'DistributionId' => $this->getDistributionId(),
@@ -91,6 +95,12 @@ class Service extends CdnBaseService
     {
         $invalidation = $this->createInvalidation($invalidation);
 
+        if ($this->client() === null) {
+            Helpers::debug('[CLOUD FRONT]: Service is disabled.');
+
+            return $invalidation;
+        }
+
         $paths = $invalidation->paths()->toArray();
 
         Helpers::debug(
@@ -100,12 +110,6 @@ class Service extends CdnBaseService
             (new Collection($paths))->take(20)->implode(', ') .
             ')...',
         );
-
-        if (!$this->isProperlyConfigured()) {
-            Helpers::debug('[CLOUD FRONT]: Service is disabled.');
-
-            return $invalidation;
-        }
 
         try {
             $response = $this->client()->createInvalidation([
@@ -139,6 +143,10 @@ class Service extends CdnBaseService
 
     public function invalidationIsCompleted(string $invalidationId): bool
     {
+        if (!$this->isProperlyConfigured()) {
+            return false;
+        }
+
         $response = $this->getInvalidation($invalidationId);
 
         if (blank($response)) {
@@ -150,6 +158,10 @@ class Service extends CdnBaseService
 
     public function getInvalidation(string $invalidationId): AwsResult
     {
+        if ($this->client() === null) {
+            return new AwsResult();
+        }
+
         return $this->client()->getInvalidation([
             'DistributionId' => $this->getDistributionId(),
             'Id' => $invalidationId,
