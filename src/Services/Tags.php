@@ -326,20 +326,21 @@ class Tags
 
         $maxUrls = EdgeFlush::cdn()->maxUrls();
 
-        $query = "
-            from edge_flush_urls
-                where edge_flush_urls.was_purged_at is null
-                  and edge_flush_urls.obsolete = true
-                  and edge_flush_urls.is_valid = true
-                order by edge_flush_urls.hits desc
-        ";
-
         /**
          * Get a count
          */
         $total = DB::select("
-            select count(distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url, edge_flush_urls.url_hash) as total
-            {$query}
+            select count(*) as total
+            from (
+                select distinct edge_flush_urls.id, 
+                                edge_flush_urls.hits, 
+                                edge_flush_urls.url, 
+                                edge_flush_urls.url_hash
+                from edge_flush_urls
+                where edge_flush_urls.was_purged_at is null
+                  and edge_flush_urls.obsolete = true
+                  and edge_flush_urls.is_valid = true
+            ) as distinct_values;
         ");
 
         $total = blank($total[0] ?? null) ? 0 : $total[0]->total;
@@ -355,7 +356,11 @@ class Tags
         $rows = Helpers::collect(
             DB::select("
                 select distinct edge_flush_urls.id, edge_flush_urls.hits, edge_flush_urls.url, edge_flush_urls.url_hash
-                {$query}
+                from edge_flush_urls
+                    where edge_flush_urls.was_purged_at is null
+                      and edge_flush_urls.obsolete = true
+                      and edge_flush_urls.is_valid = true
+                    order by edge_flush_urls.hits desc
                 limit {$maxUrls}
             "),
         )->map(fn($row) => new Url((array) $row));
