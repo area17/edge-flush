@@ -36,19 +36,19 @@ class Service extends CdnBaseService
 
     protected function getDistributionId(): string|null
     {
-        return Helpers::configString('edge-flush.services.'.$this->serviceName.'.distribution_id');
+        return Helpers::configString('edge-flush.services.'.static::$serviceName.'.distribution_id');
     }
 
     public function getClient(): CloudFrontClient|null
     {
         $config = [
-            'region' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.region'),
+            'region' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.region'),
 
-            'version' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.key'),
-                'secret' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.secret'),
+                'key' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.key'),
+                'secret' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.secret'),
             ],
         ];
 
@@ -57,20 +57,20 @@ class Service extends CdnBaseService
         }
 
         return new CloudFrontClient([
-            'region' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.region'),
+            'region' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.region'),
 
-            'version' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.key'),
-                'secret' => Helpers::configString('edge-flush.services.'.$this->serviceName.'.secret'),
+                'key' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.key'),
+                'secret' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.secret'),
             ],
         ]);
     }
 
     protected function hasInProgressInvalidation(): bool
     {
-        $list = $this->client
+        $list = $this->client()
             ->listInvalidations([
                 'DistributionId' => $this->getDistributionId(),
             ])
@@ -108,7 +108,7 @@ class Service extends CdnBaseService
         }
 
         try {
-            $response = $this->client->createInvalidation([
+            $response = $this->client()->createInvalidation([
                 'DistributionId' => $this->getDistributionId(),
                 'InvalidationBatch' => [
                     'Paths' => [
@@ -134,7 +134,7 @@ class Service extends CdnBaseService
 
     public function isProperlyConfigured(): bool
     {
-        return isset($this->client) && filled($this->client);
+        return isset($this->client) && filled($this->client());
     }
 
     public function invalidationIsCompleted(string $invalidationId): bool
@@ -150,9 +150,14 @@ class Service extends CdnBaseService
 
     public function getInvalidation(string $invalidationId): AwsResult
     {
-        return $this->client->getInvalidation([
+        return $this->client()->getInvalidation([
             'DistributionId' => $this->getDistributionId(),
             'Id' => $invalidationId,
         ]);
+    }
+
+    public function client(): CloudFrontClient|null
+    {
+        return isset($this->client) ? $this->client : null;
     }
 }
