@@ -28,6 +28,8 @@ class Entity
 
     public array $relations = [];
 
+    protected Collection $modelNames;
+
     public function __construct(Model $model, string|null $event = null)
     {
         $this->absorb($model);
@@ -126,7 +128,7 @@ class Entity
 
     public function getDirtyModelNames(): Collection
     {
-        $modelNames = Helpers::collect();
+        $this->modelNames = $this->modelNames ?? Helpers::collect();
 
         foreach ($this->attributes as $key => $value) {
             $castType = gettype($value);
@@ -143,9 +145,11 @@ class Entity
                         $modelName .= "[attribute:{$key}]";
                     }
 
-                    Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
+                    if (!isset($this->modelNames[$modelName])) {
+                        Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
 
-                    $modelNames[$modelName] = $modelName;
+                        $this->modelNames[$modelName] = $modelName;
+                    }
                 }
             }
         }
@@ -159,14 +163,16 @@ class Entity
                         $modelName .= "[relation:{$name}]";
                     }
 
-                    Helpers::debug("RELATION CHANGED: {$modelName}");
+                    if (!isset($this->modelNames[$modelName])) {
+                        Helpers::debug("RELATION CHANGED: {$modelName}");
 
-                    $modelNames[$modelName] = $modelName;
+                        $this->modelNames[$modelName] = $modelName;
+                    }
                 }
             }
         }
 
-        return $modelNames;
+        return $this->modelNames;
     }
 
     public function getOriginal(string $key): mixed
