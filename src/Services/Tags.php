@@ -518,18 +518,10 @@ class Tags
     protected function markUrlsAsObsoleteSql(Collection $list): string
     {
         $wheres = $list->map(function (string $url) {
-            if (strpos($url, "%") !== false) {
-                return "url like '{$url}'";
-            }
+            $operator = strpos($url, "%") !== false ? 'like' : '=';
 
-            return "url_hash = '{$url->url_hash}'";
+            return "url $operator '$url'";
         })->join(' or ');
-
-        Helpers::debug("Marking urls as obsolete: "."
-            update edge_flush_urls efu
-            set obsolete = true
-            where(obsolete = false and $wheres)
-        ");
 
         return "
             update edge_flush_urls efu
