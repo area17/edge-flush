@@ -5,6 +5,7 @@ namespace A17\EdgeFlush\Listeners;
 use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
 use A17\EdgeFlush\Behaviours\MakeTag;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\InteractsWithQueue;
 use A17\EdgeFlush\Behaviours\CachedOnCDN;
@@ -19,6 +20,12 @@ class EloquentObserver
 
     public function __construct()
     {
+        Event::listen('eloquent.builder.*', function ($event, $model) {
+            $model = $this->createModelInstance(json_decode($model[0], true));
+
+            $this->invalidate($model, 'builder.updating');
+        });
+
         $this->boot();
     }
 
@@ -30,6 +37,11 @@ class EloquentObserver
     public function updated(Model $model): void
     {
         $this->invalidate($model, 'updated');
+    }
+
+    public function updating(Model $model): void
+    {
+        $this->invalidate($model, 'updating');
     }
 
     public function deleted(Model $model): void
@@ -72,11 +84,6 @@ class EloquentObserver
 
         $entity->setRelation($relation);
 
-        Helpers::debug(
-            "MODEL EVENT: {$event} on model ".$entity->modelName.
-            (($relation['name'] ?? null) ? " on relation {$relation['name']}" : '')
-        );
-
         if ($entity->mustInvalidate()) {
             $this->invalidateCDNCache($entity);
         }
@@ -85,5 +92,20 @@ class EloquentObserver
     public function boot(): void
     {
         $this->dispatchedEvents = app('a17.edgeflush.dispatchedEvents');
+    }
+    
+    public function createModelInstance(array $model): Model
+    {
+        $newModel = new $model['model']();
+
+        $newModel->setRawAttributes($model['attributes']);
+
+        $updates = collect($model['updates'])->mapWithKeys(function ($value, $key) {
+            return [$key => 'just-to-trigger-dirty-attributes'];
+        })->toArray();
+
+        $newModel->setOriginalAttributes(array_merge($model['attributes'], $updates));
+
+        return $newModel;
     }
 }

@@ -3,6 +3,7 @@
 namespace A17\EdgeFlush\Behaviours;
 
 use A17\EdgeFlush\EdgeFlush;
+use A17\EdgeFlush\Models\Builder;
 use A17\EdgeFlush\Services\Entity;
 use A17\EdgeFlush\Support\Helpers;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,11 @@ use GeneaLabs\LaravelPivotEvents\Traits\PivotEventTrait;
 trait CachedOnCDN
 {
     protected array $edgeFlushCachedAttributes = [];
+
+    public function newEloquentBuilder($query)
+    {
+        return new \A17\EdgeFlush\Models\Builder($query);
+    }
 
     public function invalidateCDNCache(Entity|Model $object): void
     {
@@ -80,5 +86,10 @@ trait CachedOnCDN
         $this->edgeFlushCachedAttributes[$key] = $key;
 
         return $added;
+    }
+
+    public function setOriginalAttributes(array $attributes): void
+    {
+        $this->original = $attributes;
     }
 }
