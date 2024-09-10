@@ -2,6 +2,7 @@
 
 namespace A17\EdgeFlush\Services;
 
+use PHPUnit\TextUI\Help;
 use Illuminate\Support\Str;
 use A17\EdgeFlush\EdgeFlush;
 use Illuminate\Http\Request;
@@ -228,13 +229,13 @@ class Tags
 
         $strategy = $this->getCrudStrategy($entity);
 
-        if ($strategy === Constants::INVALIDATION_STRATEGY_NONE) {
+        if ($strategy->name === Constants::INVALIDATION_STRATEGY_NONE) {
             Helpers::debug('NO INVALIDATION needed for model ' . $entity->modelName);
 
             return;
         }
 
-        if ($strategy === Constants::INVALIDATION_STRATEGY_ALL) {
+        if ($strategy->name === Constants::INVALIDATION_STRATEGY_ALL) {
             Helpers::debug('INVALIDATING ALL tags');
 
             $this->markAsDispatched($entity);
@@ -244,7 +245,7 @@ class Tags
             return;
         }
 
-        if ($strategy === Constants::INVALIDATION_STRATEGY_DEPENDENTS) {
+        if ($strategy->name === Constants::INVALIDATION_STRATEGY_DEPENDENTS) {
             Helpers::debug('INVALIDATING tags for model ' . $entity->modelName);
 
             $invalidation = new Invalidation();
@@ -258,10 +259,22 @@ class Tags
             return;
         }
 
-        throw new \Exception("Strategy '{$strategy}' Not implemented");
+        if ($strategy->name === Constants::INVALIDATION_STRATEGY_URLS) {
+            Helpers::debug('Invalidate URLs ' . json_encode($strategy->urls));
+
+            $invalidation = new Invalidation();
+
+            $invalidation->setUrls($strategy->urls);
+
+            $this->invalidateTags($invalidation);
+
+            return;
+        }
+
+        throw new \Exception("Strategy '{$strategy->name}' Not implemented");
     }
 
-    public function getCrudStrategy(Entity $entity): string
+    public function getCrudStrategy(Entity $entity): Strategy
     {
         if (!$entity->isDirty()) {
             return Constants::INVALIDATION_STRATEGY_NONE;
@@ -269,21 +282,41 @@ class Tags
 
         $strategy = Helpers::configArray("edge-flush.invalidations.crud-strategy.{$entity->event}");
 
-        $defaultStrategy = $strategy['default'] ?? Constants::INVALIDATION_STRATEGY_DEPENDENTS;
+        $defaultStrategy = new Strategy(['strategy' => $strategy['default'] ?? Constants::INVALIDATION_STRATEGY_DEPENDENTS]);
 
         if (blank($strategy)) {
             return $defaultStrategy;
         }
 
         foreach ($strategy['when-models'] ?? [] as $modelStrategy) {
-            // Model is not in the list of models
-            if (!in_array($entity->modelClass, $modelStrategy['models'])) {
+            // Loop through each model or pattern in the models list
+            $matchesPattern = false;
+
+            foreach ($modelStrategy['models'] as $model) {
+                // Check if it's a full class name match
+                if ($entity->modelClass === $model) {
+                    $matchesPattern = true;
+
+                    break;
+                }
+
+                // Check for a wildcard match (e.g., using '*' or other patterns)
+                if (fnmatch($model, $entity->modelClass)) {
+                    $matchesPattern = true;
+
+                    break;
+                }
+            }
+
+            // If no match is found, continue to the next strategy
+            if (!$matchesPattern) {
                 continue;
             }
 
+            // Your logic when a match is found
             // There's no on-change condition
             if (blank($modelStrategy['on-change'] ?? null)) {
-                return $modelStrategy['strategy'];
+                return new Strategy($modelStrategy);
             }
 
             // Check if the attribute has changed to the expected value
@@ -292,7 +325,7 @@ class Tags
                 // Is the expected value the same as the current value?
                 // If key == value, then we're checking if the attribute was just changed
                 if ($entity->isDirty($key) && ($key === $value || $entity->attributeEquals($key, $value))) {
-                    return $modelStrategy['strategy'];
+                    return new Strategy($modelStrategy);
                 }
             }
         }
@@ -314,7 +347,7 @@ class Tags
         }
 
         Helpers::configString('edge-flush.invalidations.type') === 'batch'
-            ? $this->markTagsAsObsolete($invalidation)
+            ? $this->markAsObsolete($invalidation)
             : $this->dispatchInvalidations($invalidation);
     }
 
@@ -383,9 +416,20 @@ class Tags
         $this->dispatchInvalidations($invalidation);
     }
 
+    protected function markAsObsolete(Invalidation $invalidation): void
+    {
+        $this->markTagsAsObsolete($invalidation);
+
+        $this->markUrlsAsObsolete($invalidation);
+    }
+
     protected function markTagsAsObsolete(Invalidation $invalidation): void
     {
         $type = $invalidation->type();
+
+        if ($type !== 'tag') {
+            return;
+        }
 
         $list = $invalidation->queryItemsList();
 
@@ -396,6 +440,25 @@ class Tags
         Helpers::debug("Marking tags as obsolete: {$type} in ({$list})");
 
         $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
+    }
+
+    protected function markUrlsAsObsolete(Invalidation $invalidation): void
+    {
+        $type = $invalidation->type();
+
+        if ($type !== 'url') {
+            return;
+        }
+
+        $list = $invalidation->itemsList();
+        
+        if ($list->isEmpty() || blank($type)) {
+            return;
+        }
+
+        Helpers::debug("Marking urls as obsolete: {$type} in ".json_encode($list));
+
+        $this->dbStatement($this->markUrlsAsObsoleteSql($list));
     }
 
     protected function markTagsAsObsoleteSql(string $type, string $list): string
@@ -449,6 +512,29 @@ class Tags
                              for update
                      ) urls
                         where efu.id = urls.id
+        ";
+    }
+
+    protected function markUrlsAsObsoleteSql(Collection $list): string
+    {
+        $wheres = $list->map(function (string $url) {
+            if (strpos($url, "%") !== false) {
+                return "url like '{$url}'";
+            }
+
+            return "url_hash = '{$url->url_hash}'";
+        })->join(' or ');
+
+        Helpers::debug("Marking urls as obsolete: "."
+            update edge_flush_urls efu
+            set obsolete = true
+            where(obsolete = false and $wheres)
+        ");
+
+        return "
+            update edge_flush_urls efu
+            set obsolete = true
+            where(obsolete = false and $wheres)
         ";
     }
 

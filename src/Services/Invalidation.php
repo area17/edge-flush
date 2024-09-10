@@ -273,6 +273,11 @@ class Invalidation
         return $this;
     }
 
+    public function itemsList(string|null $type = null): Collection
+    {
+        return $this->items($type);
+    }
+    
     public function queryItemsList(string|null $type = null): string
     {
         return $this->items($type)
@@ -355,7 +360,15 @@ class Invalidation
             return $this->urlNames;
         }
 
-        return $this->urlNames = $this->urls()->map->url;
+        $urls = $this->urls()->map(function (Url|string $url) {
+            if ($url instanceof Url) {
+                return $url->url;
+            }
+
+            return $url;
+        });
+
+        return $this->urlNames = $urls;
     }
 
     public function urlHashes(): Collection

@@ -156,6 +156,25 @@ return [
                  */
                 'default' => 'invalidate-dependents',
             ],
+
+            'on-all-events' => [
+                /**
+                 * On all events, also invalidate those
+                 */
+                'default' => 'invalidate-none',
+
+                'when-models' => [
+                    [
+                        'models' => ['*'],
+
+                        'strategy' => 'invalidate-urls',
+
+                        'urls' => [
+                            '%sitemap.xml%',
+                        ]
+                    ],
+                ],
+            ],
         ],
     ],
 ];

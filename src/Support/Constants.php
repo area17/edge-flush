@@ -53,4 +53,6 @@ class Constants
     const INVALIDATION_STRATEGY_DEPENDENTS = 'invalidate-dependents';
 
     const INVALIDATION_STRATEGY_NONE = 'invalidate-none';
+
+    const INVALIDATION_STRATEGY_URLS = 'invalidate-urls';
 }

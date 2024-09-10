@@ -68,6 +68,11 @@ class EloquentObserver
             return;
         }
 
+        if ($event !== 'on-all-events') {
+            // Always dispatch an 'on-all-events' event
+            $this->invalidate($model, 'on-all-events', $relation);
+        }
+
         $entity = new Entity($model, $event);
 
         $entity->setRelation($relation);
