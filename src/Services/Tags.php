@@ -148,6 +148,7 @@ class Tags
         }
 
         Helpers::debug("[STORE-TAGS] Creating URL and storing {$models->count()} models for $url");
+        Helpers::debug('[STORE-TAGS] Tags: ' . $models->join(', '));
 
         $indexes = Helpers::collect();
 
