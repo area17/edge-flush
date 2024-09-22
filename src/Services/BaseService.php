@@ -99,7 +99,7 @@ abstract class BaseService implements ServiceContract
 
     public function addHeadersFromRequest(Response $response): void
     {
-        (new Collection(Helpers::configArray('edge-flush.headers.from-request')))->each(function (string $header) use (
+        (new Collection(Helpers::configArray('edge-flush.strategies.headers.from-request')))->each(function (string $header) use (
             $response
         ) {
             if (filled($value = request()->header($header))) {
@@ -110,7 +110,7 @@ abstract class BaseService implements ServiceContract
 
     protected function addTagToHeaders(string $service, Response $response, string $value): void
     {
-        (new Collection(Helpers::configArray("edge-flush.headers.$service")))->each(
+        (new Collection(Helpers::configArray("edge-flush.strategies.headers.$service")))->each(
             fn(string $header) => $response->headers->set($header, (new Collection([$value]))->join(', ')),
         );
     }

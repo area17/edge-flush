@@ -33,7 +33,7 @@ return [
     ],
 
     /**
-     * Caching strategies.
+     * Caching strategy types.
      *
      * Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
      *
@@ -64,7 +64,7 @@ return [
      *   only-if-cached
      *
      */
-    'strategies' => [
+    'types' => [
         'dynamic' => ['s-maxage', 'max-age', 'public'], // built-in
 
         'zero' => ['s-maxage=0', 'max-age=0', 'no-store'], // built-in

@@ -61,7 +61,7 @@ trait MakeTag
 
     public function tagIsExcluded(string $tag): bool
     {
-        $this->excludedModels ??= Helpers::collect(config('edge-flush.tags.excluded-model-classes'));
+        $this->excludedModels ??= Helpers::collect(config('edge-flush.strategies.tags.excluded-model-classes'));
 
         /**
          * @param callable(string $pattern): boolean $pattern
@@ -87,7 +87,11 @@ trait MakeTag
         }
 
         if ($type === 'boolean' || is_bool($value)) {
-            return (bool) $value ? 'true' : 'false';
+            return (bool) $value ? '1' : '0';
+        }
+
+        if ($value instanceof \Carbon\Carbon) {
+            $value = (string) $value;
         }
 
         if ($type === 'string' || $type === 'array' || $type === 'object') {
@@ -108,13 +112,9 @@ trait MakeTag
         return '--- cannot cast to string --- ' . Str::random(16);
     }
 
-    public function granularPropertyIsAllowed(string $name, Model|string $model): bool
+    public function granularAttributeIsAllowed(string $name, Model|string $model): bool
     {
-        $ignored = Helpers::collect(Helpers::configArray('edge-flush.invalidations.properties.ignored'));
-
-        $model = $model instanceof Model ? get_class($model) : $model;
-
-        return !$ignored->contains($name) && !$ignored->contains("$model@$name");
+        return !$this->attributeMustBeIgnored($model, $name);
     }
 
     public function attributeExists(Model $model, string $attribute): bool
@@ -141,5 +141,16 @@ trait MakeTag
         }
 
         return $relation instanceof Relation;
+    }
+
+    protected function attributeMustBeIgnored(Model|string $model, string $attribute): bool
+    {
+        $model = $model instanceof Model ? get_class($model) : $model;
+
+        $attributes = Helpers::configArray("edge-flush.invalidations.attributes.ignore", []);
+
+        $ignore = array_merge($attributes[$model] ?? [], ($attributes['*'] ?? []));
+
+        return in_array($attribute, $ignore);
     }
 }

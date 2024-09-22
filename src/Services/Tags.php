@@ -118,7 +118,7 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $format = Helpers::toString(Helpers::configString('edge-flush.tags.format', 'app-%environment%-%sha1%'));
+        $format = Helpers::toString(Helpers::configString('edge-flush.strategies.tags.format', 'app-%environment%-%sha1%'));
 
         return str_replace(
             ['%environment%', '%sha1%'],
@@ -427,7 +427,7 @@ class Tags
     {
         $type = $invalidation->type();
 
-        if ($type !== 'tag') {
+        if ($type !== 'tag' && $type !== 'model') {
             return;
         }
 
@@ -926,15 +926,6 @@ class Tags
             EdgeFlush::storeTagsServiceIsEnabled() &&
             $this->domainAllowed($url) &&
             EdgeFlush::cacheControl()->routeIsCachable();
-    }
-
-    protected function attributeMustBeIgnored(Model $model, string $attribute): bool
-    {
-        $attributes = Helpers::configArray("edge-flush.invalidations.attributes.ignore", []);
-
-        $ignore = array_merge($attributes[get_class($model)] ?? [], ($attributes['*'] ?? []));
-
-        return in_array($attribute, $ignore);
     }
 
     protected function getAlwaysAddAttributes(Model $model): array

@@ -74,7 +74,7 @@ class Entity
 
             $original = $this->encodeValueForComparison($this->original[$key], gettype($value));
 
-            if ($updated !== $original && $this->granularPropertyIsAllowed($key, $this->modelClass)) {
+            if ($updated !== $original && $this->granularAttributeIsAllowed($key, $this->modelClass)) {
                 $keyIsDirty = true;
             }
 
@@ -131,13 +131,13 @@ class Entity
         $this->modelNames = $this->modelNames ?? Helpers::collect();
 
         foreach ($this->attributes as $key => $value) {
-            $castType = gettype($value);
+            $castTypeNew = gettype($value);
+            $castTypeOld = gettype($this->original[$key]);
+            
+            $original = $this->encodeValueForComparison($this->original[$key], $castTypeOld);
+            $updated = $this->encodeValueForComparison($value, $castTypeNew);
 
-            $updated = $this->encodeValueForComparison($value, $castType);
-
-            $original = $this->encodeValueForComparison($this->original[$key], $castType);
-
-            if ($updated !== $original && $this->granularPropertyIsAllowed($key, $this->modelName)) {
+            if ($updated !== $original && $this->granularAttributeIsAllowed($key, $this->modelName)) {
                 if (filled($this->modelName)) {
                     $modelName = "{$this->modelName}";
 
@@ -146,7 +146,7 @@ class Entity
                     }
 
                     if (!isset($this->modelNames[$modelName])) {
-                        Helpers::debug("ATTRIBUTE CHANGED: {$modelName}");
+                        Helpers::debug("ATTRIBUTE CHANGED: {$modelName} - old: {$original}({$castTypeOld}) - new: {$updated}({$castTypeNew})");
 
                         $this->modelNames[$modelName] = $modelName;
                     }
@@ -155,7 +155,7 @@ class Entity
         }
 
         foreach ($this->relations as $name => $changed) {
-            if ($this->isRelationDirty($name) && $this->granularPropertyIsAllowed($name, $this->modelName)) {
+            if ($this->isRelationDirty($name) && $this->granularAttributeIsAllowed($name, $this->modelName)) {
                 if (filled($this->modelName)) {
                     $modelName = "{$this->modelName}";
 

@@ -1,54 +1,54 @@
 <?php
 
 return [
-    /**
-     * Services configuration
-     */
-    'services' => [
-        'akamai' => [
-            'host' => env('EDGE_FLUSH_AKAMAI_HOST', env('AKAMAI_HOST')),
+/**
+ * Services configuration
+ */
+    'akamai' => [
+        'enabled' => env('EDGE_FLUSH_AKAMAI_ENABLED', false),
 
-            'access_token' => env('EDGE_FLUSH_AKAMAI_ACCESS_TOKEN', env('AKAMAI_ACCESS_TOKEN')),
+        'host' => env('EDGE_FLUSH_AKAMAI_HOST', env('AKAMAI_HOST')),
 
-            'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN', env('AKAMAI_CLIENT_TOKEN')),
+        'access_token' => env('EDGE_FLUSH_AKAMAI_ACCESS_TOKEN', env('AKAMAI_ACCESS_TOKEN')),
 
-            'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET', env('AKAMAI_CLIENT_SECRET')),
+        'client_token' => env('EDGE_FLUSH_AKAMAI_CLIENT_TOKEN', env('AKAMAI_CLIENT_TOKEN')),
 
-            'invalidate_all_paths' => null, // there's no invalidate all on Akamai
+        'client_secret' => env('EDGE_FLUSH_AKAMAI_CLIENT_SECRET', env('AKAMAI_CLIENT_SECRET')),
 
-            'max_urls' => 499, // Akamai is limited to 500 cache tags per minute
-        ],
+        'invalidate_all_paths' => null, // there's no invalidate all on Akamai
 
-        'cloud_front' => [
-            'enabled' => env('EDGE_FLUSH_CLOUD_FRONT_ENABLED', true),
+        'max_urls' => 499, // Akamai is limited to 500 cache tags per minute
+    ],
 
-            'sdk_version' => env(
-                'EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION',
-                '2016-01-13',
-            ),
+    'cloud_front' => [
+        'enabled' => env('EDGE_FLUSH_CLOUD_FRONT_ENABLED', true),
 
-            'region' => env(
-                'EDGE_FLUSH_AWS_DEFAULT_REGION',
-                env('AWS_DEFAULT_REGION', 'us-east-1'),
-            ),
+        'sdk_version' => env(
+            'EDGE_FLUSH_CLOUD_FRONT_SDK_VERSION',
+            '2016-01-13',
+        ),
 
-            'distribution_id' => env(
-                'EDGE_FLUSH_AWS_CLOUDFRONT_DISTRIBUTION_ID',
-            ),
+        'region' => env(
+            'EDGE_FLUSH_AWS_DEFAULT_REGION',
+            env('AWS_DEFAULT_REGION', 'us-east-1'),
+        ),
 
-            'key' => env(
-                'EDGE_FLUSH_AWS_CLOUDFRONT_KEY',
-                env('AWS_ACCESS_KEY_ID'),
-            ),
+        'distribution_id' => env(
+            'EDGE_FLUSH_AWS_CLOUDFRONT_DISTRIBUTION_ID',
+        ),
 
-            'secret' => env(
-                'EDGE_FLUSH_AWS_CLOUDFRONT_SECRET',
-                env('AWS_SECRET_ACCESS_KEY'),
-            ),
+        'key' => env(
+            'EDGE_FLUSH_AWS_CLOUDFRONT_KEY',
+            env('AWS_ACCESS_KEY_ID'),
+        ),
 
-            'invalidate_all_paths' => ['/*'],
+        'secret' => env(
+            'EDGE_FLUSH_AWS_CLOUDFRONT_SECRET',
+            env('AWS_SECRET_ACCESS_KEY'),
+        ),
 
-            'max_urls' => 3000, // CloudFront has this limit
-        ],
+        'invalidate_all_paths' => ['/*'],
+
+        'max_urls' => 3000, // CloudFront has this limit
     ],
 ];

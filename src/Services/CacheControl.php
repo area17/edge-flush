@@ -80,17 +80,17 @@ class CacheControl extends BaseService implements ServiceContract
 
         if (!$this->methodIsCachable()) {
             return $this->buildStrategy(
-                Helpers::configString('edge-flush.default-strategies.non-cachable-http-methods'),
+                Helpers::configString('edge-flush.strategies.default-strategies.non-cachable-http-methods'),
             );
         }
 
         if ($this->containsValidForm($response)) {
-            return $this->buildStrategy(Helpers::configString('edge-flush.default-strategies.pages-with-valid-forms'));
+            return $this->buildStrategy(Helpers::configString('edge-flush.strategies.default-strategies.pages-with-valid-forms'));
         }
 
         return $this->isCachable($response)
-            ? $this->buildStrategy(Helpers::configString('edge-flush.default-strategies.cachable-requests'))
-            : $this->buildStrategy(Helpers::configString('edge-flush.default-strategies.non-cachable-requests'));
+            ? $this->buildStrategy(Helpers::configString('edge-flush.strategies.default-strategies.cachable-requests'))
+            : $this->buildStrategy(Helpers::configString('edge-flush.strategies.default-strategies.non-cachable-requests'));
     }
 
     protected function getContent(Response $response): string
@@ -145,8 +145,8 @@ class CacheControl extends BaseService implements ServiceContract
     {
         $hasForm = false;
 
-        if (Helpers::configBool('edge-flush.valid_forms.enabled', false)) {
-            $hasForm = Helpers::collect(Helpers::configArray('edge-flush.valid_forms.strings'))->reduce(function (
+        if (Helpers::configBool('edge-flush.responses.valid_forms.enabled', false)) {
+            $hasForm = Helpers::collect(Helpers::configArray('edge-flush.responses.valid_forms.strings'))->reduce(function (
                 bool $hasForm,
                 mixed $string
             ) use ($response) {
@@ -166,7 +166,7 @@ class CacheControl extends BaseService implements ServiceContract
 
     protected function isFrontend(): bool
     {
-        $checker = Helpers::configMixed('edge-flush.frontend-checker');
+        $checker = Helpers::configMixed('edge-flush.frontend.checker');
 
         if (is_callable($checker)) {
             return $checker();
@@ -242,7 +242,7 @@ class CacheControl extends BaseService implements ServiceContract
             return $this;
         }
 
-        $strategy = Helpers::configString("edge-flush.$field.strategy");
+        $strategy = Helpers::configString("edge-flush.strategies.$field.strategy");
 
         $property = $field === 's-maxage' ? 'sMaxAge' : 'maxAge';
 
@@ -265,12 +265,12 @@ class CacheControl extends BaseService implements ServiceContract
 
     public function getDefaultSMaxAge(): int
     {
-        return Helpers::configInt('edge-flush.s-maxage.default') ?? Constants::MS_WEEK;
+        return Helpers::configInt('edge-flush.strategies.s-maxage.default') ?? Constants::MS_WEEK;
     }
 
     public function getDefaultMaxAge(): int
     {
-        return Helpers::configInt('edge-flush.max-age.default') ?? 0;
+        return Helpers::configInt('edge-flush.strategies.max-age.default') ?? 0;
     }
 
     public function buildStrategy(string|null $strategy): string
@@ -337,9 +337,9 @@ class CacheControl extends BaseService implements ServiceContract
             return false;
         }
 
-        return (Helpers::collect(Helpers::configArray('edge-flush.responses.cachable'))->isEmpty() ||
-            Helpers::collect(Helpers::configArray('edge-flush.responses.cachable'))->contains(get_class($response))) &&
-            !Helpers::collect(Helpers::configArray('edge-flush.responses.not-cachable'))->contains(get_class($response));
+        return (Helpers::collect(Helpers::configArray('edge-flush.responses.types.cachable'))->isEmpty() ||
+            Helpers::collect(Helpers::configArray('edge-flush.responses.types.cachable'))->contains(get_class($response))) &&
+            !Helpers::collect(Helpers::configArray('edge-flush.responses.types.not-cachable'))->contains(get_class($response));
     }
 
     public function methodIsCachable(): bool
@@ -348,9 +348,9 @@ class CacheControl extends BaseService implements ServiceContract
             return false;
         }
 
-        return (Helpers::collect(Helpers::configArray('edge-flush.methods.cachable'))->isEmpty() ||
-            Helpers::collect(Helpers::configArray('edge-flush.methods.cachable'))->contains(EdgeFlush::getRequest()->getMethod())) &&
-            !Helpers::collect(Helpers::configArray('edge-flush.methods.not-cachable'))->contains(
+        return (Helpers::collect(Helpers::configArray('edge-flush.strategies.methods.cachable'))->isEmpty() ||
+            Helpers::collect(Helpers::configArray('edge-flush.strategies.methods.cachable'))->contains(EdgeFlush::getRequest()->getMethod())) &&
+            !Helpers::collect(Helpers::configArray('edge-flush.strategies.methods.not-cachable'))->contains(
                 EdgeFlush::getRequest()->getMethod(),
             );
     }
@@ -361,9 +361,9 @@ class CacheControl extends BaseService implements ServiceContract
             return false;
         }
 
-        return (Helpers::collect(Helpers::configArray('edge-flush.statuses.cachable'))->isEmpty() ||
-            Helpers::collect(Helpers::configArray('edge-flush.statuses.cachable'))->contains($response->getStatusCode())) &&
-            !Helpers::collect(Helpers::configArray('edge-flush.statuses.not-cachable'))->contains($response->getStatusCode());
+        return (Helpers::collect(Helpers::configArray('edge-flush.strategies.statuses.cachable'))->isEmpty() ||
+            Helpers::collect(Helpers::configArray('edge-flush.strategies.statuses.cachable'))->contains($response->getStatusCode())) &&
+            !Helpers::collect(Helpers::configArray('edge-flush.strategies.statuses.not-cachable'))->contains($response->getStatusCode());
     }
 
     public function routeIsCachable(): bool
@@ -377,7 +377,7 @@ class CacheControl extends BaseService implements ServiceContract
         $route = (string) ($route instanceof Route ? $route->getName() : null);
 
         if (blank($route)) {
-            return Helpers::configBool('edge-flush.routes.cache_nameless_routes', false);
+            return Helpers::configBool('edge-flush.routing.routes.cache_nameless_routes', false);
         }
 
         /**
@@ -385,9 +385,9 @@ class CacheControl extends BaseService implements ServiceContract
          */
         $filter = fn(string $pattern) => EdgeFlush::match($pattern, $route);
 
-        return (Helpers::collect(Helpers::configArray('edge-flush.routes.cachable'))->isEmpty() ||
-            Helpers::collect(Helpers::configArray('edge-flush.routes.cachable'))->contains($filter)) &&
-            !Helpers::collect(Helpers::configArray('edge-flush.routes.not-cachable'))->contains($filter);
+        return (Helpers::collect(Helpers::configArray('edge-flush.routing.routes.cachable'))->isEmpty() ||
+            Helpers::collect(Helpers::configArray('edge-flush.routing.routes.cachable'))->contains($filter)) &&
+            !Helpers::collect(Helpers::configArray('edge-flush.routing.routes.not-cachable'))->contains($filter);
     }
 
     public function urlIsCachable(): bool
@@ -403,14 +403,14 @@ class CacheControl extends BaseService implements ServiceContract
          */
         $filter = fn(string $pattern) => EdgeFlush::match($pattern, $url);
 
-        return (Helpers::collect(Helpers::configArray('edge-flush.urls.cachable'))->isEmpty() ||
-            Helpers::collect(Helpers::configArray('edge-flush.urls.cachable'))->contains($filter)) &&
-            !Helpers::collect(Helpers::configArray('edge-flush.urls.not-cachable'))->contains($filter);
+        return (Helpers::collect(Helpers::configArray('edge-flush.routing.urls.cachable'))->isEmpty() ||
+            Helpers::collect(Helpers::configArray('edge-flush.routing.urls.cachable'))->contains($filter)) &&
+            !Helpers::collect(Helpers::configArray('edge-flush.routing.urls.not-cachable'))->contains($filter);
     }
 
     public function stripCookies(Response $response, string $strategy): Response
     {
-        $strip = Helpers::configArray('edge-flush.strip_cookies') ?? [];
+        $strip = Helpers::configArray('edge-flush.responses.strip_cookies') ?? [];
 
         /**
          * We only strip cookies from cachable responses because those cookies (potentially logged in users), if cached by the CDN
@@ -432,16 +432,18 @@ class CacheControl extends BaseService implements ServiceContract
     public function getStrategyArray(string|null $strategyName): array
     {
         if (!$this->enabled() || $strategyName === null) {
-            return Helpers::configArray('edge-flush.strategies.zero') ?? [];
+            return Helpers::configArray('edge-flush.strategies.types.zero') ?? [];
         }
 
-        $strategyName = Helpers::configString("edge-flush.built-in-strategies.$strategyName") ?? $strategyName;
+        Helpers::debug("1: $strategyName");
+        $strategyName = Helpers::configString("edge-flush.strategies.built-in-strategies.$strategyName") ?? $strategyName;
+        Helpers::debug("2: $strategyName");
 
         if (trim($strategyName) === '') {
             return [];
         }
 
-        return Helpers::configArray("edge-flush.strategies.$strategyName") ?? [];
+        return Helpers::configArray("edge-flush.strategies.types.$strategyName") ?? [];
     }
 
     public function willBeCached(Response $response, string|null $strategy = null): bool

@@ -18,7 +18,7 @@ return [
     /**
      * Allowed responses
      */
-    'responses' => [
+    'types' => [
         'cachable' => [
             Illuminate\Http\Response::class,
             Illuminate\Http\JsonResponse::class,

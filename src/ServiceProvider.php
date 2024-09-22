@@ -28,12 +28,12 @@ class ServiceProvider extends IlluminateServiceProvider
         'domains',
         'strategies',
         'classes',
-        'routes',
+        'routing',
         'invalidations',
         'services',
         'warmer',
         'responses',
-        'frontend-checker',
+        'frontend',
     ];
 
     public function boot(): void
@@ -137,7 +137,7 @@ class ServiceProvider extends IlluminateServiceProvider
     public function registerConfigSections(): void
     {
         foreach ($this->configSections as $section) {
-            $this->mergeConfigFrom(__DIR__ . "/../config/{$section}.php", "{$this->packageName}");
+            $this->mergeConfigFrom(__DIR__ . "/../config/{$section}.php", "{$this->packageName}.{$section}");
         }
 
         config(["{$this->packageName}.package.name" => $this->packageName]);

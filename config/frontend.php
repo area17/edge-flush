@@ -11,5 +11,5 @@ return [
      *    'frontend-checker' => true,
      *
      */
-    'frontend-checker' => A17\EdgeFlush\Services\FrontendChecker::class,
+    'checker' => A17\EdgeFlush\Services\FrontendChecker::class,
 ];

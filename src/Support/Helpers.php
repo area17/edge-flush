@@ -15,7 +15,7 @@ class Helpers
      */
     public static function sanitizeUrl(string $url): string
     {
-        if (Helpers::configBool('edge-flush.urls.query.fully_cachable')) {
+        if (Helpers::configBool('edge-flush.routing.urls.query.fully_cachable')) {
             return $url;
         }
 
@@ -29,7 +29,7 @@ class Helpers
             return $url;
         }
 
-        $routes = (array) config('edge-flush.urls.query.allow_routes');
+        $routes = (array) config('edge-flush.routing.urls.query.allow_routes');
 
         $list = $routes[$parsed['path']] ?? null;
 
@@ -235,12 +235,12 @@ class Helpers
 
     public static function configBool(string $key, mixed $default = null): bool
     {
-        return static::toBool(config($key, $default));
+        return static::toBool(static::config($key, $default));
     }
 
     public static function configArray(string $key, mixed $default = null): array|null
     {
-        if (is_null($value = config($key, $default))) {
+        if (is_null($value = static::config($key, $default))) {
             return null;
         }
 
@@ -249,7 +249,7 @@ class Helpers
 
     public static function configString(string $key, mixed $default = null): string|null
     {
-        if (is_null($value = config($key, $default))) {
+        if (is_null($value = static::config($key, $default))) {
             return null;
         }
 
@@ -258,7 +258,7 @@ class Helpers
 
     public static function configInt(string $key, mixed $default = null): int|null
     {
-        if (is_null($value = config($key, $default))) {
+        if (is_null($value = static::config($key, $default))) {
             return null;
         }
 
@@ -297,6 +297,15 @@ class Helpers
 
     public static function configMixed(string $key, mixed $default = null): mixed
     {
+        return static::config($key, $default);
+    }
+
+    public static function config(string $key, mixed $default = null): mixed
+    {
+        if (!config()->has($key)) {
+            self::debug("Config key not found: $key");
+        }
+
         return config($key, $default);
     }
 }
