@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -29,7 +31,10 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class Tags
 {
-    use ControlsInvalidations, MakeTag, Database, CastObject;
+    use ControlsInvalidations;
+    use MakeTag;
+    use Database;
+    use CastObject;
 
     protected Collection|null $tags = null;
 
@@ -106,7 +111,7 @@ class Tags
         $url = $this->getCurrentUrl($request);
 
         if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
-            Helpers::debug('DISPATCH STORE-TAGS: for '.$url.' having '.$this->getTags()->count().' tags');
+            Helpers::debug('DISPATCH STORE-TAGS: for ' . $url . ' having ' . $this->getTags()->count() . ' tags');
 
             StoreTags::dispatch($this->getTags(), $url);
         }
@@ -118,7 +123,9 @@ class Tags
     {
         $models ??= $this->getTags();
 
-        $format = Helpers::toString(Helpers::configString('edge-flush.strategies.tags.format', 'app-%environment%-%sha1%'));
+        $format = Helpers::toString(
+            Helpers::configString('edge-flush.strategies.tags.format', 'app-%environment%-%sha1%'),
+        );
 
         return str_replace(
             ['%environment%', '%sha1%'],
@@ -163,9 +170,10 @@ class Tags
                     $index = $this->makeTagIndex($this->url, $model);
 
                     $this->dbStatement($this->getStoreCacheTagsInsertSql($index, $this->url, $model, $now));
-                    
+
                     return $index;
-                })->filter();
+                })
+                ->filter();
         }, 5);
 
         if ($indexes->isNotEmpty()) {
@@ -175,12 +183,8 @@ class Tags
         }
     }
 
-    protected function getStoreCacheTagsInsertSql(
-        string $index,
-        Url $url,
-        string $model,
-        string $now
-    ): string {
+    protected function getStoreCacheTagsInsertSql(string $index, Url $url, string $model, string $now): string
+    {
         return "
             insert into edge_flush_tags (index_hash, url_id, model, created_at, updated_at)
             select '{$index}', {$url->id}, '{$model}', '{$now}', '{$now}'
@@ -212,7 +216,12 @@ class Tags
 
     public function dispatchInvalidationsForModel(Entity $entity): void
     {
-        if (!EdgeFlush::invalidationServiceIsEnabled() || !$entity->isValid || $this->alreadyDispatched($entity) || $this->tagIsExcluded($entity->modelClass)) {
+        if (
+            !EdgeFlush::invalidationServiceIsEnabled() ||
+            !$entity->isValid ||
+            $this->alreadyDispatched($entity) ||
+            $this->tagIsExcluded($entity->modelClass)
+        ) {
             return;
         }
 
@@ -277,12 +286,14 @@ class Tags
     public function getCrudStrategy(Entity $entity): Strategy
     {
         if (!$entity->isDirty()) {
-            return Constants::INVALIDATION_STRATEGY_NONE;
+            return new Strategy(['strategy' => Constants::INVALIDATION_STRATEGY_NONE]);
         }
 
         $strategy = Helpers::configArray("edge-flush.invalidations.crud-strategy.{$entity->event}");
 
-        $defaultStrategy = new Strategy(['strategy' => $strategy['default'] ?? Constants::INVALIDATION_STRATEGY_DEPENDENTS]);
+        $defaultStrategy = new Strategy([
+            'strategy' => $strategy['default'] ?? Constants::INVALIDATION_STRATEGY_DEPENDENTS,
+        ]);
 
         if (blank($strategy)) {
             return $defaultStrategy;
@@ -433,7 +444,7 @@ class Tags
 
         $list = $invalidation->queryItemsList();
 
-        if ($list === "''" || is_null($type) || blank($type)) {
+        if ($list === "''" || blank($type)) {
             return;
         }
 
@@ -451,12 +462,12 @@ class Tags
         }
 
         $list = $invalidation->itemsList();
-        
+
         if ($list->isEmpty() || blank($type)) {
             return;
         }
 
-        Helpers::debug("Marking urls as obsolete: {$type} in ".json_encode($list));
+        Helpers::debug("Marking urls as obsolete: {$type} in " . json_encode($list));
 
         $this->dbStatement($this->markUrlsAsObsoleteSql($list));
     }
@@ -517,11 +528,22 @@ class Tags
 
     protected function markUrlsAsObsoleteSql(Collection $list): string
     {
-        $wheres = $list->map(function (string $url) {
-            $operator = strpos($url, "%") !== false ? 'like' : '=';
+        $wheres = $list
+            ->map(function (mixed $url) {
+                if ($url instanceof Url) {
+                    $url = $url->url;
+                }
 
-            return "url $operator '$url'";
-        })->join(' or ');
+                if (!is_string($url)) {
+                    return '';
+                }
+
+                $operator = strpos($url, '%') !== false ? 'like' : '=';
+
+                return "url $operator '$url'";
+            })
+            ->filter()
+            ->join(' or ');
 
         return "
             update edge_flush_urls efu
@@ -682,7 +704,9 @@ class Tags
 
     public function getMaxInvalidations(): int
     {
-        return Helpers::toInt(min(EdgeFlush::cdn()->maxUrls(), Helpers::configInt('edge-flush.invalidations.batch.size')));
+        return Helpers::toInt(
+            min(EdgeFlush::cdn()->maxUrls(), Helpers::configInt('edge-flush.invalidations.batch.size')),
+        );
     }
 
     public function dbStatement(string $sql): bool
@@ -713,7 +737,7 @@ class Tags
      * @param string $url
      * @return Url
      */
-    function makeUrl(string $url): Url
+    public function makeUrl(string $url): Url
     {
         $url = Helpers::sanitizeUrl($url);
 
@@ -930,7 +954,7 @@ class Tags
 
     protected function getAlwaysAddAttributes(Model $model): array
     {
-        $attributes = Helpers::configArray("edge-flush.invalidations.attributes.always-add", []);
+        $attributes = Helpers::configArray('edge-flush.invalidations.attributes.always-add', []);
 
         return ($attributes[get_class($model)] ?? []) + ($attributes['*'] ?? []);
     }

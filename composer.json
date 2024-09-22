@@ -36,7 +36,8 @@
         "orchestra/testbench": "^8.0",
         "phpstan/phpstan": "^1.11",
         "phpstan/phpstan-strict-rules": "^1.5",
-        "phpunit/phpunit": "^10.0"
+        "phpunit/phpunit": "^10.0",
+        "friendsofphp/php-cs-fixer": "^3.0"
     },
     "autoload": {
         "psr-4": {

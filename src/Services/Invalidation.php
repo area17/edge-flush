@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -15,7 +17,8 @@ use A17\EdgeFlush\Behaviours\CastObject;
 
 class Invalidation
 {
-    use MakeTag, CastObject;
+    use MakeTag;
+    use CastObject;
 
     protected string|null $id = null;
 
@@ -277,7 +280,7 @@ class Invalidation
     {
         return $this->items($type);
     }
-    
+
     public function queryItemsList(string|null $type = null): string
     {
         return $this->items($type)
@@ -360,7 +363,7 @@ class Invalidation
             return $this->urlNames;
         }
 
-        $urls = $this->urls()->map(function (Url|string $url) {
+        $urls = $this->urls()->map(function (mixed $url) {
             if ($url instanceof Url) {
                 return $url->url;
             }
