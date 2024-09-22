@@ -435,9 +435,7 @@ class CacheControl extends BaseService implements ServiceContract
             return Helpers::configArray('edge-flush.strategies.types.zero') ?? [];
         }
 
-        Helpers::debug("1: $strategyName");
         $strategyName = Helpers::configString("edge-flush.strategies.built-in-strategies.$strategyName") ?? $strategyName;
-        Helpers::debug("2: $strategyName");
 
         if (trim($strategyName) === '') {
             return [];
