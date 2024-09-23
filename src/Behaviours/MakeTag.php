@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Behaviours;
 
@@ -32,7 +34,7 @@ trait MakeTag
                 ? $model->getCDNCacheTag($key, $type)
                 : $this->getCDNCacheTagFromModel($model, $key, $type);
         } catch (\Exception $exception) {
-            Helpers::debug("Exception on makeModelName: ".$exception->getMessage());
+            Helpers::debug('MAKE-TAG:EXCEPTION: on makeModelName: ' . $exception->getMessage());
 
             return null;
         }
@@ -66,9 +68,7 @@ trait MakeTag
         /**
          * @param callable(string $pattern): boolean $pattern
          */
-        return $this->excludedModels->contains(
-            fn(string $pattern) => EdgeFlush::match($pattern, $tag),
-        );
+        return $this->excludedModels->contains(fn(string $pattern) => EdgeFlush::match($pattern, $tag));
     }
 
     public function tagIsNotExcluded(string $tag): bool
@@ -147,9 +147,9 @@ trait MakeTag
     {
         $model = $model instanceof Model ? get_class($model) : $model;
 
-        $attributes = Helpers::configArray("edge-flush.invalidations.attributes.ignore", []);
+        $attributes = Helpers::configArray('edge-flush.invalidations.attributes.ignore', []);
 
-        $ignore = array_merge($attributes[$model] ?? [], ($attributes['*'] ?? []));
+        $ignore = array_merge($attributes[$model] ?? [], $attributes['*'] ?? []);
 
         return in_array($attribute, $ignore);
     }

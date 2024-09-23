@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -35,7 +37,7 @@ class Warmer
 
         $count = !is_numeric($count) ? 10 : $count;
 
-        Helpers::debug('[WARMER] Warming up ' . $urls->count() . ' URLs using ' . $count . ' concurrent requests');
+        Helpers::debug('WARMER: warming up ' . $urls->count() . ' URLs using ' . $count . ' concurrent requests');
 
         while ($urls->count() > 0) {
             $chunk = $urls->splice(0, $count);
@@ -106,7 +108,7 @@ class Warmer
 
         /** @var Url $url */
         foreach ($urls as $url) {
-            Helpers::debug("WARMING: $url->url");
+            Helpers::debug("WARMER: warming up $url->url", 4);
 
             $promises[$url->url] = $this->getGuzzle()->getAsync($url->url, [
                 'headers' => $this->getHeaders($url->url),
@@ -117,7 +119,7 @@ class Warmer
 
         $executionTime = microtime(true) - $startTime;
 
-        Helpers::debug("WARMER-ELAPSED-TIME: {$executionTime}s - URLS: {$urls->count()}");
+        Helpers::debug("WARMER:ELAPSED-TIME: {$executionTime}s - URLS: {$urls->count()}");
 
         (new Collection($responses))->each(function ($response) {
             if ($response['state'] === 'rejected') {
@@ -128,15 +130,14 @@ class Warmer
                 $url = $context['url'] ?? 'missing url';
 
                 if ($response['reason'] instanceof GuzzleConnectException) {
-                    Helpers::debug("WARMER-ERROR: $error - $url");
+                    Helpers::debug("WARMER:ERROR: $error - $url");
                 } else {
-                    Helpers::debug("WARMER-REJECTED: $error - $url - " . $response['reason']->getResponse()->getBody());
+                    Helpers::debug("WARMER:REJECTED: $error - $url");
+                    Helpers::debug('WARMER:REJECTED-BODY: ' . $response['reason']->getResponse()->getBody(), 5);
                 }
             } else {
-                Helpers::debug(
-                    "WARMER-SUCCESS : {$response['value']->getStatusCode()} - " .
-                        json_encode($response['value']->getHeaders()),
-                );
+                Helpers::debug("WARMER:SUCCESS: {$response['value']->getStatusCode()}");
+                Helpers::debug('WARMER:SUCCESS-HEADERS: ' . json_encode($response['value']->getHeaders()), 5);
             }
         });
     }
@@ -147,7 +148,7 @@ class Warmer
             return $this->guzzle;
         }
 
-        Helpers::debug('WARMER-GUZZLE-CONFIG: ' . json_encode($this->getGuzzleConfiguration()));
+        Helpers::debug('WARMER:GUZZLE-CONFIG: ' . json_encode($this->getGuzzleConfiguration()), 5);
 
         return $this->guzzle = new Guzzle($this->getGuzzleConfiguration());
     }

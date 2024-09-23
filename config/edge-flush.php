@@ -23,5 +23,7 @@ return [
     /**
      * Enable/disable the pacakge
      */
-    'debug' => env('EDGE_FLUSH_DEBUG', false),
+    'debug_level' => ($level = env('EDGE_FLUSH_DEBUG_LEVEL', 0)),
+
+    'debug' => env('EDGE_FLUSH_DEBUG', $level > 0),
 ];

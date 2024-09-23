@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services\CloudFront;
 
@@ -36,19 +38,19 @@ class Service extends CdnBaseService
 
     protected function getDistributionId(): string|null
     {
-        return Helpers::configString('edge-flush.services.'.static::$serviceName.'.distribution_id');
+        return Helpers::configString('edge-flush.services.' . static::$serviceName . '.distribution_id');
     }
 
     public function getClient(): CloudFrontClient|null
     {
         $config = [
-            'region' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.region'),
+            'region' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.region'),
 
-            'version' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.key'),
-                'secret' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.secret'),
+                'key' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.key'),
+                'secret' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.secret'),
             ],
         ];
 
@@ -57,13 +59,13 @@ class Service extends CdnBaseService
         }
 
         return new CloudFrontClient([
-            'region' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.region'),
+            'region' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.region'),
 
-            'version' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.sdk_version'),
+            'version' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.sdk_version'),
 
             'credentials' => [
-                'key' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.key'),
-                'secret' => Helpers::configString('edge-flush.services.'.static::$serviceName.'.secret'),
+                'key' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.key'),
+                'secret' => Helpers::configString('edge-flush.services.' . static::$serviceName . '.secret'),
             ],
         ]);
     }
@@ -96,20 +98,16 @@ class Service extends CdnBaseService
         $invalidation = $this->createInvalidation($invalidation);
 
         if ($this->client() === null) {
-            Helpers::debug('[CLOUD FRONT]: Service is disabled.');
+            Helpers::debug('CLOUD-FRONT: Service is disabled.');
 
             return $invalidation;
         }
 
         $paths = $invalidation->paths()->toArray();
 
-        Helpers::debug(
-            '[CLOUD FRONT]: Invalidating ' .
-            count($paths) .
-            ' path(s): (' .
-            (new Collection($paths))->take(20)->implode(', ') .
-            ')...',
-        );
+        Helpers::debug('CLOUD-FRONT:INVALIDATION: path count: ' . count($paths));
+
+        Helpers::debug('CLOUD-FRONT:INVALIDATION: paths: ' . (new Collection($paths))->take(20)->implode(', '), 5);
 
         try {
             $response = $this->client()->createInvalidation([
@@ -124,10 +122,10 @@ class Service extends CdnBaseService
             ]);
         } catch (\Exception $e) {
             Log::error(
-                '[EDGE-FLUSH] [CLOUD FRONT] Invalidation request failed: ' .
-                $e->getMessage() .
-                ' - PATHS: ' .
-                json_encode($paths),
+                '[EDGE-FLUSH] CLOUD-FRONT Invalidation request failed: ' .
+                    $e->getMessage() .
+                    ' - PATHS: ' .
+                    json_encode($paths),
             );
 
             return $invalidation;

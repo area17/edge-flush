@@ -111,7 +111,9 @@ class Tags
         $url = $this->getCurrentUrl($request);
 
         if (EdgeFlush::cacheControl()->isCachable($response) && EdgeFlush::storeTagsServiceIsEnabled()) {
-            Helpers::debug('DISPATCH STORE-TAGS: for ' . $url . ' having ' . $this->getTags()->count() . ' tags');
+            Helpers::debug(
+                'TAGS:STORE-TAGS: dispatching for ' . $url . ' having ' . $this->getTags()->count() . ' tags',
+            );
 
             StoreTags::dispatch($this->getTags(), $url);
         }
@@ -147,8 +149,9 @@ class Tags
             return;
         }
 
-        Helpers::debug("[STORE-TAGS] Creating URL and storing {$models->count()} models for $url");
-        Helpers::debug('[STORE-TAGS] Tags: ' . $models->join(', '));
+        Helpers::debug("TAGS:STORE-TAGS: creating URL and storing {$models->count()} models for $url");
+
+        Helpers::debug('TAGS:STORE-TAGS: tags: ' . $models->join(', '), 4); // debug level = 5
 
         $indexes = Helpers::collect();
 
@@ -226,7 +229,7 @@ class Tags
             return;
         }
 
-        Helpers::debug('DISPATCHING for model: ' . $entity->modelName);
+        Helpers::debug('TAGS:DISPATCHING: dispatching for model: ' . $entity->modelName);
 
         $this->dispatchInvalidationsForCrud($entity);
     }
@@ -240,13 +243,13 @@ class Tags
         $strategy = $this->getCrudStrategy($entity);
 
         if ($strategy->name === Constants::INVALIDATION_STRATEGY_NONE) {
-            Helpers::debug('NO INVALIDATION needed for model ' . $entity->modelName);
+            Helpers::debug('TAGS:DISPATCHING: no invalidation needed for model ' . $entity->modelName);
 
             return;
         }
 
         if ($strategy->name === Constants::INVALIDATION_STRATEGY_ALL) {
-            Helpers::debug('INVALIDATING ALL tags');
+            Helpers::debug('TAGS:DISPATCHING: invalidating all tags');
 
             $this->markAsDispatched($entity);
 
@@ -256,7 +259,7 @@ class Tags
         }
 
         if ($strategy->name === Constants::INVALIDATION_STRATEGY_DEPENDENTS) {
-            Helpers::debug('INVALIDATING tags for model ' . $entity->modelName);
+            Helpers::debug('TAGS:DISPATCHING: invalidating tags for model ' . $entity->modelName);
 
             $invalidation = new Invalidation();
 
@@ -270,7 +273,7 @@ class Tags
         }
 
         if ($strategy->name === Constants::INVALIDATION_STRATEGY_URLS) {
-            Helpers::debug('Invalidate URLs ' . json_encode($strategy->urls));
+            Helpers::debug('TAGS:DISPATCHING:INVALIDATE-URLS: ' . json_encode($strategy->urls), 2);
 
             $invalidation = new Invalidation();
 
@@ -449,7 +452,7 @@ class Tags
             return;
         }
 
-        Helpers::debug("Marking tags as obsolete: {$type} in ({$list})");
+        Helpers::debug("TAGS:OBSOLETE: marking tags as obsolete: {$type} in ({$list})");
 
         $this->dbStatement($this->markTagsAsObsoleteSql($type, $list));
     }
@@ -468,7 +471,7 @@ class Tags
             return;
         }
 
-        Helpers::debug("Marking urls as obsolete: {$type} in " . json_encode($list));
+        Helpers::debug("TAGS:OBSOLETE: marking urls as obsolete: {$type} in " . json_encode($list));
 
         $this->dbStatement($this->markUrlsAsObsoleteSql($list));
     }
@@ -573,7 +576,7 @@ class Tags
             return;
         }
 
-        Helpers::debug('INVALIDATING: entire cache...');
+        Helpers::debug('TAGS:INVALIDATION: entire cache...');
 
         $invalidation->setMustInvalidateAll(true);
 
@@ -611,7 +614,7 @@ class Tags
         $count = 0;
 
         do {
-            Helpers::debug('Invalidating all tags... -> ' . $count);
+            Helpers::debug('TAGS:INVALIDATION: all tags: ' . $count);
 
             if ($count++ > 0) {
                 sleep(2);

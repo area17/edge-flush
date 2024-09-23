@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -33,7 +35,7 @@ abstract class CdnBaseService extends BaseService implements CDNService
         }
 
         return $this->createInvalidationRequest(
-            Helpers::configArray('edge-flush.services.'.static::$serviceName.'.invalidate_all_paths'),
+            Helpers::configArray('edge-flush.services.' . static::$serviceName . '.invalidate_all_paths'),
         );
     }
 
@@ -80,10 +82,10 @@ abstract class CdnBaseService extends BaseService implements CDNService
     {
         return $this->createInvalidationRequest($invalidation);
     }
-    
+
     public function maxUrls(): int
     {
-        return Helpers::configInt('edge-flush.services.'.static::$serviceName.'.max_urls') ?? 300;
+        return Helpers::configInt('edge-flush.services.' . static::$serviceName . '.max_urls') ?? 300;
     }
 
     public function enabled(): bool
@@ -92,12 +94,10 @@ abstract class CdnBaseService extends BaseService implements CDNService
             return $this->enabled;
         }
 
-        $enabled = EdgeFlush::enabled() &&
-            $this->serviceIsEnabled() &&
-            $this->isProperlyConfigured();
+        $enabled = EdgeFlush::enabled() && $this->serviceIsEnabled() && $this->isProperlyConfigured();
 
         if (!$enabled) {
-            Helpers::debug('Service is not enabled or not properly configured: '.static::$serviceName);
+            Helpers::debug('CDN-SERVICE: service is not enabled or not properly configured: ' . static::$serviceName);
         }
 
         return $this->enabled = $enabled;
@@ -105,14 +105,16 @@ abstract class CdnBaseService extends BaseService implements CDNService
 
     public function serviceIsEnabled(): bool
     {
-        return Helpers::configBool('edge-flush.services.'.static::$serviceName.'.enabled', true);
+        return Helpers::configBool('edge-flush.services.' . static::$serviceName . '.enabled', true);
     }
 
     public function canInvalidateAll(): bool
     {
         return collect(
-            Helpers::configString('edge-flush.services.'.static::$serviceName.'.invalidate_all_paths') ?? []
-        )->filter()->isNotEmpty();
+            Helpers::configString('edge-flush.services.' . static::$serviceName . '.invalidate_all_paths') ?? [],
+        )
+            ->filter()
+            ->isNotEmpty();
     }
 
     public function createInvalidationRequest(Invalidation|array $invalidation = null): Invalidation

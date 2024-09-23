@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services;
 
@@ -133,7 +135,7 @@ class Entity
         foreach ($this->attributes as $key => $value) {
             $castTypeNew = gettype($value);
             $castTypeOld = gettype($this->original[$key]);
-            
+
             $original = $this->encodeValueForComparison($this->original[$key], $castTypeOld);
             $updated = $this->encodeValueForComparison($value, $castTypeNew);
 
@@ -146,7 +148,9 @@ class Entity
                     }
 
                     if (!isset($this->modelNames[$modelName])) {
-                        Helpers::debug("ATTRIBUTE CHANGED: {$modelName} - old: {$original}({$castTypeOld}) - new: {$updated}({$castTypeNew})");
+                        Helpers::debug(
+                            "ENTITY:ATTRIBUTE-CHANGED: {$modelName} - old: {$original}({$castTypeOld}) - new: {$updated}({$castTypeNew})",
+                        );
 
                         $this->modelNames[$modelName] = $modelName;
                     }
@@ -164,7 +168,7 @@ class Entity
                     }
 
                     if (!isset($this->modelNames[$modelName])) {
-                        Helpers::debug("RELATION CHANGED: {$modelName}");
+                        Helpers::debug("ENTITY:RELATION-CHANGED: {$modelName}");
 
                         $this->modelNames[$modelName] = $modelName;
                     }

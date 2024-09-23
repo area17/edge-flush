@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Support;
 
@@ -171,8 +173,16 @@ class Helpers
         return true;
     }
 
-    public static function debug(array|string $data): bool
+    public static function debug(array|string $data, int $debugLevel = 1): bool
     {
+        if (config('edge-flush.debug_level') < $debugLevel) {
+            return false;
+        }
+
+        if (is_string($data)) {
+            $data = "[$debugLevel] $data";
+        }
+
         return static::log($data, 'debug');
     }
 
@@ -290,7 +300,6 @@ class Helpers
 
         if (is_null($var)) {
             return collect();
-
         }
         return collect([$var]);
     }
@@ -303,10 +312,9 @@ class Helpers
     public static function config(string $key, mixed $default = null): mixed
     {
         if (!config()->has($key)) {
-            self::debug("Config key not found: $key");
+            self::debug("CONFIG: config key not found: $key");
         }
 
         return config($key, $default);
     }
 }
-

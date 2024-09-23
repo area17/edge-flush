@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace A17\EdgeFlush\Services\Akamai;
 
@@ -89,7 +91,8 @@ class Service extends CdnBaseService
             $invalidation = (new Invalidation())->setUrls($invalidation);
         }
 
-        $urls = $invalidation->urls()
+        $urls = $invalidation
+            ->urls()
             ->map(function ($item) {
                 return $item instanceof Url ? $item->url_hash : $item;
             })
@@ -104,7 +107,9 @@ class Service extends CdnBaseService
             'objects' => $urls->toArray(),
         ];
 
-        Helpers::debug('[AKAMAI] dispatching invalidations for ' . $urls->count() . ' urls');
+        Helpers::debug('AKAMAI: dispatching invalidations for ' . $urls->count() . ' urls');
+
+        Helpers::debug('AKAMAI: invalidating these URLs: ' . json_encode($body), 4);
 
         // Create an instance of the Timer
         $timer = new Timer();
@@ -143,9 +148,7 @@ class Service extends CdnBaseService
 
     public function isProperlyConfigured(): bool
     {
-        return filled($this->getClientToken())
-            && filled($this->getClientSecret())
-            && filled($this->getAccessToken());
+        return filled($this->getClientToken()) && filled($this->getClientSecret()) && filled($this->getAccessToken());
     }
 
     public function getClientToken(): string|null
