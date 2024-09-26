@@ -117,9 +117,9 @@ class Helpers
         }
 
         if (filled($components['query'] ?? null)) {
-            $query = new Collection($components['query']);
+            ksort($components['query']);
 
-            $url .= '?' . http_build_query($query->sortKeys()->toArray());
+            $url .= '?' . http_build_query($components['query']);
         }
 
         return $url;
