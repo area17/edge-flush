@@ -17,9 +17,7 @@ class Helpers
      */
     public static function sanitizeUrl(string $url): string
     {
-        if (Helpers::configBool('edge-flush.routing.urls.query.fully_cachable')) {
-            return $url;
-        }
+        $isFullyCachable = Helpers::configBool('edge-flush.routing.urls.query.fully_cachable');
 
         $parsed = static::parseUrl($url);
 
@@ -50,7 +48,7 @@ class Helpers
 
         $list = Helpers::collect($list);
 
-        $drop = (new Collection($query))->filter(fn($_, $name) => !$list->contains($name));
+        $drop = (new Collection($query))->filter(fn($_, $name) => !$isFullyCachable && !$list->contains($name));
 
         return static::rewriteUrl($query, $drop->keys(), $url);
     }
@@ -119,7 +117,9 @@ class Helpers
         }
 
         if (filled($components['query'] ?? null)) {
-            $url .= '?' . http_build_query($components['query']);
+            $query = new Collection($components['query']);
+
+            $url .= '?' . http_build_query($query->sortKeys()->toArray());
         }
 
         return $url;
